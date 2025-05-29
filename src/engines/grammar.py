@@ -57,20 +57,27 @@ class GrammarAnalysisResult:
 
 class GrammarEngine:
     """
-    Advanced grammar checking and writing enhancement engine.
+    Computational engine for linguistic analysis and text processing.
     
-    Provides comprehensive text analysis including:
-    - Grammar and syntax checking
-    - Style and clarity analysis
-    - Readability assessment
-    - Writing improvement suggestions
+    Provides computational text analysis through algorithmic grammar checking,
+    readability metrics, and style analysis using NLP libraries.
     """
     
     def __init__(self):
+        self.name = "Grammar Analysis Engine"
+        self.version = "1.0.0"
+        self.supported_calculations = [
+            "grammar_analysis",
+            "readability_metrics",
+            "style_analysis", 
+            "sentence_structure_analysis",
+            "lexical_diversity_analysis",
+            "text_complexity_scoring"
+        ]
         self.grammar_checker = self._initialize_grammar_checker()
         self.style_rules = self._initialize_style_rules()
         self.writing_patterns = self._initialize_writing_patterns()
-        logger.info("📝 Grammar Engine initialized")
+        logger.info("📝 Grammar Analysis Engine initialized")
     
     def _initialize_grammar_checker(self):
         """Initialize the grammar checking tool."""

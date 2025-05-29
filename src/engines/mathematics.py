@@ -27,13 +27,27 @@ except ImportError as e:
 
 class MathematicsEngine:
     """
-    Provides precise mathematical computation and verification using
-    specialized Python mathematical libraries.
+    Computational engine for mathematical calculations and verification.
+    
+    Provides precise mathematical computation using SymPy, NumPy, SciPy,
+    and other specialized mathematical libraries.
     """
     
     def __init__(self):
+        self.name = "Mathematics Engine"
+        self.version = "1.0.0"
+        self.supported_calculations = [
+            "algebra_solving",
+            "calculus_operations", 
+            "statistical_analysis",
+            "number_theory_calculations",
+            "geometry_computations",
+            "linear_algebra_operations",
+            "differential_equations",
+            "optimization_problems"
+        ]
         self.available_functions = self._initialize_functions()
-        logger.info("🔢 Mathematics Engine initialized")
+        logger.info("🔢 Mathematics Computational Engine initialized")
     
     def _initialize_functions(self) -> Dict[str, callable]:
         """Initialize available mathematical functions."""

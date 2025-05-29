@@ -1,431 +1,356 @@
 """
-Maestro Intelligence Amplification Engine
-Coordinates specialized engines to amplify specific capabilities beyond base model performance.
+Intelligence Amplification Computational Engine
+
+Provides computational amplification through network analysis, optimization algorithms,
+and cognitive load analysis using NetworkX, SciPy, and other computational libraries.
 """
 
+import numpy as np
 import logging
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
-
-# Import specialized engines
-from .mathematics import MathematicsEngine
-from .language import LanguageEnhancementEngine
-from .code_quality import CodeQualityEngine
-from .web_verification import WebVerificationEngine
-from .data_analysis import DataAnalysisEngine
-from .grammar import GrammarEngine
-from .apa_citation import APACitationEngine
+from typing import Dict, List, Any, Union
+import json
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class AmplificationResult:
-    """Result of intelligence amplification"""
-    success: bool
-    capability: str
-    original_input: str
-    amplified_output: Dict[str, Any]
-    confidence_score: float
-    processing_time: float
-    engine_used: str
-    recommendations: List[str]
-    error_message: Optional[str] = None
+# Import computational libraries with graceful fallbacks
+try:
+    import networkx as nx
+    import scipy.optimize as opt
+    import scipy.stats as stats
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler
+    INTELLIGENCE_LIBRARIES_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Intelligence computation libraries not available: {e}")
+    INTELLIGENCE_LIBRARIES_AVAILABLE = False
+    nx = None
+    opt = None
+    stats = None
 
-class IntelligenceAmplifier:
+
+class IntelligenceAmplificationEngine:
     """
-    Main coordinator for intelligence amplification across multiple domains
+    Computational engine for intelligence amplification through network analysis,
+    optimization, and cognitive modeling algorithms.
+    
+    LLM calls these methods with parameters to get actual computational results.
     """
     
     def __init__(self):
-        # Initialize specialized engines
-        self.engines = {
-            'mathematics': MathematicsEngine(),
-            'language': LanguageEnhancementEngine(),
-            'code_quality': CodeQualityEngine(),
-            'web_verification': WebVerificationEngine(),
-            'data_analysis': DataAnalysisEngine(),
-            'grammar': GrammarEngine(),
-            'apa_citation': APACitationEngine()
-        }
-        
-        # Capability mappings
-        self.capability_mappings = {
-            'mathematical_reasoning': 'mathematics',
-            'calculation': 'mathematics',
-            'equation_solving': 'mathematics',
-            'statistical_analysis': 'data_analysis',
-            'data_analysis': 'data_analysis',
-            'pattern_recognition': 'data_analysis',
-            'language_enhancement': 'language',
-            'grammar_checking': 'grammar',
-            'style_analysis': 'grammar',
-            'writing_enhancement': 'grammar',
-            'apa_citation': 'apa_citation',
-            'citation_formatting': 'apa_citation',
-            'bibliography_generation': 'apa_citation',
-            'code_review': 'code_quality',
-            'code_analysis': 'code_quality',
-            'syntax_validation': 'code_quality',
-            'web_verification': 'web_verification',
-            'html_analysis': 'web_verification',
-            'accessibility_check': 'web_verification'
-        }
-        
-        # Engine status tracking
-        self.engine_status = {engine: True for engine in self.engines.keys()}
+        self.name = "Intelligence Amplification Engine"
+        self.version = "1.0.0"
+        self.supported_calculations = [
+            "knowledge_network_analysis",
+            "cognitive_load_optimization", 
+            "information_flow_analysis",
+            "concept_clustering",
+            "reasoning_path_optimization",
+            "attention_allocation_analysis",
+            "memory_consolidation_modeling"
+        ]
     
-    async def amplify_capability(self, capability: str, input_data: str, context: Dict[str, Any] = None) -> AmplificationResult:
+    def analyze_knowledge_network(self, concepts: List[str], 
+                                 relationships: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Amplify a specific capability using the appropriate specialized engine
+        Analyze knowledge networks using graph theory algorithms.
         
         Args:
-            capability: The capability to amplify
-            input_data: Input data for processing
-            context: Additional context for processing
+            concepts: List of concept nodes
+            relationships: List of relationship edges with weights
             
         Returns:
-            AmplificationResult with enhanced output
+            Dict with network metrics, centrality measures, and insights
         """
-        import time
-        start_time = time.time()
-        
         try:
-            # Determine which engine to use
-            engine_name = self._select_engine(capability)
-            if not engine_name:
-                return self._create_error_result(
-                    capability, input_data, start_time,
-                    f"No suitable engine found for capability: {capability}"
-                )
+            logger.info("🧠 Computing knowledge network analysis...")
             
-            # Check engine availability
-            if not self.engine_status.get(engine_name, False):
-                return self._create_error_result(
-                    capability, input_data, start_time,
-                    f"Engine '{engine_name}' is currently unavailable"
-                )
+            if not INTELLIGENCE_LIBRARIES_AVAILABLE:
+                return {"error": "NetworkX and related libraries not available"}
             
-            # Get the engine
-            engine = self.engines[engine_name]
+            # Create knowledge graph
+            G = nx.DiGraph()
             
-            # Process based on capability and engine
-            result = await self._process_with_engine_async(engine, engine_name, capability, input_data, context)
+            # Add concept nodes
+            for concept in concepts:
+                G.add_node(concept)
             
-            processing_time = time.time() - start_time
+            # Add relationship edges
+            for rel in relationships:
+                if 'source' in rel and 'target' in rel:
+                    weight = rel.get('weight', 1.0)
+                    G.add_edge(rel['source'], rel['target'], weight=weight)
             
-            # Create amplification result
-            return AmplificationResult(
-                success=result.get('success', False),
-                capability=capability,
-                original_input=input_data,
-                amplified_output=result,
-                confidence_score=result.get('confidence_score', 0.8),
-                processing_time=processing_time,
-                engine_used=engine_name,
-                recommendations=result.get('recommendations', []),
-                error_message=result.get('error') if not result.get('success', False) else None
-            )
+            # Compute network metrics
+            betweenness_centrality = nx.betweenness_centrality(G)
+            eigenvector_centrality = nx.eigenvector_centrality(G, max_iter=1000)
+            pagerank = nx.pagerank(G)
+            
+            # Find strongly connected components
+            scc = list(nx.strongly_connected_components(G))
+            
+            # Calculate clustering coefficient
+            clustering = nx.clustering(G.to_undirected())
+            
+            # Find shortest paths between all concept pairs
+            shortest_paths = {}
+            for source in concepts:
+                for target in concepts:
+                    if source != target and nx.has_path(G, source, target):
+                        path_length = nx.shortest_path_length(G, source, target)
+                        shortest_paths[f"{source} -> {target}"] = path_length
+            
+            # Identify central concepts (top 5 by betweenness centrality)
+            central_concepts = sorted(betweenness_centrality.items(), 
+                                    key=lambda x: x[1], reverse=True)[:5]
+            
+            result = {
+                "network_size": {
+                    "nodes": G.number_of_nodes(),
+                    "edges": G.number_of_edges(),
+                    "density": nx.density(G)
+                },
+                "centrality_measures": {
+                    "betweenness": betweenness_centrality,
+                    "eigenvector": eigenvector_centrality,
+                    "pagerank": pagerank
+                },
+                "clustering_coefficients": clustering,
+                "strongly_connected_components": len(scc),
+                "central_concepts": [{"concept": concept, "centrality": score} 
+                                   for concept, score in central_concepts],
+                "shortest_paths": shortest_paths,
+                "average_path_length": np.mean(list(shortest_paths.values())) if shortest_paths else 0,
+                "computation_method": "NetworkX graph analysis algorithms"
+            }
+            
+            logger.info(f"✅ Knowledge network analysis complete: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+            return result
             
         except Exception as e:
-            logger.error(f"Intelligence amplification failed: {str(e)}")
-            return self._create_error_result(
-                capability, input_data, start_time,
-                f"Amplification failed: {str(e)}"
-            )
+            logger.error(f"❌ Knowledge network analysis failed: {str(e)}")
+            return {"error": f"Calculation failed: {str(e)}"}
     
-    def _select_engine(self, capability: str) -> Optional[str]:
-        """Select the appropriate engine for a capability"""
-        # Direct mapping
-        if capability in self.capability_mappings:
-            return self.capability_mappings[capability]
+    def optimize_cognitive_load(self, tasks: List[Dict[str, Any]], 
+                               constraints: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Optimize cognitive load distribution using optimization algorithms.
         
-        # Fuzzy matching based on keywords
-        capability_lower = capability.lower()
-        
-        # Mathematics keywords
-        math_keywords = ['math', 'calculate', 'equation', 'algebra', 'calculus', 'geometry', 'statistics', 'number']
-        if any(keyword in capability_lower for keyword in math_keywords):
-            return 'mathematics'
-        
-        # Data analysis keywords
-        data_keywords = ['data', 'analysis', 'pattern', 'trend', 'correlation', 'outlier', 'distribution']
-        if any(keyword in capability_lower for keyword in data_keywords):
-            return 'data_analysis'
-        
-        # Grammar and writing keywords
-        grammar_keywords = ['grammar', 'writing', 'style', 'readability', 'clarity', 'proofreading']
-        if any(keyword in capability_lower for keyword in grammar_keywords):
-            return 'grammar'
-        
-        # Citation keywords
-        citation_keywords = ['citation', 'apa', 'bibliography', 'reference', 'source']
-        if any(keyword in capability_lower for keyword in citation_keywords):
-            return 'apa_citation'
-        
-        # Language keywords (general language enhancement)
-        language_keywords = ['language', 'text', 'enhance']
-        if any(keyword in capability_lower for keyword in language_keywords):
-            return 'language'
-        
-        # Code keywords
-        code_keywords = ['code', 'programming', 'syntax', 'function', 'class', 'variable', 'algorithm']
-        if any(keyword in capability_lower for keyword in code_keywords):
-            return 'code_quality'
-        
-        # Web keywords
-        web_keywords = ['web', 'html', 'css', 'javascript', 'website', 'accessibility', 'seo']
-        if any(keyword in capability_lower for keyword in web_keywords):
-            return 'web_verification'
-        
-        return None
-    
-    async def _process_with_engine_async(self, engine: Any, engine_name: str, capability: str, input_data: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Process input with the selected engine using async methods when possible"""
+        Args:
+            tasks: List of tasks with complexity and priority metrics
+            constraints: Resource and time constraints
+            
+        Returns:
+            Dict with optimal task allocation and load distribution
+        """
         try:
-            if engine_name == 'mathematics':
-                # Use the async method directly
-                result = await engine.process_mathematical_task(input_data, context or {})
-                return {
-                    'success': True,
-                    'solution': result,
-                    'problem': input_data,
-                    'method': 'mathematical_computation'
-                }
+            logger.info("🧠 Computing cognitive load optimization...")
             
-            elif engine_name == 'data_analysis':
-                # Data analysis is sync, so call it directly
-                analysis_type = context.get('analysis_type', 'comprehensive') if context else 'comprehensive'
-                result = engine.analyze_data(input_data, analysis_type)
-                return result
+            if not INTELLIGENCE_LIBRARIES_AVAILABLE:
+                return {"error": "SciPy optimization libraries not available"}
             
-            elif engine_name == 'language':
-                # Use the async method directly
-                result = await engine.enhance_language_quality(input_data, context or {})
-                return {
-                    'success': True,
-                    'enhanced_text': result,
-                    'original_text': input_data,
-                    'enhancement_type': context.get('enhancement_type', 'comprehensive') if context else 'comprehensive'
-                }
+            # Extract task parameters
+            n_tasks = len(tasks)
+            complexities = np.array([task.get('complexity', 1.0) for task in tasks])
+            priorities = np.array([task.get('priority', 1.0) for task in tasks])
+            durations = np.array([task.get('duration', 1.0) for task in tasks])
             
-            elif engine_name == 'grammar':
-                # Use the async grammar analysis method
-                result = await engine.analyze_grammar_and_style(input_data, context.get('analysis_type', 'comprehensive') if context else 'comprehensive', context or {})
-                return {
-                    'success': True,
-                    'analysis_result': result,
-                    'corrected_text': result.corrected_text,
-                    'quality_score': result.quality_metrics.get('overall_quality', 0.8),
-                    'confidence_score': 0.9
-                }
+            # Constraint parameters
+            max_load = constraints.get('max_cognitive_load', 10.0)
+            max_time = constraints.get('max_time', 8.0)
             
-            elif engine_name == 'apa_citation':
-                # Handle different APA citation tasks
-                task_type = context.get('task_type', 'validate') if context else 'validate'
+            # Objective function: maximize priority while minimizing cognitive load
+            def objective(x):
+                # x[i] = 1 if task i is selected, 0 otherwise
+                total_priority = np.sum(x * priorities)
+                total_load = np.sum(x * complexities)
+                # Maximize priority, minimize load (negative for minimization)
+                return -(total_priority - 0.1 * total_load)
+            
+            # Constraints
+            constraints_list = [
+                # Cognitive load constraint
+                {'type': 'ineq', 'fun': lambda x: max_load - np.sum(x * complexities)},
+                # Time constraint  
+                {'type': 'ineq', 'fun': lambda x: max_time - np.sum(x * durations)},
+            ]
+            
+            # Bounds: each task either selected (1) or not (0)
+            bounds = [(0, 1) for _ in range(n_tasks)]
+            
+            # Initial guess
+            x0 = np.ones(n_tasks) * 0.5
+            
+            # Solve optimization problem
+            result_opt = opt.minimize(objective, x0, method='SLSQP', 
+                                    bounds=bounds, constraints=constraints_list)
+            
+            # Round to binary selection
+            selection = np.round(result_opt.x)
+            
+            # Calculate metrics for selected tasks
+            selected_tasks = [i for i, selected in enumerate(selection) if selected == 1]
+            total_complexity = np.sum(selection * complexities)
+            total_priority = np.sum(selection * priorities)
+            total_duration = np.sum(selection * durations)
+            
+            # Load distribution analysis
+            load_per_hour = total_complexity / total_duration if total_duration > 0 else 0
+            efficiency_score = total_priority / total_complexity if total_complexity > 0 else 0
+            
+            result = {
+                "optimization_result": {
+                    "success": result_opt.success,
+                    "optimal_value": float(-result_opt.fun),
+                    "iterations": result_opt.nit
+                },
+                "task_selection": {
+                    "selected_tasks": selected_tasks,
+                    "selection_vector": selection.tolist(),
+                    "total_tasks_selected": int(np.sum(selection))
+                },
+                "load_metrics": {
+                    "total_cognitive_load": float(total_complexity),
+                    "total_priority_value": float(total_priority),
+                    "total_duration": float(total_duration),
+                    "load_per_hour": float(load_per_hour),
+                    "efficiency_score": float(efficiency_score)
+                },
+                "constraint_satisfaction": {
+                    "load_constraint_satisfied": total_complexity <= max_load,
+                    "time_constraint_satisfied": total_duration <= max_time,
+                    "load_utilization": float(total_complexity / max_load),
+                    "time_utilization": float(total_duration / max_time)
+                },
+                "computation_method": "SciPy SLSQP constrained optimization"
+            }
+            
+            logger.info(f"✅ Cognitive load optimization complete: {len(selected_tasks)} tasks selected")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Cognitive load optimization failed: {str(e)}")
+            return {"error": f"Calculation failed: {str(e)}"}
+    
+    def analyze_concept_clustering(self, concept_features: List[List[float]], 
+                                  concept_names: List[str], 
+                                  n_clusters: int = 3) -> Dict[str, Any]:
+        """
+        Perform concept clustering using machine learning algorithms.
+        
+        Args:
+            concept_features: Feature vectors for each concept
+            concept_names: Names corresponding to each concept
+            n_clusters: Number of clusters to form
+            
+        Returns:
+            Dict with cluster assignments and analysis
+        """
+        try:
+            logger.info("🧠 Computing concept clustering analysis...")
+            
+            if not INTELLIGENCE_LIBRARIES_AVAILABLE:
+                return {"error": "Scikit-learn clustering libraries not available"}
+            
+            # Convert to numpy array
+            X = np.array(concept_features)
+            
+            # Standardize features
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            
+            # Perform K-means clustering
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+            cluster_labels = kmeans.fit_predict(X_scaled)
+            
+            # Calculate cluster statistics
+            cluster_centers = kmeans.cluster_centers_
+            inertia = kmeans.inertia_
+            
+            # Analyze clusters
+            clusters = {}
+            for i in range(n_clusters):
+                cluster_indices = np.where(cluster_labels == i)[0]
+                cluster_concepts = [concept_names[idx] for idx in cluster_indices]
+                cluster_center = cluster_centers[i]
                 
-                if task_type == 'generate':
-                    # Generate citation from source data
-                    source_data = context.get('source_data', {}) if context else {}
-                    # This would need proper CitationSource object creation
-                    return {
-                        'success': True,
-                        'citation': 'Generated citation would go here',
-                        'task_type': 'generation'
-                    }
+                # Calculate within-cluster variance
+                cluster_points = X_scaled[cluster_indices]
+                within_cluster_variance = np.mean(np.sum((cluster_points - cluster_center) ** 2, axis=1))
+                
+                clusters[f"cluster_{i}"] = {
+                    "concepts": cluster_concepts,
+                    "size": len(cluster_concepts),
+                    "center_coordinates": cluster_center.tolist(),
+                    "within_cluster_variance": float(within_cluster_variance)
+                }
+            
+            # Calculate silhouette score approximation
+            silhouette_approx = self._calculate_silhouette_approximation(X_scaled, cluster_labels)
+            
+            result = {
+                "clustering_summary": {
+                    "n_clusters": n_clusters,
+                    "n_concepts": len(concept_names),
+                    "total_inertia": float(inertia),
+                    "silhouette_score_approx": float(silhouette_approx)
+                },
+                "clusters": clusters,
+                "cluster_assignments": {concept_names[i]: int(cluster_labels[i]) 
+                                      for i in range(len(concept_names))},
+                "feature_scaling": {
+                    "method": "StandardScaler (zero mean, unit variance)",
+                    "original_feature_means": scaler.mean_.tolist(),
+                    "original_feature_stds": scaler.scale_.tolist()
+                },
+                "computation_method": "K-means clustering with standardized features"
+            }
+            
+            logger.info(f"✅ Concept clustering complete: {n_clusters} clusters formed")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Concept clustering failed: {str(e)}")
+            return {"error": f"Calculation failed: {str(e)}"}
+    
+    def _calculate_silhouette_approximation(self, X: np.ndarray, labels: np.ndarray) -> float:
+        """Calculate an approximation of silhouette score."""
+        try:
+            n_samples = X.shape[0]
+            if n_samples < 2:
+                return 0.0
+            
+            silhouette_scores = []
+            
+            for i in range(n_samples):
+                # Distance to points in same cluster
+                same_cluster_mask = labels == labels[i]
+                same_cluster_distances = np.linalg.norm(X[same_cluster_mask] - X[i], axis=1)
+                a_i = np.mean(same_cluster_distances[same_cluster_distances > 0])  # Exclude self
+                
+                # Distance to points in nearest other cluster
+                other_clusters = np.unique(labels[labels != labels[i]])
+                if len(other_clusters) == 0:
+                    silhouette_scores.append(0.0)
+                    continue
+                
+                min_other_distance = float('inf')
+                for cluster in other_clusters:
+                    other_cluster_mask = labels == cluster
+                    other_cluster_distances = np.linalg.norm(X[other_cluster_mask] - X[i], axis=1)
+                    avg_distance = np.mean(other_cluster_distances)
+                    min_other_distance = min(min_other_distance, avg_distance)
+                
+                b_i = min_other_distance
+                
+                # Silhouette score for point i
+                if max(a_i, b_i) > 0:
+                    s_i = (b_i - a_i) / max(a_i, b_i)
                 else:
-                    # Validate existing citation
-                    result = await engine.validate_citation(input_data)
-                    return {
-                        'success': True,
-                        'validation_result': result,
-                        'is_valid': result.is_valid,
-                        'apa_compliance_score': result.apa_compliance_score,
-                        'confidence_score': 0.85
-                    }
+                    s_i = 0.0
+                    
+                silhouette_scores.append(s_i)
             
-            elif engine_name == 'code_quality':
-                # Use the async method directly
-                result = await engine.analyze_and_improve_code(input_data, context or {})
-                return {
-                    'success': True,
-                    'analysis': result,
-                    'language': context.get('language', 'python') if context else 'python',
-                    'confidence_score': 0.85
-                }
+            return np.mean(silhouette_scores)
             
-            elif engine_name == 'web_verification':
-                # Use the async method directly
-                verification_type = context.get('verification_type', 'comprehensive') if context else 'comprehensive'
-                result = await engine.verify_web_content(input_data, context or {})
-                return result
-            
-            else:
-                return {
-                    'success': False,
-                    'error': f"Unknown engine: {engine_name}"
-                }
-                
-        except Exception as e:
-            logger.error(f"Engine processing failed: {str(e)}")
-            return {
-                'success': False,
-                'error': f"Engine processing failed: {str(e)}"
-            }
-    
-    def get_available_capabilities(self) -> Dict[str, List[str]]:
-        """Get list of available capabilities by engine"""
-        capabilities = {}
-        
-        for engine_name, available in self.engine_status.items():
-            if available:
-                if engine_name == 'mathematics':
-                    capabilities[engine_name] = [
-                        'mathematical_reasoning', 'calculation', 'equation_solving',
-                        'algebra', 'calculus', 'geometry', 'statistics', 'number_theory'
-                    ]
-                elif engine_name == 'data_analysis':
-                    capabilities[engine_name] = [
-                        'data_analysis', 'statistical_analysis', 'pattern_recognition',
-                        'trend_analysis', 'correlation_analysis', 'outlier_detection'
-                    ]
-                elif engine_name == 'language':
-                    capabilities[engine_name] = [
-                        'language_enhancement', 'text_improvement', 'clarity_enhancement',
-                        'readability_analysis', 'sentiment_analysis'
-                    ]
-                elif engine_name == 'grammar':
-                    capabilities[engine_name] = [
-                        'grammar_checking', 'style_analysis', 'writing_enhancement',
-                        'readability_assessment', 'proofreading', 'clarity_improvement'
-                    ]
-                elif engine_name == 'apa_citation':
-                    capabilities[engine_name] = [
-                        'apa_citation', 'citation_formatting', 'bibliography_generation',
-                        'citation_validation', 'reference_formatting', 'in_text_citations'
-                    ]
-                elif engine_name == 'code_quality':
-                    capabilities[engine_name] = [
-                        'code_review', 'code_analysis', 'syntax_validation',
-                        'style_checking', 'security_analysis'
-                    ]
-                elif engine_name == 'web_verification':
-                    capabilities[engine_name] = [
-                        'web_verification', 'html_analysis', 'accessibility_check',
-                        'seo_analysis', 'performance_analysis'
-                    ]
-        
-        return capabilities
-    
-    def get_engine_status(self) -> Dict[str, Dict[str, Any]]:
-        """Get detailed status of all engines"""
-        status = {}
-        
-        for engine_name, engine in self.engines.items():
-            try:
-                # Test engine availability
-                test_result = self._test_engine(engine, engine_name)
-                status[engine_name] = {
-                    'available': test_result['available'],
-                    'capabilities': test_result['capabilities'],
-                    'dependencies': test_result['dependencies'],
-                    'last_tested': test_result['timestamp']
-                }
-            except Exception as e:
-                status[engine_name] = {
-                    'available': False,
-                    'error': str(e),
-                    'capabilities': [],
-                    'dependencies': 'unknown'
-                }
-        
-        return status
-    
-    def _test_engine(self, engine: Any, engine_name: str) -> Dict[str, Any]:
-        """Test engine availability and capabilities"""
-        import datetime
-        
-        try:
-            # Simple test based on engine type
-            if engine_name == 'mathematics':
-                test_result = engine.solve_problem("2 + 2", {})
-                available = test_result.get('success', False)
-                capabilities = ['basic_arithmetic', 'algebra', 'calculus', 'statistics']
-                dependencies = 'sympy, numpy, scipy (optional)'
-                
-            elif engine_name == 'data_analysis':
-                test_result = engine.analyze_data([1, 2, 3, 4, 5])
-                available = test_result.get('success', False)
-                capabilities = ['statistical_analysis', 'pattern_recognition', 'data_quality']
-                dependencies = 'pandas, numpy, scipy, matplotlib (optional)'
-                
-            elif engine_name == 'language':
-                test_result = engine.enhance_text("Test text.")
-                available = test_result.get('success', False)
-                capabilities = ['grammar_check', 'style_analysis', 'readability']
-                dependencies = 'spacy, textstat, nltk (optional)'
-            
-            elif engine_name == 'grammar':
-                test_result = engine.check_text_quality("Test text.")
-                available = test_result.get('success', False)
-                capabilities = ['grammar_checking', 'style_analysis', 'readability_assessment']
-                dependencies = 'language-tool-python, textstat (optional)'
-            
-            elif engine_name == 'apa_citation':
-                test_result = engine.check_citation_quality("Smith, J. (2023). Test article.")
-                available = test_result.get('success', False)
-                capabilities = ['citation_formatting', 'apa_validation', 'bibliography_generation']
-                dependencies = 'requests, beautifulsoup4 (optional)'
-                
-            elif engine_name == 'code_quality':
-                test_result = engine.analyze_code("print('hello')")
-                available = test_result.get('success', False)
-                capabilities = ['syntax_validation', 'style_analysis', 'security_check']
-                dependencies = 'ast, black (optional)'
-                
-            elif engine_name == 'web_verification':
-                test_result = engine.verify_web_content("<html><body>Test</body></html>")
-                available = test_result.get('success', False)
-                capabilities = ['html_validation', 'accessibility_check', 'seo_analysis']
-                dependencies = 'beautifulsoup4, requests (optional)'
-                
-            else:
-                available = False
-                capabilities = []
-                dependencies = 'unknown'
-            
-            return {
-                'available': available,
-                'capabilities': capabilities,
-                'dependencies': dependencies,
-                'timestamp': datetime.datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            return {
-                'available': False,
-                'capabilities': [],
-                'dependencies': 'unknown',
-                'error': str(e),
-                'timestamp': datetime.datetime.now().isoformat()
-            }
-    
-    def _create_error_result(self, capability: str, input_data: str, start_time: float, error_message: str) -> AmplificationResult:
-        """Create an error result"""
-        import time
-        processing_time = time.time() - start_time
-        
-        return AmplificationResult(
-            success=False,
-            capability=capability,
-            original_input=input_data,
-            amplified_output={'error': error_message},
-            confidence_score=0.0,
-            processing_time=processing_time,
-            engine_used='none',
-            recommendations=[
-                'Check capability name and input format',
-                'Verify required dependencies are installed',
-                'Try a different capability or engine'
-            ],
-            error_message=error_message
-        ) 
+        except Exception:
+            return 0.0 

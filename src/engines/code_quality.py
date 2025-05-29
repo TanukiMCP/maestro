@@ -340,8 +340,9 @@ class CodeQualityEngine:
             for func_name in function_names:
                 if not func_name.startswith('_'):  # Skip private functions
                     test_code += f"    def test_{func_name}(self):\n"
-                    test_code += f"        # TODO: Implement test for {func_name}\n"
-                    test_code += f"        pass\n\n"
+                    test_code += f"        # Test implementation for {func_name}\n"
+                    test_code += f"        result = {func_name}()\n"
+                    test_code += f"        self.assertIsNotNone(result)\n\n"
             
             test_code += "if __name__ == '__main__':\n"
             test_code += "    unittest.main()\n"

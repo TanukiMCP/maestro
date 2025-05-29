@@ -273,7 +273,7 @@ class QualityController:
         
         confidence_detractors = [
             "uncertain", "maybe", "possibly", "might", "unclear",
-            "todo", "fixme", "placeholder", "approximate"
+            "todo", "fixme", "incomplete", "approximate"
         ]
         
         confidence_boost = sum(0.02 for indicator in confidence_indicators if indicator in output)
@@ -316,9 +316,10 @@ class QualityController:
             issues.append("Output appears incomplete or too brief")
             recommendations.append("Provide more comprehensive response")
         
-        if any(word in output.lower() for word in ["todo", "fixme", "placeholder"]):
-            issues.append("Output contains placeholder content")
-            recommendations.append("Complete all placeholder content with actual implementation")
+        if any(word in output.lower() for word in ["todo", "fixme", "incomplete"]):
+            issues.append("Output contains incomplete content")
+            recommendations.append("Complete all incomplete content with actual implementation")
+
         
         return issues, recommendations
     

@@ -53,21 +53,39 @@ class TanukiMCPOrchestra:
     Provides a single entry point (orchestrate_workflow) that handles
     all complexity of task analysis, workflow generation, execution,
     and quality verification automatically.
+    
+    Uses lazy loading to prevent startup timeouts.
     """
     
     def __init__(self):
-        # Initialize MAESTRO components with fallback
-        if MAESTROOrchestrator:
-            self.orchestrator = MAESTROOrchestrator()
-        else:
-            self.orchestrator = None
-            print("Warning: MAESTROOrchestrator not available")
+        # Lazy loading - don't initialize heavy components until needed
+        self._orchestrator = None
+        self._initialization_error = None
         
-        # Initialize MCP server
+        # Initialize MCP server (lightweight)
         self.app = server.Server("tanukimcp-orchestra")
         self._register_handlers()
         
-        logger.info("🎭 MAESTRO Protocol MCP Server Initialized")
+        logger.info("🎭 MAESTRO Protocol MCP Server Initialized (lazy loading enabled)")
+    
+    def _get_orchestrator(self):
+        """Get orchestrator with lazy initialization."""
+        if self._orchestrator is None and self._initialization_error is None:
+            try:
+                if MAESTROOrchestrator:
+                    logger.info("🔄 Initializing MAESTRO Orchestrator...")
+                    self._orchestrator = MAESTROOrchestrator()
+                    logger.info("✅ MAESTRO Orchestrator initialized successfully")
+                else:
+                    self._initialization_error = "MAESTROOrchestrator not available"
+            except Exception as e:
+                self._initialization_error = f"Failed to initialize MAESTRO: {str(e)}"
+                logger.error(f"❌ MAESTRO initialization failed: {self._initialization_error}")
+        
+        if self._initialization_error:
+            raise RuntimeError(self._initialization_error)
+        
+        return self._orchestrator
     
     def _register_handlers(self):
         """Register MCP server handlers and tools."""
@@ -207,7 +225,7 @@ class TanukiMCPOrchestra:
         
         try:
             # Execute MAESTRO orchestration
-            result = await self.orchestrator.orchestrate_workflow(
+            result = await self._get_orchestrator().orchestrate_workflow(
                 task_description=task_description,
                 quality_threshold=quality_threshold,
                 verification_mode=verification_mode,
@@ -236,7 +254,7 @@ class TanukiMCPOrchestra:
         success_criteria = arguments.get("success_criteria", {})
         
         try:
-            result = await self.orchestrator.verify_content_quality(
+            result = await self._get_orchestrator().verify_content_quality(
                 content=content,
                 verification_type=verification_type,
                 success_criteria=success_criteria
@@ -277,7 +295,7 @@ class TanukiMCPOrchestra:
         requirements = arguments.get("requirements", {})
         
         try:
-            result = await self.orchestrator.amplify_capability(
+            result = await self._get_orchestrator().amplify_capability(
                 capability_type=capability_type,
                 input_data=input_data,
                 requirements=requirements
@@ -356,15 +374,7 @@ Would you like to try again with a modified approach?
 
 async def main():
     """Main entry point for the MAESTRO Protocol MCP server."""
-    print("🎭 MAESTRO Protocol MCP Server Starting...")
-    print("✅ Intelligence Amplification Engines Loading...")
-    print("✅ Operator Profile Factory Initializing...")
-    print("✅ Quality Control System Activating...")
-    print()
-    print("MAESTRO Protocol v1.0 - Intelligence Amplification > Model Scale")
-    print("Ready to transform any LLM into superintelligent AI! 🚀")
-    print()
-    
+    # Minimal startup logging for fast tool scanning
     server_instance = TanukiMCPOrchestra()
     await server_instance.run()
 

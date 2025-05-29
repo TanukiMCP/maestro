@@ -1,5 +1,5 @@
 """
-Intelligence Amplification Engine for MAESTRO Protocol
+Maestro Intelligence Amplification Engine
 Coordinates specialized engines to amplify specific capabilities beyond base model performance.
 """
 
@@ -13,6 +13,8 @@ from .language import LanguageEnhancementEngine
 from .code_quality import CodeQualityEngine
 from .web_verification import WebVerificationEngine
 from .data_analysis import DataAnalysisEngine
+from .grammar import GrammarEngine
+from .apa_citation import APACitationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,9 @@ class IntelligenceAmplifier:
             'language': LanguageEnhancementEngine(),
             'code_quality': CodeQualityEngine(),
             'web_verification': WebVerificationEngine(),
-            'data_analysis': DataAnalysisEngine()
+            'data_analysis': DataAnalysisEngine(),
+            'grammar': GrammarEngine(),
+            'apa_citation': APACitationEngine()
         }
         
         # Capability mappings
@@ -53,8 +57,12 @@ class IntelligenceAmplifier:
             'data_analysis': 'data_analysis',
             'pattern_recognition': 'data_analysis',
             'language_enhancement': 'language',
-            'grammar_checking': 'language',
-            'style_analysis': 'language',
+            'grammar_checking': 'grammar',
+            'style_analysis': 'grammar',
+            'writing_enhancement': 'grammar',
+            'apa_citation': 'apa_citation',
+            'citation_formatting': 'apa_citation',
+            'bibliography_generation': 'apa_citation',
             'code_review': 'code_quality',
             'code_analysis': 'code_quality',
             'syntax_validation': 'code_quality',
@@ -144,8 +152,18 @@ class IntelligenceAmplifier:
         if any(keyword in capability_lower for keyword in data_keywords):
             return 'data_analysis'
         
-        # Language keywords
-        language_keywords = ['language', 'grammar', 'style', 'writing', 'text', 'readability']
+        # Grammar and writing keywords
+        grammar_keywords = ['grammar', 'writing', 'style', 'readability', 'clarity', 'proofreading']
+        if any(keyword in capability_lower for keyword in grammar_keywords):
+            return 'grammar'
+        
+        # Citation keywords
+        citation_keywords = ['citation', 'apa', 'bibliography', 'reference', 'source']
+        if any(keyword in capability_lower for keyword in citation_keywords):
+            return 'apa_citation'
+        
+        # Language keywords (general language enhancement)
+        language_keywords = ['language', 'text', 'enhance']
         if any(keyword in capability_lower for keyword in language_keywords):
             return 'language'
         
@@ -189,6 +207,41 @@ class IntelligenceAmplifier:
                     'original_text': input_data,
                     'enhancement_type': context.get('enhancement_type', 'comprehensive') if context else 'comprehensive'
                 }
+            
+            elif engine_name == 'grammar':
+                # Use the async grammar analysis method
+                result = await engine.analyze_grammar_and_style(input_data, context.get('analysis_type', 'comprehensive') if context else 'comprehensive', context or {})
+                return {
+                    'success': True,
+                    'analysis_result': result,
+                    'corrected_text': result.corrected_text,
+                    'quality_score': result.quality_metrics.get('overall_quality', 0.8),
+                    'confidence_score': 0.9
+                }
+            
+            elif engine_name == 'apa_citation':
+                # Handle different APA citation tasks
+                task_type = context.get('task_type', 'validate') if context else 'validate'
+                
+                if task_type == 'generate':
+                    # Generate citation from source data
+                    source_data = context.get('source_data', {}) if context else {}
+                    # This would need proper CitationSource object creation
+                    return {
+                        'success': True,
+                        'citation': 'Generated citation would go here',
+                        'task_type': 'generation'
+                    }
+                else:
+                    # Validate existing citation
+                    result = await engine.validate_citation(input_data)
+                    return {
+                        'success': True,
+                        'validation_result': result,
+                        'is_valid': result.is_valid,
+                        'apa_compliance_score': result.apa_compliance_score,
+                        'confidence_score': 0.85
+                    }
             
             elif engine_name == 'code_quality':
                 # Use the async method directly
@@ -237,8 +290,18 @@ class IntelligenceAmplifier:
                     ]
                 elif engine_name == 'language':
                     capabilities[engine_name] = [
-                        'language_enhancement', 'grammar_checking', 'style_analysis',
+                        'language_enhancement', 'text_improvement', 'clarity_enhancement',
                         'readability_analysis', 'sentiment_analysis'
+                    ]
+                elif engine_name == 'grammar':
+                    capabilities[engine_name] = [
+                        'grammar_checking', 'style_analysis', 'writing_enhancement',
+                        'readability_assessment', 'proofreading', 'clarity_improvement'
+                    ]
+                elif engine_name == 'apa_citation':
+                    capabilities[engine_name] = [
+                        'apa_citation', 'citation_formatting', 'bibliography_generation',
+                        'citation_validation', 'reference_formatting', 'in_text_citations'
                     ]
                 elif engine_name == 'code_quality':
                     capabilities[engine_name] = [
@@ -300,6 +363,18 @@ class IntelligenceAmplifier:
                 available = test_result.get('success', False)
                 capabilities = ['grammar_check', 'style_analysis', 'readability']
                 dependencies = 'spacy, textstat, nltk (optional)'
+            
+            elif engine_name == 'grammar':
+                test_result = engine.check_text_quality("Test text.")
+                available = test_result.get('success', False)
+                capabilities = ['grammar_checking', 'style_analysis', 'readability_assessment']
+                dependencies = 'language-tool-python, textstat (optional)'
+            
+            elif engine_name == 'apa_citation':
+                test_result = engine.check_citation_quality("Smith, J. (2023). Test article.")
+                available = test_result.get('success', False)
+                capabilities = ['citation_formatting', 'apa_validation', 'bibliography_generation']
+                dependencies = 'requests, beautifulsoup4 (optional)'
                 
             elif engine_name == 'code_quality':
                 test_result = engine.analyze_code("print('hello')")

@@ -1,5 +1,5 @@
 """
-Intelligence Amplification Engines for MAESTRO Protocol
+Intelligence Amplification Engines for Maestro
 
 This package contains specialized engines that amplify specific capabilities
 beyond base model performance through integration with Python libraries
@@ -11,6 +11,8 @@ Available Engines:
 - CodeQualityEngine: Code analysis, review, and improvement
 - WebVerificationEngine: Web content verification and analysis
 - DataAnalysisEngine: Comprehensive data analysis and insights
+- GrammarEngine: Advanced grammar checking and writing enhancement
+- APACitationEngine: APA 7th edition citation formatting and validation
 - IntelligenceAmplifier: Main coordinator for all engines
 """
 
@@ -19,6 +21,8 @@ from .language import LanguageEnhancementEngine
 from .code_quality import CodeQualityEngine
 from .web_verification import WebVerificationEngine
 from .data_analysis import DataAnalysisEngine
+from .grammar import GrammarEngine
+from .apa_citation import APACitationEngine
 from .intelligence_amplifier import IntelligenceAmplifier, AmplificationResult
 
 __all__ = [
@@ -27,6 +31,8 @@ __all__ = [
     'CodeQualityEngine',
     'WebVerificationEngine',
     'DataAnalysisEngine',
+    'GrammarEngine',
+    'APACitationEngine',
     'IntelligenceAmplifier',
     'AmplificationResult'
 ] 

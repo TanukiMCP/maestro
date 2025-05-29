@@ -1,0 +1,165 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tanukimcp-orchestra"
+version = "1.0.0"
+description = "MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration - Transform any LLM into superintelligent AI"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+]
+maintainers = [
+    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+]
+keywords = [
+    "mcp",
+    "maestro-protocol", 
+    "orchestration",
+    "intelligence-amplification",
+    "python",
+    "langchain",
+    "verification",
+    "quality-control",
+    "ai-democratization"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.0.0",
+    "sympy>=1.12",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+    "requests>=2.31.0",
+    "asyncio",
+]
+
+[project.optional-dependencies]
+language = [
+    "spacy>=3.6.0",
+    "nltk>=3.8.0",
+    "textstat>=0.7.0",
+]
+code-quality = [
+    "pylint>=2.17.0",
+    "black>=23.0.0",
+    "pytest>=7.4.0",
+]
+web = [
+    "beautifulsoup4>=4.12.0",
+    "playwright>=1.40.0",
+    "selenium>=4.15.0",
+]
+visualization = [
+    "plotly>=5.15.0",
+    "seaborn>=0.12.0",
+]
+all = [
+    "tanukimcp-orchestra[language,code-quality,web,visualization]"
+]
+dev = [
+    "tanukimcp-orchestra[all]",
+    "pytest>=7.4.0",
+    "coverage>=7.0.0",
+    "mypy>=1.5.0",
+    "flake8>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tanukimcp/orchestra"
+Documentation = "https://github.com/tanukimcp/orchestra#readme"
+Repository = "https://github.com/tanukimcp/orchestra"
+"Bug Tracker" = "https://github.com/tanukimcp/orchestra/issues"
+
+[project.scripts]
+maestro = "main:main"
+maestro-server = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+
+# MCP Server specific configuration
+[tool.mcp]
+server = true
+protocol_version = "2025-01-28"
+capabilities = ["tools", "resources", "prompts"]
+primary_tool = "orchestrate_workflow"
+category = "productivity"
+subcategory = "ai-orchestration"
+
+[tool.maestro_protocol]
+version = "1.0"
+core_principle = "Intelligence Amplification > Model Scale"
+key_features = [
+    "Meta-orchestration with operator profiles",
+    "Automated LLM weakness compensation", 
+    "Quality verification at every step",
+    "Early stopping for optimal results",
+    "Free model democratization"
+] 

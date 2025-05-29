@@ -57,14 +57,15 @@ class QualityMetrics:
 
 @dataclass
 class TaskAnalysis:
-    """Analysis of a task to determine orchestration strategy."""
+    """Analysis results for a task request."""
     task_type: TaskType
     complexity: ComplexityLevel
     capabilities: List[str]
-    estimated_duration: int
+    estimated_duration: int  # seconds
     required_tools: List[str]
     success_criteria: List[str]
     quality_requirements: Dict[str, float]
+    metadata: Optional[Dict[str, Any]] = None  # For knowledge graph integration
     
     
 @dataclass

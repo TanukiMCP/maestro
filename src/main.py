@@ -123,7 +123,7 @@ class TanukiMCPOrchestra:
                                 "type": "string",
                                 "description": "Verification depth: 'fast', 'balanced', or 'comprehensive'",
                                 "enum": ["fast", "balanced", "comprehensive"],
-                                "default": "comprehensive"
+                                "default": "fast"
                             },
                             "max_execution_time": {
                                 "type": "integer",
@@ -218,33 +218,31 @@ class TanukiMCPOrchestra:
         """Handle the primary orchestrate_workflow tool."""
         task_description = arguments["task_description"]
         quality_threshold = arguments.get("quality_threshold", 0.9)
-        verification_mode = arguments.get("verification_mode", "comprehensive")
+        verification_mode = arguments.get("verification_mode", "fast")
         max_execution_time = arguments.get("max_execution_time", 300)
         
         logger.info(f"🎭 MAESTRO orchestrating task: {task_description[:100]}...")
         
+        # Execute MAESTRO orchestration
         try:
-            # Execute MAESTRO orchestration
-            result = await self._get_orchestrator().orchestrate_workflow(
+            orchestrator = self._get_orchestrator()
+            result = await orchestrator.orchestrate_workflow(
                 task_description=task_description,
                 quality_threshold=quality_threshold,
                 verification_mode=verification_mode,
                 max_execution_time=max_execution_time
             )
             
-            # Format response based on success
             if result.success:
-                response_text = result.format_success_response()
-                logger.info("✅ MAESTRO orchestration completed successfully")
+                response = result.format_success_response()
             else:
-                response_text = await self._handle_quality_failure(result, task_description)
-                logger.warning("⚠️ MAESTRO orchestration completed with quality issues")
+                response = await self._handle_quality_failure(result, task_description)
             
-            return [types.TextContent(type="text", text=response_text)]
-            
+            return [types.TextContent(type="text", text=response)]
+        
         except Exception as e:
+            logger.error(f"MAESTRO orchestration failed: {str(e)}")
             error_response = await self._handle_orchestration_error(e, task_description)
-            logger.error(f"❌ MAESTRO orchestration failed: {str(e)}")
             return [types.TextContent(type="text", text=error_response)]
     
     async def _handle_verify_quality(self, arguments: dict) -> list[types.TextContent]:

@@ -1,4 +1,5 @@
 # 🎭 MAESTRO Protocol
+[![smithery badge](https://smithery.ai/badge/@TanukiMCP/orchestra)](https://smithery.ai/server/@TanukiMCP/orchestra)
 
 **Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration**
 
@@ -43,6 +44,14 @@ Rather than relying on larger models, MAESTRO amplifies intelligence through:
 - **Quality Assurance**: Verification and validation specialists
 
 ## 🛠️ Installation
+
+### Installing via Smithery
+
+To install Orchestra for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@TanukiMCP/orchestra):
+
+```bash
+npx -y @smithery/cli install @TanukiMCP/orchestra --client claude
+```
 
 ### Quick Setup
 ```bash

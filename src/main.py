@@ -54,33 +54,36 @@ class TanukiMCPOrchestra:
     all complexity of task analysis, workflow generation, execution,
     and quality verification automatically.
     
-    Uses lazy loading to prevent startup timeouts.
+    Ultra-lightweight for deployment scanning with aggressive lazy loading.
     """
     
     def __init__(self):
-        # Lazy loading - don't initialize heavy components until needed
+        # Minimal initialization - NO heavy components loaded
         self._orchestrator = None
         self._initialization_error = None
+        self._initialization_attempted = False
         
-        # Initialize MCP server (lightweight)
+        # Initialize MCP server (lightweight only)
         self.app = server.Server("tanukimcp-orchestra")
         self._register_handlers()
         
-        logger.info("🎭 MAESTRO Protocol MCP Server Initialized (lazy loading enabled)")
+        # Ultra-minimal logging for deployment scanning
+        logger.info("🎭 MAESTRO Protocol MCP Server Ready")
     
     def _get_orchestrator(self):
-        """Get orchestrator with lazy initialization."""
-        if self._orchestrator is None and self._initialization_error is None:
+        """Get orchestrator with ultra-defensive lazy initialization."""
+        if self._orchestrator is None and not self._initialization_attempted:
+            self._initialization_attempted = True
             try:
                 if MAESTROOrchestrator:
-                    logger.info("🔄 Initializing MAESTRO Orchestrator...")
+                    logger.info("🔄 Initializing MAESTRO components...")
                     self._orchestrator = MAESTROOrchestrator()
-                    logger.info("✅ MAESTRO Orchestrator initialized successfully")
+                    logger.info("✅ MAESTRO ready for orchestration")
                 else:
                     self._initialization_error = "MAESTROOrchestrator not available"
             except Exception as e:
-                self._initialization_error = f"Failed to initialize MAESTRO: {str(e)}"
-                logger.error(f"❌ MAESTRO initialization failed: {self._initialization_error}")
+                self._initialization_error = f"MAESTRO initialization failed: {str(e)}"
+                logger.error(f"❌ {self._initialization_error}")
         
         if self._initialization_error:
             raise RuntimeError(self._initialization_error)
@@ -92,18 +95,18 @@ class TanukiMCPOrchestra:
         
         @self.app.list_tools()
         async def handle_list_tools() -> list[types.Tool]:
-            """List available tools."""
+            """List available tools - optimized for fast deployment scanning."""
+            # Static tool definitions for ultra-fast scanning
+            # No dynamic operations or heavy imports during tool listing
             return [
                 types.Tool(
                     name="orchestrate_workflow",
                     description=(
-                        "MAESTRO Protocol meta-orchestration tool. "
-                        "Automatically designs and executes multi-agent workflows with "
-                        "dynamic operator profile creation, intelligence amplification "
-                        "for LLM weaknesses, automated quality verification at each step, "
-                        "and early stopping when success criteria are met. "
-                        "This is the primary entry point - users just describe their goal. "
-                        "The system handles ALL complexity, tool selection, and verification."
+                        "MAESTRO Protocol meta-orchestration tool for AI agent workflows. "
+                        "Automatically designs multi-agent workflows with dynamic operator profiles, "
+                        "intelligence amplification, real-time knowledge graph optimization, "
+                        "and automated quality verification. Just describe your goal - "
+                        "the system handles all complexity, tool selection, and verification."
                     ),
                     inputSchema={
                         "type": "object",
@@ -140,26 +143,16 @@ class TanukiMCPOrchestra:
                 
                 types.Tool(
                     name="verify_quality",
-                    description=(
-                        "Verify quality using appropriate verification methods. "
-                        "Used internally by orchestration but can be called directly."
-                    ),
+                    description="Verify content quality using specialized verification methods",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "content": {
-                                "type": "string",
-                                "description": "Content to verify"
-                            },
+                            "content": {"type": "string", "description": "Content to verify"},
                             "verification_type": {
                                 "type": "string",
-                                "description": "Type of verification to perform",
                                 "enum": ["mathematical", "code_quality", "language_quality", "visual", "accessibility"]
                             },
-                            "success_criteria": {
-                                "type": "object",
-                                "description": "Success criteria for verification"
-                            }
+                            "success_criteria": {"type": "object", "description": "Success criteria"}
                         },
                         "required": ["content", "verification_type"],
                         "additionalProperties": False
@@ -167,26 +160,17 @@ class TanukiMCPOrchestra:
                 ),
                 
                 types.Tool(
-                    name="amplify_capability",
-                    description=(
-                        "Use intelligence amplification for specific capability enhancement. "
-                        "Compensates for LLM weaknesses using specialized Python libraries."
-                    ),
+                    name="amplify_capability", 
+                    description="Use intelligence amplification for enhanced capabilities",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "capability_type": {
                                 "type": "string",
-                                "description": "Type of capability to amplify",
                                 "enum": ["mathematics", "language", "code_quality", "web_verification", "data_analysis"]
                             },
-                            "input_data": {
-                                "description": "Input data for capability enhancement"
-                            },
-                            "requirements": {
-                                "type": "object",
-                                "description": "Specific requirements for the capability"
-                            }
+                            "input_data": {"description": "Input data for capability enhancement"},
+                            "requirements": {"type": "object", "description": "Specific requirements"}
                         },
                         "required": ["capability_type", "input_data"],
                         "additionalProperties": False

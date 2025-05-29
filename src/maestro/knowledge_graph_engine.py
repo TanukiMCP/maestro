@@ -59,18 +59,26 @@ class RealTimeKnowledgeGraph:
     """
     
     def __init__(self):
+        # Ultra-lightweight initialization for deployment scanning
         self.task_nodes: Dict[str, TaskNode] = {}
         self.capability_nodes: Dict[str, CapabilityNode] = {}
         self.task_capability_edges: Dict[Tuple[str, str], TaskCapabilityEdge] = {}
         
-        # Real-time learning structures
+        # Minimal data structures
         self.execution_history: List[Dict[str, Any]] = []
         self.performance_trends: Dict[str, List[float]] = defaultdict(list)
         
-        # Initialize with known capabilities
-        self._initialize_base_capabilities()
+        # Defer capability initialization to prevent timeout
+        self._capabilities_initialized = False
         
-        logger.info("🌐 Real-Time Knowledge Graph initialized")
+        # Minimal logging for deployment
+        logger.info("🌐 Knowledge Graph ready")
+    
+    def _ensure_capabilities_initialized(self):
+        """Ensure capabilities are initialized only when needed."""
+        if not self._capabilities_initialized:
+            self._initialize_base_capabilities()
+            self._capabilities_initialized = True
     
     def _initialize_base_capabilities(self):
         """Initialize with base capabilities from engines"""
@@ -93,6 +101,9 @@ class RealTimeKnowledgeGraph:
         """
         Real-time analysis using knowledge graph instead of static patterns.
         """
+        # Ensure capabilities are initialized only when needed
+        self._ensure_capabilities_initialized()
+        
         # Generate task signature for graph lookup
         task_signature = self._generate_task_signature(task_description)
         

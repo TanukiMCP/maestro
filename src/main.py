@@ -11,10 +11,9 @@ import logging
 import traceback
 from typing import Any, Dict, List
 
-from mcp.server import server
-from mcp.server.stdio import stdio_server
+from mcp.server import Server, InitializationOptions
+from mcp import stdio_server
 from mcp import types
-from mcp.server import InitializationOptions
 
 # Import MAESTRO components for planning and analysis
 try:
@@ -22,6 +21,8 @@ try:
 except ImportError:
     from maestro import MAESTROOrchestrator
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -38,22 +39,24 @@ class TanukiMCPOrchestra:
         self._initialization_error = None
         self._initialization_attempted = False
         
-        # Initialize MCP server
-        self.app = server.Server("tanukimcp-orchestra")
+        # Initialize MCP server with proper configuration
+        self.app = Server("tanukimcp-orchestra")
         self._register_handlers()
         
         logger.info("🎭 MAESTRO Protocol MCP Server Ready (Planning Engine)")
     
     def _get_orchestrator(self):
-        """Get orchestrator with lazy initialization."""
+        """Get orchestrator with lazy initialization and proper error handling."""
         if self._orchestrator is None and not self._initialization_attempted:
             self._initialization_attempted = True
             try:
+                logger.info("🔄 Initializing MAESTRO orchestration planner...")
                 self._orchestrator = MAESTROOrchestrator()
                 logger.info("✅ MAESTRO orchestration planner ready")
             except Exception as e:
                 self._initialization_error = f"MAESTRO initialization failed: {str(e)}"
                 logger.error(f"❌ {self._initialization_error}")
+                logger.error(traceback.format_exc())
         
         if self._initialization_error:
             raise RuntimeError(self._initialization_error)
@@ -61,97 +64,140 @@ class TanukiMCPOrchestra:
         return self._orchestrator
     
     def _register_handlers(self):
-        """Register MCP server handlers and tools."""
+        """Register MCP server handlers and tools with proper error handling."""
         
         @self.app.list_tools()
         async def handle_list_tools() -> list[types.Tool]:
             """List available MAESTRO planning tools."""
-            return [
-                types.Tool(
-                    name="analyze_task_for_planning",
-                    description=(
-                        "MAESTRO Protocol task analysis and planning tool. "
-                        "Analyzes task requirements, selects appropriate workflow template, "
-                        "generates execution phases with success criteria, and provides "
-                        "system prompt guidance. Use this to get comprehensive orchestration "
-                        "guidance before executing a workflow."
-                    ),                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "task_description": {
-                                "type": "string",
-                                "description": "Natural language description of the task to analyze"
+            try:
+                logger.info("📋 Listing MAESTRO planning tools...")
+                tools = [
+                    types.Tool(
+                        name="analyze_task_for_planning",
+                        description=(
+                            "MAESTRO Protocol task analysis and planning tool. "
+                            "Analyzes task requirements, selects appropriate workflow template, "
+                            "generates execution phases with success criteria, and provides "
+                            "system prompt guidance. Use this to get comprehensive orchestration "
+                            "guidance before executing a workflow."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "Natural language description of the task to analyze"
+                                },
+                                "detail_level": {
+                                    "type": "string",
+                                    "description": "Analysis detail level",
+                                    "enum": ["fast", "balanced", "comprehensive"],
+                                    "default": "comprehensive"
+                                }
                             },
-                            "detail_level": {
-                                "type": "string",
-                                "description": "Analysis detail level",
-                                "enum": ["fast", "balanced", "comprehensive"],
-                                "default": "comprehensive"
-                            }
+                            "required": ["task_description"],
+                            "additionalProperties": False
                         },
-                        "required": ["task_description"],
-                        "additionalProperties": False
-                    }
-                ),
-                types.Tool(
-                    name="create_execution_plan",
-                    description=(
-                        "Create detailed execution plan for task implementation. "
-                        "Provides step-by-step guidance, success criteria, and tool recommendations "
-                        "for executing a specific workflow phase or entire task."
+                        annotations={
+                            "title": "MAESTRO Task Analysis",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": False
+                        }
                     ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "task_description": {
-                                "type": "string",
-                                "description": "Task to create execution plan for"
+                    types.Tool(
+                        name="create_execution_plan",
+                        description=(
+                            "Create detailed execution plan for task implementation. "
+                            "Provides step-by-step guidance, success criteria, and tool recommendations "
+                            "for executing a specific workflow phase or entire task."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "Task to create execution plan for"
+                                },
+                                "phase_focus": {
+                                    "type": "string",
+                                    "description": "Specific phase to focus on (optional)",
+                                    "enum": ["Analysis", "Implementation", "Testing", "Quality_Assurance", "Documentation"]
+                                }
                             },
-                            "phase_focus": {
-                                "type": "string",
-                                "description": "Specific phase to focus on (optional)",
-                                "enum": ["Analysis", "Implementation", "Testing", "Quality_Assurance", "Documentation"]
-                            }
+                            "required": ["task_description"],
+                            "additionalProperties": False
                         },
-                        "required": ["task_description"],
-                        "additionalProperties": False
-                    }
-                ),
-                types.Tool(
-                    name="get_available_templates",
-                    description=(
-                        "Get list of available MAESTRO workflow templates. "
-                        "Templates provide structured approaches for different types of tasks."
+                        annotations={
+                            "title": "MAESTRO Execution Planner",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": False
+                        }
                     ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {},
-                        "additionalProperties": False
-                    }
-                ),                types.Tool(
-                    name="get_template_details",
-                    description=(
-                        "Get detailed information about a specific workflow template. "
-                        "Includes system prompt guidance, execution phases, and quality standards."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "template_name": {
-                                "type": "string",
-                                "description": "Name of the template to get details for"
-                            }
+                    types.Tool(
+                        name="get_available_templates",
+                        description=(
+                            "Get list of available MAESTRO workflow templates. "
+                            "Templates provide structured approaches for different types of tasks."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {},
+                            "additionalProperties": False
                         },
-                        "required": ["template_name"],
-                        "additionalProperties": False
-                    }
-                )
-            ]
+                        annotations={
+                            "title": "MAESTRO Template Catalog",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": False
+                        }
+                    ),
+                    types.Tool(
+                        name="get_template_details",
+                        description=(
+                            "Get detailed information about a specific workflow template. "
+                            "Includes system prompt guidance, execution phases, and quality standards."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "template_name": {
+                                    "type": "string",
+                                    "description": "Name of the template to get details for"
+                                }
+                            },
+                            "required": ["template_name"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Template Details",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": False
+                        }
+                    )
+                ]
+                logger.info(f"✅ Successfully listed {len(tools)} MAESTRO planning tools")
+                return tools
+                
+            except Exception as e:
+                logger.error(f"❌ Error listing tools: {str(e)}")
+                logger.error(traceback.format_exc())
+                # Return empty list rather than failing completely
+                return []
         
         @self.app.call_tool()
         async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
-            """Handle tool calls for MAESTRO planning tools."""
+            """Handle tool calls for MAESTRO planning tools with comprehensive error handling."""
             try:
+                logger.info(f"🔧 Executing tool: {name}")
+                logger.debug(f"Tool arguments: {arguments}")
+                
                 orchestrator = self._get_orchestrator()
                 
                 if name == "analyze_task_for_planning":
@@ -163,13 +209,20 @@ class TanukiMCPOrchestra:
                 elif name == "get_template_details":
                     return await self._handle_get_template_details(orchestrator, arguments)
                 else:
-                    raise ValueError(f"Unknown tool: {name}")
+                    error_msg = f"Unknown tool: {name}. Available tools: analyze_task_for_planning, create_execution_plan, get_available_templates, get_template_details"
+                    logger.error(error_msg)
+                    return [types.TextContent(
+                        type="text",
+                        text=f"❌ {error_msg}"
+                    )]
                     
             except Exception as e:
-                logger.error(f"Error in tool {name}: {str(e)}\n{traceback.format_exc()}")
+                error_msg = f"Error executing {name}: {str(e)}"
+                logger.error(error_msg)
+                logger.error(traceback.format_exc())
                 return [types.TextContent(
                     type="text",
-                    text=f"❌ Error executing {name}: {str(e)}\n\nPlease check your input parameters and try again."
+                    text=f"❌ {error_msg}\n\nPlease check your input parameters and try again. If the problem persists, check the server logs for more details."
                 )]
     
     async def _handle_analyze_task_for_planning(self, orchestrator, arguments: dict) -> list[types.TextContent]:

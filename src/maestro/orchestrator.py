@@ -481,7 +481,7 @@ class MAESTROOrchestrator:
         
         # Default execution simulation
         return {
-            "output": f"Task completed successfully using {operator_profile.profile_type.value} operator profile. "
+            "output": f"Task completed successfully using {operator_profile.operator_type.value} operator profile. "
                      f"Capabilities used: {', '.join(capabilities)}. "
                      f"The MAESTRO Protocol has orchestrated this task with quality verification.",
             "summary": "Task executed with MAESTRO Protocol orchestration",
@@ -511,9 +511,9 @@ class MAESTROOrchestrator:
         """Use intelligence amplification for specific capabilities."""
         if self.intelligence_amplifier:
             return await self.intelligence_amplifier.amplify_capability(
-                capability_type=capability_type,
-                input_data=input_data,
-                requirements=requirements
+                capability=capability_type,
+                input_data=str(input_data),
+                context=requirements
             )
         else:
             # Fallback when intelligence amplifier is not available

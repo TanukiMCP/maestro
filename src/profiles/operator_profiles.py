@@ -29,6 +29,7 @@ class ComplexityLevel(Enum):
 @dataclass
 class OperatorProfile:
     """Complete operator profile definition"""
+    profile_id: str
     name: str
     operator_type: OperatorType
     complexity_level: ComplexityLevel
@@ -56,6 +57,7 @@ class OperatorProfileManager:
         
         # Analytical Operators
         profiles["analytical_basic"] = OperatorProfile(
+            profile_id="analytical_basic",
             name="Basic Analyst",
             operator_type=OperatorType.ANALYTICAL,
             complexity_level=ComplexityLevel.BASIC,
@@ -111,6 +113,7 @@ Quality standards:
         )
         
         profiles["analytical_advanced"] = OperatorProfile(
+            profile_id="analytical_advanced",
             name="Advanced Analyst",
             operator_type=OperatorType.ANALYTICAL,
             complexity_level=ComplexityLevel.ADVANCED,
@@ -169,6 +172,7 @@ Quality standards:
         
         # Technical Operators
         profiles["technical_intermediate"] = OperatorProfile(
+            profile_id="technical_intermediate",
             name="Technical Specialist",
             operator_type=OperatorType.TECHNICAL,
             complexity_level=ComplexityLevel.INTERMEDIATE,
@@ -227,6 +231,7 @@ Quality standards:
         
         # Creative Operators
         profiles["creative_advanced"] = OperatorProfile(
+            profile_id="creative_advanced",
             name="Creative Innovator",
             operator_type=OperatorType.CREATIVE,
             complexity_level=ComplexityLevel.ADVANCED,
@@ -284,6 +289,7 @@ Quality standards:
         
         # Research Operators
         profiles["research_expert"] = OperatorProfile(
+            profile_id="research_expert",
             name="Research Expert",
             operator_type=OperatorType.RESEARCH,
             complexity_level=ComplexityLevel.EXPERT,
@@ -342,6 +348,7 @@ Quality standards:
         
         # Quality Assurance Operators
         profiles["qa_intermediate"] = OperatorProfile(
+            profile_id="qa_intermediate",
             name="Quality Assurance Specialist",
             operator_type=OperatorType.QUALITY_ASSURANCE,
             complexity_level=ComplexityLevel.INTERMEDIATE,

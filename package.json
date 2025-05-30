@@ -1,7 +1,7 @@
 {
   "name": "tanuki-maestro-mcp",
   "version": "1.0.1",
-  "description": "Maestro MCP Server - Enhanced Workflow Orchestration for LLM Intelligence Amplification with HTTP/SSE transport",
+  "description": "Maestro MCP Server - Intelligent workflow orchestration for AI assistants with streamable HTTP transport",
   "main": "src/main.py",
   "bin": {
     "tanuki-maestro-mcp": "bin/tanuki-maestro-mcp.js"

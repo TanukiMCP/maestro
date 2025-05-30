@@ -30,7 +30,7 @@ def run_dev_mode(host="127.0.0.1", port=8000):
     print(f"📍 Server will be available at: http://{host}:{port}")
     print(f"🔗 SSE endpoint: http://{host}:{port}/sse/")
     print(f"📡 Messages endpoint: http://{host}:{port}/messages/")
-    print("🔄 Hot reload enabled - changes will restart the server")
+    print(f"🔄 Hot reload enabled - changes will restart the server")
     
     cmd = [
         "uvicorn", 
@@ -74,7 +74,7 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
     print(f"🎭 Starting Maestro MCP Server for SMITHERY")
     print(f"📍 Server will be available at: http://{host}:{port}")
     print(f"🔗 SSE endpoint: http://{host}:{port}/sse/")
-    print(f"📡 Messages endpoint: http://{host}:{port}/messages/")
+    print(f"📡 MCP endpoint: http://{host}:{port}/mcp")
     print("🌟 Optimized for Smithery MCP platform")
     
     cmd = [
@@ -83,7 +83,7 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
         "--host", str(host),
         "--port", str(port),
         "--workers", "1",
-        "--access-log",
+        "--timeout-keep-alive", "120",  # Increase keep-alive timeout for long connections
         "--log-level", "info"
     ]
     

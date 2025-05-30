@@ -9,6 +9,10 @@ import asyncio
 import logging
 from typing import Dict, Any, List
 
+# Import FastAPI to wrap our MCP server
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
+
 from mcp import types # Import types directly
 from mcp.server.fastmcp import FastMCP
 
@@ -16,7 +20,7 @@ from mcp.server.fastmcp import FastMCP
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastMCP server with HTTP transport for Smithery
+# Initialize FastMCP server
 mcp = FastMCP("maestro")
 
 # --- Lazy Loaded Instances ---
@@ -166,24 +170,100 @@ def _register_tools():
     except Exception as e:
         logger.error(f"Error getting 'maestro_iae' schema from ComputationalTools: {e}")
 
-    # Placeholder for other original tools from main.py if they need to be kept or adapted
-    # Example: maestro_search (if it were to be made real and lazy)
-    # @mcp.tool(name="maestro_search", description="...", inputSchema=...)
-    # async def handle_maestro_search_placeholder(**kwargs):
-    #     # Original main.py search was a placeholder returning a string.
-    #     # If it needs to be real, implement lazy loading for its service here.
-    #     query = kwargs.get("query", "default query")
-    #     # ... (rest of placeholder logic or call to a real service)
-    #     return [types.TextContent(text=f"Search results for {query}...")] 
-    # logger.info("Registered placeholder: maestro_search")
-
     logger.info("Tool registration process completed.")
 
 # Register tools when this module is imported
 _register_tools()
 
-# The 'app' for Uvicorn is the FastMCP instance itself
-app = mcp
+# Create a FastAPI app
+fastapi_app = FastAPI(title="Maestro MCP Server", description="Enhanced Workflow Orchestration")
+
+# MCP request/response handler
+async def handle_mcp_request(request: Request):
+    """Handle MCP requests and proxy them to the FastMCP instance."""
+    logger.info(f"Handling MCP request: {request.method} {request.url.path}")
+    
+    # Get the request body
+    body = await request.body()
+    
+    # Set up headers dictionary from request headers
+    headers = dict(request.headers.items())
+    
+    # Create response queue for ASGI messages
+    response_queue = asyncio.Queue()
+    
+    # Define send and receive functions for ASGI
+    async def send(message):
+        await response_queue.put(message)
+    
+    async def receive():
+        return {
+            "type": "http.request",
+            "body": body,
+            "more_body": False
+        }
+    
+    # Call the FastMCP ASGI app with appropriate scope
+    # Path is empty because FastMCP doesn't expect a /mcp prefix
+    scope = {
+        "type": "http",
+        "path": "/",
+        "method": request.method,
+        "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+        "query_string": request.url.query.encode(),
+        "client": ("127.0.0.1", 0),
+        "server": ("127.0.0.1", 8000),
+        "scheme": request.url.scheme,
+        "http_version": "1.1",
+        "raw_path": request.url.path.encode(),
+    }
+    
+    # Process the request through FastMCP
+    await mcp(scope, receive, send)
+    
+    # Get the response from the queue
+    response_start = await response_queue.get()
+    response_body = await response_queue.get()
+    
+    # Extract status code and headers
+    status_code = response_start.get("status", 200)
+    headers = dict([(k.decode(), v.decode()) for k, v in response_start.get("headers", [])])
+    
+    # Return the response
+    return StreamingResponse(
+        content=[response_body.get("body", b"")],
+        status_code=status_code,
+        headers=headers
+    )
+
+# Mount the MCP server at /mcp with route for all methods
+@fastapi_app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
+async def handle_all_mcp_methods(request: Request):
+    """Handle all HTTP methods to /mcp for Smithery compatibility."""
+    logger.info(f"MCP endpoint called with method: {request.method}")
+    return await handle_mcp_request(request)
+
+# The 'app' for Uvicorn is now the FastAPI app that mounts FastMCP at /mcp
+app = fastapi_app
+
+# Add a default route for the root path
+@fastapi_app.get("/")
+async def root():
+    """Return information about the server and its endpoints."""
+    tools_count = len(mcp.tools)
+    return {
+        "name": "Maestro MCP Server",
+        "description": "Enhanced Workflow Orchestration with Intelligence Amplification",
+        "version": "1.0.0",
+        "status": "online",
+        "tools_count": tools_count,
+        "endpoints": {
+            "mcp": "/mcp - MCP server endpoint (GET: tool list, POST: tool call, DELETE: cancel)",
+            "docs": "/docs - FastAPI auto-generated documentation"
+        },
+        "smithery_compatible": True,
+        "lazy_loading": True
+    }
 
 if __name__ == "__main__":
     import sys

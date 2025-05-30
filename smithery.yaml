@@ -1,0 +1,16 @@
+version: 1
+type: http
+start:
+  command: ["python", "deploy.py", "smithery", "--host", "0.0.0.0", "--port", "8000"]
+  port: 8000
+configSchema:
+  type: object
+  properties:
+    api_key:
+      type: string
+      description: Optional API key for accessing external services
+    debug:
+      type: boolean
+      description: Enable debug mode for additional logging
+      default: false
+  required: [] 

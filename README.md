@@ -242,6 +242,23 @@ Maestro works with any MCP-compatible AI assistant:
 - **Custom Applications** - Standard MCP protocol compatibility
 - **Enterprise Platforms** - Scalable deployment options available
 
+## Smithery.ai Deployment
+
+Maestro is fully compatible with Smithery.ai's tool scanning and deployment system. The server implements:
+
+- **Lazy Loading**: All heavy dependencies are only loaded when actually needed, not during tool scanning
+- **Streamable HTTP**: Implements the `/mcp` endpoint required by Smithery's HTTP specification
+- **No Authentication for Tool Listing**: Tool schemas are available without requiring API keys
+- **Optimized Docker Image**: Multi-stage build for minimal image size and fast startup
+
+To deploy on Smithery:
+1. Fork this repository
+2. Connect it to your Smithery.ai account
+3. Click "Deploy" on the Deployments tab
+4. Tools will be automatically available for use in your AI assistants
+
+If you encounter a "Failed to scan tools" error, please ensure you're using the latest version that implements the FastAPI wrapper around FastMCP.
+
 ## Support & Resources
 
 - **Documentation**: Complete tool references and examples

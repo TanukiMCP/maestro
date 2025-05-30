@@ -13,14 +13,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Flag to track if quantum engine is available - check at import time is safe
-QUANTUM_ENGINE_AVAILABLE = True
-try:
-    # Just check if the module exists, don't import heavy dependencies yet
-    import importlib
-    importlib.util.find_spec('numpy')
-except ImportError:
-    QUANTUM_ENGINE_AVAILABLE = False
-    logger.warning("NumPy not available - computational engines disabled")
+# QUANTUM_ENGINE_AVAILABLE = True
+# try:
+#     import importlib
+#     importlib.util.find_spec('numpy')
+# except ImportError:
+#     QUANTUM_ENGINE_AVAILABLE = False
+#     logger.warning("NumPy not available - computational engines disabled")
 
 
 class ComputationalTools:
@@ -36,9 +35,24 @@ class ComputationalTools:
         self.engines = {}
         self._numpy = None
         self._engines_initialized = False
+        self._numpy_available = None # For the check
         
         logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
     
+    def _check_numpy_availability(self):
+        if self._numpy_available is None:
+            try:
+                import importlib
+                if importlib.util.find_spec('numpy'):
+                    self._numpy_available = True
+                else:
+                    self._numpy_available = False
+                    logger.warning("NumPy spec not found - computational engines may be limited")
+            except ImportError:
+                self._numpy_available = False
+                logger.warning("NumPy not available during check - computational engines disabled")
+        return self._numpy_available
+
     def _ensure_numpy(self):
         """Lazy import numpy only when actually needed."""
         if self._numpy is None:
@@ -59,8 +73,8 @@ class ComputationalTools:
         self._engines_initialized = True
         
         # Ensure numpy is available before initializing engines
-        if not QUANTUM_ENGINE_AVAILABLE:
-            logger.warning("⚠️ Computational engines not available (missing dependencies)")
+        if not self._check_numpy_availability(): # Use the new check method
+            logger.warning("⚠️ Computational engines not available (NumPy missing based on check)")
             return
         
         # Add quantum physics engine if available

@@ -57,9 +57,9 @@ USER maestro
 # Expose port
 EXPOSE 8000
 
-# Healthcheck for container orchestration
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/ || exit 1
+# Remove the healthcheck as it may be causing deployment issues with Smithery
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#   CMD curl -f http://localhost:8000/ || exit 1
 
 # Default command optimized for Smithery - with lazy loading enabled
 CMD ["python", "deploy.py", "smithery", "--host", "0.0.0.0", "--port", "8000"]

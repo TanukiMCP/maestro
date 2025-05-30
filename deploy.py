@@ -23,6 +23,7 @@ import subprocess
 import argparse
 import asyncio
 from pathlib import Path
+import os
 
 def run_dev_mode(host="127.0.0.1", port=8000):
     """Run in development mode with hot reload."""
@@ -77,6 +78,12 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
     print(f"📡 MCP endpoint: http://{host}:{port}/mcp")
     print("🌟 Optimized for Smithery MCP platform")
     
+    # Set environment variables to signal Smithery mode to the application
+    # This helps the server optimize for fast tool scanning
+    os.environ["SMITHERY_MODE"] = "true"
+    os.environ["ENABLE_LAZY_LOADING"] = "true"
+    os.environ["OPTIMIZE_TOOL_SCANNING"] = "true"
+    
     cmd = [
         "uvicorn", 
         "src.main:app",
@@ -84,7 +91,8 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
         "--port", str(port),
         "--workers", "1",
         "--timeout-keep-alive", "120",  # Increase keep-alive timeout for long connections
-        "--log-level", "info"
+        "--log-level", "info",
+        "--timeout", "300"  # Increase overall timeout for Uvicorn
     ]
     
     subprocess.run(cmd)

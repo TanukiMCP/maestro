@@ -2,9 +2,10 @@
 mcp>=1.0.0
 
 # HTTP/SSE Transport (for Smithery compatibility)
-fastapi>=0.100.0
-starlette>=0.27.0
-uvicorn[standard]>=0.23.0
+fastapi>=0.104.1
+starlette>=0.31.1
+uvicorn>=0.24.0
+python-multipart>=0.0.6
 
 # LangChain Orchestration  
 langchain>=0.1.0
@@ -32,7 +33,8 @@ pyspellchecker>=0.7.0
 pylint>=2.17.0
 flake8>=6.0.0
 black>=23.0.0
-pytest>=7.4.0
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
 coverage>=7.0.0
 mypy>=1.5.0
 
@@ -50,6 +52,18 @@ streamlit>=1.28.0
 ollama>=0.1.0
 
 # Additional utilities
-pydantic>=2.0.0
+pydantic>=2.4.2
 aiohttp>=3.8.0
-asyncio-mqtt>=0.16.0 
+asyncio-mqtt>=0.16.0
+
+# Utilities
+typing-extensions>=4.8.0
+httpx>=0.25.1
+psutil>=5.9.6
+
+# For asyncio and async support
+asyncio>=3.4.3
+
+# For optional database connections
+sqlalchemy>=2.0.23
+aiomysql>=0.2.0 

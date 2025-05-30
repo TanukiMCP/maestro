@@ -7,21 +7,48 @@ HTTP transport implementation for Smithery compatibility.
 
 import asyncio
 import logging
+import time
+import os
+import sys
+import traceback
 from typing import Dict, Any, List
 
 # Import FastAPI to wrap our MCP server
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from mcp import types # Import types directly
 from mcp.server.fastmcp import FastMCP
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
+def log_debug(msg, *args, **kwargs):
+    """Helper to log debug messages with a SMITHERY-DEBUG prefix for easy filtering"""
+    logger.debug(f"SMITHERY-DEBUG: {msg}", *args, **kwargs)
+
+log_debug("Starting Maestro MCP Server")
+log_debug(f"Python version: {sys.version}")
+log_debug(f"Environment variables: SMITHERY_MODE={os.environ.get('SMITHERY_MODE')}, ENABLE_LAZY_LOADING={os.environ.get('ENABLE_LAZY_LOADING')}")
+
 # Initialize FastMCP server
-mcp = FastMCP("maestro")
+try:
+    log_debug("Initializing FastMCP server")
+    start_time = time.time()
+    mcp = FastMCP("maestro")
+    init_time = time.time() - start_time
+    log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
+except Exception as e:
+    log_debug(f"Error initializing FastMCP server: {e}")
+    log_debug(traceback.format_exc())
+    raise
 
 # --- Lazy Loaded Instances ---
 _maestro_tools_instance = None
@@ -31,22 +58,28 @@ def get_maestro_tools_instance():
     """Lazily get an instance of MaestroTools."""
     global _maestro_tools_instance
     if _maestro_tools_instance is None:
+        log_debug("Creating MaestroTools instance")
+        start_time = time.time()
         # This import should be safe if maestro_tools.py only defines the class
         # and its __init__ is lightweight.
         from .maestro_tools import MaestroTools 
         _maestro_tools_instance = MaestroTools()
-        logger.info("MaestroTools instance created lazily.")
+        load_time = time.time() - start_time
+        log_debug(f"MaestroTools instance created lazily in {load_time:.2f} seconds")
     return _maestro_tools_instance
 
 def get_computational_tools_instance():
     """Lazily get an instance of ComputationalTools."""
     global _computational_tools_instance
     if _computational_tools_instance is None:
+        log_debug("Creating ComputationalTools instance")
+        start_time = time.time()
         # This import should be safe if computational_tools.py only defines the class
         # and its __init__ is lightweight.
         from .computational_tools import ComputationalTools
         _computational_tools_instance = ComputationalTools()
-        logger.info("ComputationalTools instance created lazily.")
+        load_time = time.time() - start_time
+        log_debug(f"ComputationalTools instance created lazily in {load_time:.2f} seconds")
     return _computational_tools_instance
 
 # --- Tool Handlers ---
@@ -54,6 +87,7 @@ def get_computational_tools_instance():
 # They call the actual logic in MaestroTools or ComputationalTools.
 
 async def handle_maestro_orchestrate(task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate") -> List[types.TextContent]:
+    log_debug("handle_maestro_orchestrate called")
     instance = get_maestro_tools_instance()
     # Assuming _handle_orchestrate in MaestroTools takes arguments as a dictionary
     args = {
@@ -65,6 +99,7 @@ async def handle_maestro_orchestrate(task_description: str, context: Dict[str, A
     return await instance._handle_orchestrate(arguments=args)
 
 async def handle_maestro_iae_discovery(task_type: str = "general", domain_context: str = "", complexity_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
+    log_debug("handle_maestro_iae_discovery called")
     instance = get_maestro_tools_instance()
     args = {
         "task_type": task_type,
@@ -74,6 +109,7 @@ async def handle_maestro_iae_discovery(task_type: str = "general", domain_contex
     return await instance._handle_iae_discovery(arguments=args)
 
 async def handle_maestro_tool_selection(request_description: str, available_context: Dict[str, Any] = None, precision_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
+    log_debug("handle_maestro_tool_selection called")
     instance = get_maestro_tools_instance()
     args = {
         "request_description": request_description,
@@ -83,6 +119,7 @@ async def handle_maestro_tool_selection(request_description: str, available_cont
     return await instance._handle_tool_selection(arguments=args)
 
 async def handle_maestro_iae(engine_domain: str, computation_type: str, parameters: Dict[str, Any], precision_requirements: str = "machine_precision", validation_level: str = "standard") -> List[types.TextContent]:
+    log_debug("handle_maestro_iae called")
     instance = get_computational_tools_instance()
     # ComputationalTools.handle_tool_call expects 'name' and 'arguments'
     # Here, 'name' is maestro_iae, and arguments are the kwargs.
@@ -99,91 +136,124 @@ async def handle_maestro_iae(engine_domain: str, computation_type: str, paramete
 
 def _register_tools():
     """Register MCP tools by defining their schemas and handlers."""
+    log_debug("Starting tool registration process")
+    start_time = time.time()
     logger.info("Registering tools for Maestro MCP Server...")
 
     # Maestro Orchestrate (from MaestroTools)
-    mcp.tool(
-        name="maestro_orchestrate",
-        description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "task_description": {"type": "string"},
-                "context": {"type": "object"},
-                "success_criteria": {"type": "object"},
-                "complexity_level": {"type": "string", "default": "moderate"}
-            },
-            "required": ["task_description"]
-        }
-    )(handle_maestro_orchestrate)
-    logger.info("Registered: maestro_orchestrate")
+    try:
+        log_debug("Registering maestro_orchestrate tool")
+        mcp.tool(
+            name="maestro_orchestrate",
+            description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "task_description": {"type": "string"},
+                    "context": {"type": "object"},
+                    "success_criteria": {"type": "object"},
+                    "complexity_level": {"type": "string", "default": "moderate"}
+                },
+                "required": ["task_description"]
+            }
+        )(handle_maestro_orchestrate)
+        logger.info("Registered: maestro_orchestrate")
+    except Exception as e:
+        log_debug(f"Error registering maestro_orchestrate: {e}")
+        log_debug(traceback.format_exc())
 
     # Maestro IAE Discovery (from MaestroTools)
-    mcp.tool(
-        name="maestro_iae_discovery",
-        description="💡 Discover Intelligence Amplification Engines and their capabilities.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "task_type": {"type": "string", "default": "general"},
-                "domain_context": {"type": "string", "default": ""},
-                "complexity_requirements": {"type": "object", "default": {}}
-            },
-            "required": []
-        }
-    )(handle_maestro_iae_discovery)
-    logger.info("Registered: maestro_iae_discovery")
+    try:
+        log_debug("Registering maestro_iae_discovery tool")
+        mcp.tool(
+            name="maestro_iae_discovery",
+            description="💡 Discover Intelligence Amplification Engines and their capabilities.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "task_type": {"type": "string", "default": "general"},
+                    "domain_context": {"type": "string", "default": ""},
+                    "complexity_requirements": {"type": "object", "default": {}}
+                },
+                "required": []
+            }
+        )(handle_maestro_iae_discovery)
+        logger.info("Registered: maestro_iae_discovery")
+    except Exception as e:
+        log_debug(f"Error registering maestro_iae_discovery: {e}")
+        log_debug(traceback.format_exc())
 
     # Maestro Tool Selection (from MaestroTools)
-    mcp.tool(
-        name="maestro_tool_selection",
-        description="🎯 Intelligent tool selection based on task requirements and computational needs.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "request_description": {"type": "string"},
-                "available_context": {"type": "object", "default": {}},
-                "precision_requirements": {"type": "object", "default": {}}
-            },
-            "required": ["request_description"]
-        }
-    )(handle_maestro_tool_selection)
-    logger.info("Registered: maestro_tool_selection")
+    try:
+        log_debug("Registering maestro_tool_selection tool")
+        mcp.tool(
+            name="maestro_tool_selection",
+            description="🎯 Intelligent tool selection based on task requirements and computational needs.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "request_description": {"type": "string"},
+                    "available_context": {"type": "object", "default": {}},
+                    "precision_requirements": {"type": "object", "default": {}}
+                },
+                "required": ["request_description"]
+            }
+        )(handle_maestro_tool_selection)
+        logger.info("Registered: maestro_tool_selection")
+    except Exception as e:
+        log_debug(f"Error registering maestro_tool_selection: {e}")
+        log_debug(traceback.format_exc())
     
     # Maestro IAE (from ComputationalTools)
     # Hardcoded schema instead of loading from ComputationalTools during initialization
-    mcp.tool(
-        name="maestro_iae",
-        description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "engine_domain": {"type": "string"},
-                "computation_type": {"type": "string"},
-                "parameters": {"type": "object"},
-                "precision_requirements": {"type": "string", "default": "machine_precision"},
-                "validation_level": {"type": "string", "default": "standard"}
-            },
-            "required": ["engine_domain", "computation_type", "parameters"]
-        }
-    )(handle_maestro_iae)
-    logger.info("Registered: maestro_iae")
+    try:
+        log_debug("Registering maestro_iae tool")
+        mcp.tool(
+            name="maestro_iae",
+            description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "engine_domain": {"type": "string"},
+                    "computation_type": {"type": "string"},
+                    "parameters": {"type": "object"},
+                    "precision_requirements": {"type": "string", "default": "machine_precision"},
+                    "validation_level": {"type": "string", "default": "standard"}
+                },
+                "required": ["engine_domain", "computation_type", "parameters"]
+            }
+        )(handle_maestro_iae)
+        logger.info("Registered: maestro_iae")
+    except Exception as e:
+        log_debug(f"Error registering maestro_iae: {e}")
+        log_debug(traceback.format_exc())
 
-    logger.info("Tool registration process completed.")
+    registration_time = time.time() - start_time
+    log_debug(f"Tool registration process completed in {registration_time:.2f} seconds")
+    log_debug(f"Registered {len(mcp.tools)} tools: {list(mcp.tools.keys())}")
 
 # Register tools when this module is imported
-_register_tools()
+try:
+    _register_tools()
+except Exception as e:
+    log_debug(f"Error during tool registration: {e}")
+    log_debug(traceback.format_exc())
+    raise
 
 # Create a FastAPI app
+log_debug("Creating FastAPI app")
 fastapi_app = FastAPI(title="Maestro MCP Server", description="Enhanced Workflow Orchestration")
 
 # MCP request/response handler
 async def handle_mcp_request(request: Request):
     """Handle MCP requests and proxy them to the FastMCP instance."""
+    req_start_time = time.time()
     logger.info(f"Handling MCP request: {request.method} {request.url.path}")
+    log_debug(f"Request headers: {request.headers}")
     
     # Get the request body
     body = await request.body()
+    log_debug(f"Request body size: {len(body)} bytes")
     
     # Set up headers dictionary from request headers
     headers = dict(request.headers.items())
@@ -193,9 +263,11 @@ async def handle_mcp_request(request: Request):
     
     # Define send and receive functions for ASGI
     async def send(message):
+        log_debug(f"ASGI send message type: {message.get('type')}")
         await response_queue.put(message)
     
     async def receive():
+        log_debug("ASGI receive called")
         return {
             "type": "http.request",
             "body": body,
@@ -217,16 +289,28 @@ async def handle_mcp_request(request: Request):
         "raw_path": request.url.path.encode(),
     }
     
+    log_debug(f"Calling FastMCP ASGI app with scope: {scope}")
+    
     # Process the request through FastMCP
-    await mcp(scope, receive, send)
+    try:
+        await mcp(scope, receive, send)
+        log_debug("FastMCP ASGI app call completed")
+    except Exception as e:
+        log_debug(f"Error calling FastMCP ASGI app: {e}")
+        log_debug(traceback.format_exc())
+        raise
     
     # Get the response from the queue
+    log_debug("Getting response from queue")
     response_start = await response_queue.get()
     response_body = await response_queue.get()
     
     # Extract status code and headers
     status_code = response_start.get("status", 200)
     headers = dict([(k.decode(), v.decode()) for k, v in response_start.get("headers", [])])
+    
+    req_time = time.time() - req_start_time
+    log_debug(f"MCP request completed in {req_time:.2f} seconds with status {status_code}")
     
     # Return the response
     return StreamingResponse(
@@ -240,16 +324,49 @@ async def handle_mcp_request(request: Request):
 async def handle_all_mcp_methods(request: Request):
     """Handle all HTTP methods to /mcp for Smithery compatibility."""
     logger.info(f"MCP endpoint called with method: {request.method}")
+    req_start_time = time.time()
+    log_debug(f"MCP endpoint request: {request.method} {request.url.path}")
+    log_debug(f"Request client: {request.client}")
+    log_debug(f"Request headers: {dict(request.headers.items())}")
+    
+    # Fast path for GET requests - specifically for Smithery tool scanning
+    # This avoids the overhead of going through the full MCP request handling
+    if request.method == "GET":
+        log_debug("Fast path for tool scanning activated")
+        try:
+            start_time = time.time()
+            tool_list = []
+            log_debug(f"Preparing tool list from {len(mcp.tools)} tools")
+            for tool_name, tool_info in mcp.tools.items():
+                log_debug(f"Adding tool {tool_name} to response")
+                tool_list.append({
+                    "name": tool_name,
+                    "description": tool_info.description,
+                    "inputSchema": tool_info.inputSchema
+                })
+            log_debug(f"Tool list prepared with {len(tool_list)} tools")
+            
+            response_time = time.time() - start_time
+            log_debug(f"Fast path response prepared in {response_time:.2f} seconds")
+            log_debug(f"Total GET request time: {time.time() - req_start_time:.2f} seconds")
+            
+            return JSONResponse(content=tool_list)
+        except Exception as e:
+            log_debug(f"Error in fast path for tool scanning: {e}")
+            log_debug(traceback.format_exc())
+            raise
+    
+    # Normal path for other requests
+    log_debug("Using normal MCP request path")
     return await handle_mcp_request(request)
-
-# The 'app' for Uvicorn is now the FastAPI app that mounts FastMCP at /mcp
-app = fastapi_app
 
 # Add a default route for the root path
 @fastapi_app.get("/")
 async def root():
     """Return information about the server and its endpoints."""
+    log_debug("Root endpoint called")
     tools_count = len(mcp.tools)
+    log_debug(f"Current tool count: {tools_count}")
     return {
         "name": "Maestro MCP Server",
         "description": "Enhanced Workflow Orchestration with Intelligence Amplification",
@@ -263,6 +380,52 @@ async def root():
         "smithery_compatible": True,
         "lazy_loading": True
     }
+
+# Debug endpoint to get diagnostic information
+@fastapi_app.get("/debug")
+async def debug_info():
+    """Return debugging information about the server."""
+    log_debug("Debug endpoint called")
+    import psutil
+    import platform
+    
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    
+    return {
+        "server_info": {
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "process_id": os.getpid(),
+            "uptime_seconds": time.time() - process.create_time(),
+        },
+        "memory_usage": {
+            "rss_bytes": memory_info.rss,
+            "rss_mb": memory_info.rss / (1024 * 1024),
+            "vms_bytes": memory_info.vms,
+            "vms_mb": memory_info.vms / (1024 * 1024),
+        },
+        "tools": {
+            "count": len(mcp.tools),
+            "names": list(mcp.tools.keys())
+        },
+        "environment": {
+            "smithery_mode": os.environ.get("SMITHERY_MODE", "false"),
+            "enable_lazy_loading": os.environ.get("ENABLE_LAZY_LOADING", "false"),
+            "optimize_tool_scanning": os.environ.get("OPTIMIZE_TOOL_SCANNING", "false")
+        }
+    }
+
+# Add a dedicated healthcheck endpoint for Smithery
+@fastapi_app.get("/health")
+async def healthcheck():
+    """Dedicated lightweight healthcheck endpoint for Smithery."""
+    log_debug("Healthcheck endpoint called")
+    return {"status": "healthy", "timestamp": time.time()}
+
+# The 'app' for Uvicorn is now the FastAPI app that mounts FastMCP at /mcp
+app = fastapi_app
+log_debug("Module initialization complete - app ready to serve requests")
 
 if __name__ == "__main__":
     import sys

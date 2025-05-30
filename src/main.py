@@ -6,8 +6,6 @@ Ultra-lightweight implementation for Smithery MCP compliance.
 """
 
 import asyncio
-import logging
-import traceback
 import json
 from typing import Any, Dict, List, Union
 
@@ -15,8 +13,10 @@ from mcp.server import Server, InitializationOptions
 from mcp import stdio_server
 from mcp import types
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging but DON'T log during startup to avoid stdio interference
+import logging
+# Only configure after the server is initialized
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +33,8 @@ class MaestroMCPServer:
         self.app = Server("maestro")
         self._register_handlers()
         
-        logger.info("🎭 Maestro MCP Server Ready (Ultra-lightweight for Smithery)")
+        # NO LOGGING during init - it interferes with stdio!
+        # logger.info("🎭 Maestro MCP Server Ready (Ultra-lightweight for Smithery)")
     
     def _register_handlers(self):
         """Register MCP server handlers - lightweight static definitions only."""
@@ -41,7 +42,8 @@ class MaestroMCPServer:
         @self.app.list_tools()
         async def handle_list_tools() -> list[types.Tool]:
             """List available tools - ultra-lightweight for MCP scanning."""
-            logger.info("📋 Listing Maestro tools...")
+            # NO LOGGING during tool listing - critical for MCP handshake!
+            # logger.info("📋 Listing Maestro tools...")
             
             # Static tool definitions only - no heavy initialization
             return [
@@ -52,7 +54,7 @@ class MaestroMCPServer:
                         "type": "object",
                         "properties": {
                             "task": {
-                                "type": "string", 
+                                "type": "string",
                                 "description": "Task description to orchestrate"
                             },
                             "context": {
@@ -65,7 +67,7 @@ class MaestroMCPServer:
                     }
                 ),
                 types.Tool(
-                    name="maestro_iae", 
+                    name="maestro_iae",
                     description="🧠 Intelligence Amplification Engine - computational problem solving",
                     inputSchema={
                         "type": "object",
@@ -76,7 +78,7 @@ class MaestroMCPServer:
                                 "description": "Computational domain"
                             },
                             "computation_type": {
-                                "type": "string", 
+                                "type": "string",
                                 "description": "Type of computation to perform"
                             },
                             "parameters": {
@@ -94,6 +96,8 @@ class MaestroMCPServer:
         async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             """Handle tool calls with lazy loading."""
             try:
+                # Enable logging AFTER the handshake is complete
+                logging.basicConfig(level=logging.INFO)
                 logger.info(f"🔧 Tool called: {name}")
                 
                 if name == "maestro_orchestrate":
@@ -107,7 +111,9 @@ class MaestroMCPServer:
                     )]
             
             except Exception as e:
-                logger.error(f"Tool execution failed: {str(e)}")
+                # Only log errors after handshake
+                if logger.handlers:
+                    logger.error(f"Tool execution failed: {str(e)}")
                 return [types.TextContent(
                     type="text", 
                     text=f"❌ Tool execution failed: {str(e)}"
@@ -171,7 +177,8 @@ Use `maestro_iae` for:
             return [types.TextContent(type="text", text=response)]
             
         except Exception as e:
-            logger.error(f"Orchestration failed: {str(e)}")
+            if logger.handlers:
+                logger.error(f"Orchestration failed: {str(e)}")
             return [types.TextContent(
                 type="text",
                 text=f"❌ Orchestration failed: {str(e)}"
@@ -211,7 +218,8 @@ Please provide specific parameters for detailed computational analysis.
                 )]
         
         except Exception as e:
-            logger.error(f"IAE processing failed: {str(e)}")
+            if logger.handlers:
+                logger.error(f"IAE processing failed: {str(e)}")
             return [types.TextContent(
                 type="text",
                 text=f"❌ IAE processing failed: {str(e)}"
@@ -223,14 +231,15 @@ Please provide specific parameters for detailed computational analysis.
             from computational_tools import ComputationalTools
             return ComputationalTools
         except Exception as e:
-            logger.warning(f"ComputationalTools class not available: {str(e)}")
+            if logger.handlers:
+                logger.warning(f"ComputationalTools class not available: {str(e)}")
             return None
 
 
 # Server Entry Point
 async def main():
     """Main entry point for the Maestro MCP server."""
-    # Create server instance
+    # Create server instance - NO LOGGING during startup!
     server = MaestroMCPServer()
     
     # Run the MCP server
@@ -250,5 +259,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    logger.info("🚀 Starting Maestro MCP Server...")
+    # NO LOGGING during startup - it interferes with stdio!
+    # logger.info("🚀 Starting Maestro MCP Server...")
     asyncio.run(main())

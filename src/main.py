@@ -8,6 +8,8 @@ HTTP transport implementation for Smithery compatibility.
 import asyncio
 import logging
 from typing import Dict, Any, List
+
+from mcp import types # Import types directly
 from mcp.server.fastmcp import FastMCP
 
 # Configure logging
@@ -17,380 +19,183 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server with HTTP transport for Smithery
 mcp = FastMCP("maestro")
 
-# Lazy loading flags to prevent initialization during tool scanning
-_engines_loaded = False
-_orchestrator_loaded = False
-_computational_tools_loaded = False
+# --- Lazy Loaded Instances ---
+_maestro_tools_instance = None
+_computational_tools_instance = None
+
+def get_maestro_tools_instance():
+    """Lazily get an instance of MaestroTools."""
+    global _maestro_tools_instance
+    if _maestro_tools_instance is None:
+        # This import should be safe if maestro_tools.py only defines the class
+        # and its __init__ is lightweight.
+        from .maestro_tools import MaestroTools 
+        _maestro_tools_instance = MaestroTools()
+        logger.info("MaestroTools instance created lazily.")
+    return _maestro_tools_instance
+
+def get_computational_tools_instance():
+    """Lazily get an instance of ComputationalTools."""
+    global _computational_tools_instance
+    if _computational_tools_instance is None:
+        # This import should be safe if computational_tools.py only defines the class
+        # and its __init__ is lightweight.
+        from .computational_tools import ComputationalTools
+        _computational_tools_instance = ComputationalTools()
+        logger.info("ComputationalTools instance created lazily.")
+    return _computational_tools_instance
+
+# --- Tool Handlers ---
+# These handlers will be registered with MCP.
+# They call the actual logic in MaestroTools or ComputationalTools.
+
+async def handle_maestro_orchestrate(task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate") -> List[types.TextContent]:
+    instance = get_maestro_tools_instance()
+    # Assuming _handle_orchestrate in MaestroTools takes arguments as a dictionary
+    args = {
+        "task_description": task_description,
+        "context": context or {},
+        "success_criteria": success_criteria or {},
+        "complexity_level": complexity_level
+    }
+    return await instance._handle_orchestrate(arguments=args)
+
+async def handle_maestro_iae_discovery(task_type: str = "general", domain_context: str = "", complexity_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
+    instance = get_maestro_tools_instance()
+    args = {
+        "task_type": task_type,
+        "domain_context": domain_context,
+        "complexity_requirements": complexity_requirements or {}
+    }
+    return await instance._handle_iae_discovery(arguments=args)
+
+async def handle_maestro_tool_selection(request_description: str, available_context: Dict[str, Any] = None, precision_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
+    instance = get_maestro_tools_instance()
+    args = {
+        "request_description": request_description,
+        "available_context": available_context or {},
+        "precision_requirements": precision_requirements or {}
+    }
+    return await instance._handle_tool_selection(arguments=args)
+
+async def handle_maestro_iae(engine_domain: str, computation_type: str, parameters: Dict[str, Any], precision_requirements: str = "machine_precision", validation_level: str = "standard") -> List[types.TextContent]:
+    instance = get_computational_tools_instance()
+    # ComputationalTools.handle_tool_call expects 'name' and 'arguments'
+    # Here, 'name' is maestro_iae, and arguments are the kwargs.
+    args = {
+        "engine_domain": engine_domain,
+        "computation_type": computation_type,
+        "parameters": parameters,
+        "precision_requirements": precision_requirements,
+        "validation_level": validation_level
+    }
+    return await instance.handle_tool_call(name="maestro_iae", arguments=args)
+
+# --- Tool Registration ---
 
 def _register_tools():
-    """Register MCP tools using FastMCP decorators."""
+    """Register MCP tools by defining their schemas and handlers."""
+    logger.info("Registering tools for Maestro MCP Server...")
+
+    # Maestro Orchestrate (from MaestroTools)
+    mcp.tool(
+        name="maestro_orchestrate",
+        description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task_description": {"type": "string"},
+                "context": {"type": "object"},
+                "success_criteria": {"type": "object"},
+                "complexity_level": {"type": "string", "default": "moderate"}
+            },
+            "required": ["task_description"]
+        }
+    )(handle_maestro_orchestrate)
+    logger.info("Registered: maestro_orchestrate")
+
+    # Maestro IAE Discovery (from MaestroTools)
+    mcp.tool(
+        name="maestro_iae_discovery",
+        description="💡 Discover Intelligence Amplification Engines and their capabilities.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task_type": {"type": "string", "default": "general"},
+                "domain_context": {"type": "string", "default": ""},
+                "complexity_requirements": {"type": "object", "default": {}}
+            },
+            "required": []
+        }
+    )(handle_maestro_iae_discovery)
+    logger.info("Registered: maestro_iae_discovery")
+
+    # Maestro Tool Selection (from MaestroTools)
+    mcp.tool(
+        name="maestro_tool_selection",
+        description="🎯 Intelligent tool selection based on task requirements and computational needs.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "request_description": {"type": "string"},
+                "available_context": {"type": "object", "default": {}},
+                "precision_requirements": {"type": "object", "default": {}}
+            },
+            "required": ["request_description"]
+        }
+    )(handle_maestro_tool_selection)
+    logger.info("Registered: maestro_tool_selection")
     
-    @mcp.tool(description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation")
-    def maestro_orchestrate(task: str, context: Dict[str, Any] = None) -> str:
-        """
-        Intelligent workflow orchestration with context analysis.
-        
-        Args:
-            task: Task description to orchestrate
-            context: Additional context (optional)
-        """
-        try:
-            # Lazy import orchestrator only when the tool is actually called
-            global _orchestrator_loaded
-            if not _orchestrator_loaded:
-                logger.info("Lazy loading orchestrator module on first use")
-                # Import will be done only when function is called, not during tool scanning
-                _orchestrator_loaded = True
-                
-            context = context or {}
-            
-            response = f"""# 🎭 Maestro Orchestration
+    # Maestro IAE (from ComputationalTools)
+    # Get schema from ComputationalTools.get_mcp_tools()
+    try:
+        from .computational_tools import ComputationalTools
+        temp_comp_tools = ComputationalTools() # Assumed lightweight __init__
+        iae_tool_schema = next((t for t in temp_comp_tools.get_mcp_tools() if t.name == "maestro_iae"), None)
+        if iae_tool_schema:
+            mcp.tool(
+                name=iae_tool_schema.name,
+                description=iae_tool_schema.description,
+                inputSchema=iae_tool_schema.inputSchema
+            )(handle_maestro_iae)
+            logger.info(f"Registered: {iae_tool_schema.name}")
+        else:
+            logger.error("Could not find 'maestro_iae' schema in ComputationalTools.")
+    except ImportError:
+        logger.error("Could not import ComputationalTools to get 'maestro_iae' schema.")
+    except Exception as e:
+        logger.error(f"Error getting 'maestro_iae' schema from ComputationalTools: {e}")
 
-**Task:** {task}
+    # Placeholder for other original tools from main.py if they need to be kept or adapted
+    # Example: maestro_search (if it were to be made real and lazy)
+    # @mcp.tool(name="maestro_search", description="...", inputSchema=...)
+    # async def handle_maestro_search_placeholder(**kwargs):
+    #     # Original main.py search was a placeholder returning a string.
+    #     # If it needs to be real, implement lazy loading for its service here.
+    #     query = kwargs.get("query", "default query")
+    #     # ... (rest of placeholder logic or call to a real service)
+    #     return [types.TextContent(text=f"Search results for {query}...")] 
+    # logger.info("Registered placeholder: maestro_search")
 
-## Orchestration Plan
+    logger.info("Tool registration process completed.")
 
-### 1. Context Analysis ✅
-- Task complexity: Moderate
-- Required context: {"Sufficient" if context else "Minimal - consider providing more"}
-- Success criteria: Definable
-
-### 2. Workflow Design
-1. **Preparation Phase**
-   - Gather requirements
-   - Set up environment
-   - Define success metrics
-
-2. **Execution Phase** 
-   - Implement core functionality
-   - Apply best practices
-   - Monitor progress
-
-3. **Validation Phase**
-   - Test implementation
-   - Verify requirements
-   - Document results
-
-### 3. Tool Recommendations
-- Use available IDE tools for implementation
-- Consider computational validation via `maestro_iae`
-- Apply iterative refinement
-
-### 4. Next Steps
-1. Begin with preparation phase
-2. Implement incrementally 
-3. Validate at each step
-4. Use `maestro_iae` for computational tasks
-
-## Intelligence Amplification Available
-Use `maestro_iae` for:
-- Complex calculations
-- Scientific computations"""
-
-            return response
-            
-        except Exception as e:
-            logger.error(f"Error in maestro_orchestrate: {e}")
-            return f"❌ Orchestration error: {str(e)}"
-
-    @mcp.tool(description="🧠 Intelligence Amplification Engine - computational problem solving")
-    def maestro_iae(
-        engine_domain: str,
-        computation_type: str,
-        parameters: Dict[str, Any] = None
-    ) -> str:
-        """
-        Intelligence Amplification Engine for computational problem solving.
-        
-        Args:
-            engine_domain: Computational domain (quantum_physics, advanced_mathematics, computational_modeling)
-            computation_type: Type of computation to perform
-            parameters: Parameters for computation
-        """
-        # Lazy import computational tools only when the tool is actually called
-        global _computational_tools_loaded
-        if not _computational_tools_loaded:
-            logger.info("Lazy loading computational tools module on first use")
-            # Import will be done only when function is called, not during tool scanning
-            _computational_tools_loaded = True
-        
-        parameters = parameters or {}
-        
-        return f"""# 🧠 Intelligence Amplification Engine
-
-**Domain:** {engine_domain}
-**Computation:** {computation_type}
-
-## Analysis Ready
-IAE computational engines are available for:
-- Quantum physics calculations
-- Advanced mathematical modeling
-- Scientific computations
-
-**Note:** Computational tools will be initialized on first use for optimal performance.
-
-Please provide specific parameters for detailed computational analysis.
-
-**Parameters received:** {parameters}
-"""
-    
-    @mcp.tool(description="🚀 Direct access to specialized intelligence amplification engines")
-    def amplify_capability(capability: str, input_data: str, additional_params: Dict[str, Any] = None) -> str:
-        """
-        Direct access to specialized intelligence amplification engines.
-        
-        Args:
-            capability: Engine type (mathematics, grammar_checking, apa_citation, code_analysis, etc.)
-            input_data: Data to process
-            additional_params: Additional parameters (optional)
-        """
-        # Lazy import engines only when the tool is actually called
-        global _engines_loaded
-        if not _engines_loaded:
-            logger.info("Lazy loading engine modules on first use")
-            # Import will be done only when function is called, not during tool scanning
-            _engines_loaded = True
-            
-        additional_params = additional_params or {}
-        
-        return f"""# 🚀 Intelligence Amplification - {capability.title()}
-
-**Input:** {input_data[:100]}{"..." if len(input_data) > 100 else ""}
-
-## Amplification Results
-
-### {capability.replace('_', ' ').title()} Engine Analysis
-
-**Processing with specialized engine:**
-- Input validated successfully
-- Engine capabilities: Full analysis available
-- Ready for detailed processing
-
-**Available Capabilities:**
-- mathematics: Mathematical reasoning and computation
-- grammar_checking: Advanced grammar and style analysis
-- apa_citation: APA 7th edition citation formatting
-- code_analysis: Code quality and security analysis
-- data_analysis: Statistical and data processing
-- web_verification: Web accessibility and content validation
-
-**Metadata:**
-- Engine: {capability}
-- Processing time: <1s
-- Confidence: High
-- Status: ✅ Complete
-"""
-    
-    @mcp.tool(description="🔍 LLM-driven web search with intelligent query handling")
-    def maestro_search(
-        query: str,
-        search_engine: str = "duckduckgo",
-        max_results: int = 5,
-        temporal_filter: str = "any",
-        result_format: str = "structured"
-    ) -> str:
-        """
-        LLM-driven web search with intelligent query handling.
-        
-        Args:
-            query: Search query string
-            search_engine: Search engine to use (duckduckgo, bing, google)
-            max_results: Maximum number of results to return
-            temporal_filter: Filter by time (e.g., 24h, 1w, 1m, 1y, or 'any')
-            result_format: Format of results (structured, markdown, json)
-        """
-        return f"""# 🔍 Search Results for "{query}"
-
-**Search Engine:** {search_engine}
-**Results Found:** {max_results} (simulated)
-**Temporal Filter:** {temporal_filter}
-**Format:** {result_format}
-
-## Results
-
-### Result 1
-**Title:** Advanced {query} Resources
-**URL:** https://example.com/advanced-{query.replace(' ', '-').lower()}
-**Snippet:** Comprehensive guide and resources for {query}...
-
-### Result 2
-**Title:** {query} Best Practices
-**URL:** https://example.com/{query.replace(' ', '-').lower()}-practices
-**Snippet:** Industry best practices and methodologies for {query}...
-
-### Result 3
-**Title:** Latest {query} Research
-**URL:** https://example.com/research-{query.replace(' ', '-').lower()}
-**Snippet:** Recent research and developments in {query}...
-
-**Note:** For real-time search results, enhanced tool handlers will be activated automatically.
-**Status:** ✅ Search simulation complete
-"""
-    
-    @mcp.tool(description="📄 LLM-driven web scraping with intelligent content extraction")
-    def maestro_scrape(
-        url: str,
-        output_format: str = "markdown",
-        selectors: List[str] = None,
-        wait_for: str = None,
-        extract_links: bool = False,
-        extract_images: bool = False
-    ) -> str:
-        """
-        LLM-driven web scraping with intelligent content extraction.
-        
-        Args:
-            url: URL to scrape
-            output_format: Format for output (markdown, json, text, html)
-            selectors: CSS selectors for specific content extraction
-            wait_for: Element or condition to wait for before scraping
-            extract_links: Whether to extract all links
-            extract_images: Whether to extract image information
-        """
-        selectors = selectors or []
-        
-        return f"""# 📄 Web Scraping Results
-
-**URL:** {url}
-**Output Format:** {output_format}
-**Selectors:** {', '.join(selectors) if selectors else 'Auto-detect content'}
-**Extract Links:** {extract_links}
-**Extract Images:** {extract_images}
-
-## Extracted Content
-
-### Main Content
-Content from {url} would be extracted here using intelligent parsing algorithms...
-
-### Additional Data
-- **Wait Condition:** {wait_for or 'Page load complete'}
-- **Content Length:** Estimated 2,500 characters
-- **Parsing Method:** Intelligent content detection
-
-**Note:** For live web scraping, enhanced tool handlers will be activated automatically.
-**Status:** ✅ Scraping simulation complete
-"""
-    
-    @mcp.tool(description="⚡ LLM-driven code execution with intelligent analysis")
-    def maestro_execute(
-        code: str,
-        language: str = "python",
-        timeout: int = 30,
-        capture_output: bool = True,
-        working_directory: str = None,
-        environment_vars: Dict[str, str] = None
-    ) -> str:
-        """
-        LLM-driven code execution with intelligent analysis.
-        
-        Args:
-            code: Code to execute
-            language: Programming language (python, javascript, shell)
-            timeout: Execution timeout in seconds
-            capture_output: Whether to capture stdout/stderr
-            working_directory: Directory to execute in
-            environment_vars: Environment variables for execution
-        """
-        environment_vars = environment_vars or {}
-        
-        return f"""# ⚡ Code Execution Results
-
-**Language:** {language}
-**Code Length:** {len(code)} characters
-**Timeout:** {timeout}s
-**Working Directory:** {working_directory or 'Default'}
-
-## Execution Summary
-
-### Code Analysis
-```{language}
-{code[:200]}{"..." if len(code) > 200 else ""}
-```
-
-### Execution Results
-- **Status:** ✅ Ready for execution
-- **Validation:** Syntax check passed
-- **Security:** Basic security analysis complete
-- **Performance:** Estimated execution time < {timeout}s
-
-**Note:** For live code execution, enhanced tool handlers will be activated automatically.
-**Status:** ✅ Execution simulation complete
-"""
-    
-    @mcp.tool(description="📊 Get available computational engines and their capabilities")
-    def get_available_engines() -> str:
-        """Get information about available computational engines and capabilities."""
-        return """# 📊 Available Maestro Engines
-
-## Intelligence Amplification Engines
-
-### 1. 🧠 Computational Engine (maestro_iae)
-**Domains:** quantum_physics, advanced_mathematics, computational_modeling
-**Capabilities:**
-- Quantum entanglement calculations
-- Advanced mathematical modeling
-- Scientific computations
-- Symbolic mathematics
-
-### 2. 🚀 Capability Amplifier (amplify_capability)
-**Engines:** mathematics, grammar_checking, apa_citation, code_analysis
-**Capabilities:**
-- Mathematical reasoning enhancement
-- Grammar and style analysis
-- Academic citation formatting
-- Code quality assessment
-
-### 3. 🎭 Workflow Orchestrator (maestro_orchestrate)
-**Types:** task_planning, context_analysis, workflow_design
-**Capabilities:**
-- Intelligent task breakdown
-- Context analysis and validation
-- Success criteria definition
-
-## Enhanced Tools
-
-### 4. 🔍 Web Search (maestro_search)
-**Types:** comprehensive, quick, academic
-**Capabilities:**
-- Intelligent query optimization
-- Source reliability filtering
-- Multi-engine search aggregation
-
-### 5. 📄 Web Scraping (maestro_scrape)
-**Types:** content, data, links, images
-**Capabilities:**
-- Intelligent content extraction
-- Structure-aware parsing
-- Format transformation
-
-### 6. ⚡ Code Execution (maestro_execute)
-**Languages:** python, javascript, bash, and more
-**Capabilities:**
-- Secure sandbox execution
-- Performance analysis
-- Security validation
-
-## Engine Status
-- **Total Engines:** 6 active
-- **Core Tools:** 3 orchestration engines
-- **Enhanced Tools:** 3 automation tools
-- **Status:** ✅ All systems operational
-
-**Ready for intelligent orchestration! 🚀**
-"""
-
-# Register tools
+# Register tools when this module is imported
 _register_tools()
 
+# The 'app' for Uvicorn is the FastMCP instance itself
+app = mcp
+
 if __name__ == "__main__":
-    # Direct execution
     import sys
-    
     if len(sys.argv) > 1 and sys.argv[1] == "stdio":
-        # STDIO mode for local development
         logger.info("🎭 Starting Maestro MCP Server (STDIO Mode)")
-        mcp.run(transport="stdio")
+        try:
+            asyncio.run(mcp.run_stdio_session()) 
+        except KeyboardInterrupt:
+            logger.info("STDIO session ended by user.")
     else:
-        # HTTP mode for Smithery deployment
-        logger.info("🎭 Starting Maestro MCP Server (HTTP Mode)")
-        mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
+        # This branch is typically for information when 'python src/main.py' is run directly.
+        # HTTP server startup is handled by 'deploy.py' using Uvicorn.
+        logger.info("🎭 Maestro MCP Server (src.main)")
+        print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")
+        print("To run with STDIO, use: python src/main.py stdio")

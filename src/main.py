@@ -136,101 +136,59 @@ async def handle_maestro_iae(engine_domain: str, computation_type: str, paramete
 
 def _register_tools():
     """Register MCP tools by defining their schemas and handlers."""
-    log_debug("Starting tool registration process")
-    start_time = time.time()
     logger.info("Registering tools for Maestro MCP Server...")
 
-    # Maestro Orchestrate (from MaestroTools)
     try:
         log_debug("Registering maestro_orchestrate tool")
         mcp.tool(
             name="maestro_orchestrate",
-            description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "task_description": {"type": "string"},
-                    "context": {"type": "object"},
-                    "success_criteria": {"type": "object"},
-                    "complexity_level": {"type": "string", "default": "moderate"}
-                },
-                "required": ["task_description"]
-            }
+            description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation."
         )(handle_maestro_orchestrate)
         logger.info("Registered: maestro_orchestrate")
     except Exception as e:
         log_debug(f"Error registering maestro_orchestrate: {e}")
         log_debug(traceback.format_exc())
 
-    # Maestro IAE Discovery (from MaestroTools)
     try:
         log_debug("Registering maestro_iae_discovery tool")
         mcp.tool(
             name="maestro_iae_discovery",
-            description="💡 Discover Intelligence Amplification Engines and their capabilities.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "task_type": {"type": "string", "default": "general"},
-                    "domain_context": {"type": "string", "default": ""},
-                    "complexity_requirements": {"type": "object", "default": {}}
-                },
-                "required": []
-            }
+            description="💡 Discover Intelligence Amplification Engines and their capabilities."
         )(handle_maestro_iae_discovery)
         logger.info("Registered: maestro_iae_discovery")
     except Exception as e:
         log_debug(f"Error registering maestro_iae_discovery: {e}")
         log_debug(traceback.format_exc())
 
-    # Maestro Tool Selection (from MaestroTools)
     try:
         log_debug("Registering maestro_tool_selection tool")
         mcp.tool(
             name="maestro_tool_selection",
-            description="🎯 Intelligent tool selection based on task requirements and computational needs.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "request_description": {"type": "string"},
-                    "available_context": {"type": "object", "default": {}},
-                    "precision_requirements": {"type": "object", "default": {}}
-                },
-                "required": ["request_description"]
-            }
+            description="🎯 Intelligent tool selection based on task requirements and computational needs."
         )(handle_maestro_tool_selection)
         logger.info("Registered: maestro_tool_selection")
     except Exception as e:
         log_debug(f"Error registering maestro_tool_selection: {e}")
         log_debug(traceback.format_exc())
-    
-    # Maestro IAE (from ComputationalTools)
-    # Hardcoded schema instead of loading from ComputationalTools during initialization
+
     try:
         log_debug("Registering maestro_iae tool")
         mcp.tool(
             name="maestro_iae",
-            description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "engine_domain": {"type": "string"},
-                    "computation_type": {"type": "string"},
-                    "parameters": {"type": "object"},
-                    "precision_requirements": {"type": "string", "default": "machine_precision"},
-                    "validation_level": {"type": "string", "default": "standard"}
-                },
-                "required": ["engine_domain", "computation_type", "parameters"]
-            }
+            description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."
         )(handle_maestro_iae)
         logger.info("Registered: maestro_iae")
     except Exception as e:
         log_debug(f"Error registering maestro_iae: {e}")
         log_debug(traceback.format_exc())
 
-    registration_time = time.time() - start_time
-    log_debug(f"Tool registration process completed in {registration_time:.2f} seconds")
-    log_debug(f"Registered {len(mcp.tools)} tools: {list(mcp.tools.keys())}")
+    # Use _tool_map for tool listing
+    try:
+        tool_map = getattr(mcp, '_tool_map', {})
+        log_debug(f"Tool registration process completed. Registered {len(tool_map)} tools: {list(tool_map.keys())}")
+    except Exception as e:
+        log_debug(f"Error accessing tool map: {e}")
+        log_debug(traceback.format_exc())
 
 # Register tools when this module is imported
 try:
@@ -238,7 +196,8 @@ try:
 except Exception as e:
     log_debug(f"Error during tool registration: {e}")
     log_debug(traceback.format_exc())
-    raise
+    # Allow server to start even if registration fails, to aid debugging
+    # raise # Commented out to allow server to start
 
 # Create a FastAPI app
 log_debug("Creating FastAPI app")
@@ -330,31 +289,28 @@ async def handle_all_mcp_methods(request: Request):
     log_debug(f"Request headers: {dict(request.headers.items())}")
     
     # Fast path for GET requests - specifically for Smithery tool scanning
-    # This avoids the overhead of going through the full MCP request handling
     if request.method == "GET":
         log_debug("Fast path for tool scanning activated")
         try:
             start_time = time.time()
             tool_list = []
-            log_debug(f"Preparing tool list from {len(mcp.tools)} tools")
-            for tool_name, tool_info in mcp.tools.items():
+            tool_map = getattr(mcp, '_tool_map', {})
+            log_debug(f"Preparing tool list from {len(tool_map)} tools")
+            for tool_name, tool_info in tool_map.items():
                 log_debug(f"Adding tool {tool_name} to response")
                 tool_list.append({
                     "name": tool_name,
-                    "description": tool_info.description,
-                    "inputSchema": tool_info.inputSchema
+                    "description": getattr(tool_info, 'description', None)
                 })
             log_debug(f"Tool list prepared with {len(tool_list)} tools")
-            
             response_time = time.time() - start_time
             log_debug(f"Fast path response prepared in {response_time:.2f} seconds")
             log_debug(f"Total GET request time: {time.time() - req_start_time:.2f} seconds")
-            
             return JSONResponse(content=tool_list)
         except Exception as e:
             log_debug(f"Error in fast path for tool scanning: {e}")
             log_debug(traceback.format_exc())
-            raise
+            return JSONResponse(content={"error": "Failed to list tools", "details": str(e)}, status_code=500)
     
     # Normal path for other requests
     log_debug("Using normal MCP request path")
@@ -365,7 +321,8 @@ async def handle_all_mcp_methods(request: Request):
 async def root():
     """Return information about the server and its endpoints."""
     log_debug("Root endpoint called")
-    tools_count = len(mcp.tools)
+    tool_map = getattr(mcp, '_tool_map', {})
+    tools_count = len(tool_map)
     log_debug(f"Current tool count: {tools_count}")
     return {
         "name": "Maestro MCP Server",
@@ -392,6 +349,7 @@ async def debug_info():
     process = psutil.Process()
     memory_info = process.memory_info()
     
+    tool_map = getattr(mcp, '_tool_map', {})
     return {
         "server_info": {
             "python_version": sys.version,
@@ -406,8 +364,8 @@ async def debug_info():
             "vms_mb": memory_info.vms / (1024 * 1024),
         },
         "tools": {
-            "count": len(mcp.tools),
-            "names": list(mcp.tools.keys())
+            "count": len(tool_map),
+            "names": list(tool_map.keys())
         },
         "environment": {
             "smithery_mode": os.environ.get("SMITHERY_MODE", "false"),

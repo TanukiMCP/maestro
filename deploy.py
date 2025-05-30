@@ -91,8 +91,7 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
         "--port", str(port),
         "--workers", "1",
         "--timeout-keep-alive", "120",  # Increase keep-alive timeout for long connections
-        "--log-level", "info",
-        "--timeout", "300"  # Increase overall timeout for Uvicorn
+        "--log-level", "info"
     ]
     
     subprocess.run(cmd)

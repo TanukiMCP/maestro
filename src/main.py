@@ -185,9 +185,10 @@ Use `maestro_iae` for:
         
         try:
             # Lazy load computational tools only when needed
-            computational_tools = self._get_computational_tools()
-            if computational_tools:
-                return await computational_tools.handle_tool_call("maestro_iae", arguments)
+            ComputationalToolsClass = self._get_computational_tools_class()
+            if ComputationalToolsClass:
+                computational_tools_instance = ComputationalToolsClass()
+                return await computational_tools_instance.handle_tool_call("maestro_iae", arguments)
             else:
                 # Fallback response when computational tools not available
                 return [types.TextContent(
@@ -216,13 +217,13 @@ Please provide specific parameters for detailed computational analysis.
                 text=f"❌ IAE processing failed: {str(e)}"
             )]
     
-    def _get_computational_tools(self):
-        """Lazy load computational tools only when actually needed."""
+    def _get_computational_tools_class(self):
+        """Lazy load computational_tools module and return the ComputationalTools class."""
         try:
             from computational_tools import ComputationalTools
-            return ComputationalTools()
+            return ComputationalTools
         except Exception as e:
-            logger.warning(f"Computational tools not available: {str(e)}")
+            logger.warning(f"ComputationalTools class not available: {str(e)}")
             return None
 
 

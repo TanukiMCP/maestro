@@ -42,27 +42,8 @@ class MaestroMCPServer:
         try:
             logger.info("🚀 Initializing Maestro resources...")
             
-            # Initialize computational tools with graceful degradation
-            try:
-                from computational_tools import ComputationalTools
-                computational_tools = ComputationalTools()
-                self.context["computational_tools"] = computational_tools
-                logger.info("🧠 Computational tools loaded successfully")
-            except ImportError as e:
-                logger.warning(f"⚠️ Computational tools not available: {e}")
-                self.context["computational_tools"] = None
-            
-            # Initialize EnhancedToolHandlers
-            try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tool_handlers = EnhancedToolHandlers()
-                # It's better if enhanced_tool_handlers has an async init method
-                # await enhanced_tool_handlers.initialize() # if it had one
-                self.context["enhanced_tool_handlers"] = enhanced_tool_handlers
-                logger.info("🛠️ Enhanced tool handlers loaded successfully")
-            except ImportError as e:
-                logger.warning(f"⚠️ Enhanced tool handlers not available: {e}")
-                self.context["enhanced_tool_handlers"] = None
+            # Only minimal initialization here - everything else should be lazy
+            # Don't initialize heavy components during startup to avoid tool scanning timeouts
             
             yield self.context
             
@@ -154,11 +135,11 @@ Use `maestro_iae` for:
             try:
                 parameters = parameters or {}
                 
-                # Get computational tools from context
-                ctx = self.mcp.get_context()
-                computational_tools = ctx.request_context.lifespan_context.get("computational_tools")
-                
-                if computational_tools:
+                # Lazy initialization of computational tools
+                try:
+                    from computational_tools import ComputationalTools
+                    computational_tools = ComputationalTools()
+                    
                     # Use actual computational tools
                     result = asyncio.run(computational_tools.handle_tool_call(
                         "maestro_iae", 
@@ -169,7 +150,8 @@ Use `maestro_iae` for:
                         }
                     ))
                     return result[0].text if result else "❌ No result from computational tools"
-                else:
+                    
+                except ImportError:
                     # Fallback response when computational tools not available
                     return f"""# 🧠 Intelligence Amplification Engine
 
@@ -392,7 +374,7 @@ Please provide specific parameters for detailed computational analysis.
                 return f"❌ Quality verification failed: {str(e)}"
         
         @self.mcp.tool(description="🔍 LLM-driven web search with intelligent query handling")
-        async def maestro_search(
+        def maestro_search(
             query: str,
             search_engine: str = "duckduckgo",
             max_results: int = 5,
@@ -410,30 +392,39 @@ Please provide specific parameters for detailed computational analysis.
                 result_format: Format of results (structured, markdown, json)
             """
             try:
-                ctx = self.mcp.get_context()
-                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
-                if not handlers:
-                    return "❌ Enhanced tool handlers are not available."
-
-                arguments = {
-                    "query": query,
-                    "search_engine": search_engine,
-                    "max_results": max_results,
-                    "temporal_filter": temporal_filter,
-                    "result_format": result_format
-                }
-                
-                # The handler returns a list of TextContent, convert to string for now
-                # Smithery might expect a specific format; this might need adjustment
-                result_contents = await handlers.handle_maestro_search(arguments)
-                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                # Lazy initialization of enhanced tool handlers
+                try:
+                    from maestro.enhanced_tools import EnhancedToolHandlers
+                    handlers = EnhancedToolHandlers()
+                    
+                    arguments = {
+                        "query": query,
+                        "search_engine": search_engine,
+                        "max_results": max_results,
+                        "temporal_filter": temporal_filter,
+                        "result_format": result_format
+                    }
+                    
+                    # Run async handler in sync context
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    result_contents = loop.run_until_complete(handlers.handle_maestro_search(arguments))
+                    return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    
+                except ImportError as e:
+                    return f"❌ Enhanced tool handlers not available: {e}"
 
             except Exception as e:
                 logger.error(f"Error in maestro_search: {e}")
                 return f"❌ Search error: {str(e)}"
         
         @self.mcp.tool(description="📄 LLM-driven web scraping with intelligent content extraction")
-        async def maestro_scrape(
+        def maestro_scrape(
             url: str,
             output_format: str = "markdown",
             selectors: List[str] = None,
@@ -453,31 +444,43 @@ Please provide specific parameters for detailed computational analysis.
                 extract_images: Whether to extract image information
             """
             try:
-                ctx = self.mcp.get_context()
-                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
-                if not handlers:
-                    return "❌ Enhanced tool handlers are not available."
+                # Lazy initialization of enhanced tool handlers
+                try:
+                    from maestro.enhanced_tools import EnhancedToolHandlers
+                    handlers = EnhancedToolHandlers()
 
-                if selectors is None:
-                    selectors = []
+                    if selectors is None:
+                        selectors = []
 
-                arguments = {
-                    "url": url,
-                    "output_format": output_format,
-                    "selectors": selectors,
-                    "wait_for": wait_for,
-                    "extract_links": extract_links,
-                    "extract_images": extract_images
-                }
-                result_contents = await handlers.handle_maestro_scrape(arguments)
-                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    arguments = {
+                        "url": url,
+                        "output_format": output_format,
+                        "selectors": selectors,
+                        "wait_for": wait_for,
+                        "extract_links": extract_links,
+                        "extract_images": extract_images
+                    }
+                    
+                    # Run async handler in sync context
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    result_contents = loop.run_until_complete(handlers.handle_maestro_scrape(arguments))
+                    return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    
+                except ImportError as e:
+                    return f"❌ Enhanced tool handlers not available: {e}"
 
             except Exception as e:
                 logger.error(f"Error in maestro_scrape: {e}")
                 return f"❌ Scrape error: {str(e)}"
         
         @self.mcp.tool(description="⚡ LLM-driven code execution with intelligent analysis")
-        async def maestro_execute(
+        def maestro_execute(
             code: str,
             language: str = "python",
             timeout: int = 30,
@@ -497,31 +500,43 @@ Please provide specific parameters for detailed computational analysis.
                 environment_vars: Environment variables for execution
             """
             try:
-                ctx = self.mcp.get_context()
-                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
-                if not handlers:
-                    return "❌ Enhanced tool handlers are not available."
+                # Lazy initialization of enhanced tool handlers
+                try:
+                    from maestro.enhanced_tools import EnhancedToolHandlers
+                    handlers = EnhancedToolHandlers()
 
-                if environment_vars is None:
-                    environment_vars = {}
+                    if environment_vars is None:
+                        environment_vars = {}
 
-                arguments = {
-                    "code": code,
-                    "language": language,
-                    "timeout": timeout,
-                    "capture_output": capture_output,
-                    "working_directory": working_directory,
-                    "environment_vars": environment_vars
-                }
-                result_contents = await handlers.handle_maestro_execute(arguments)
-                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    arguments = {
+                        "code": code,
+                        "language": language,
+                        "timeout": timeout,
+                        "capture_output": capture_output,
+                        "working_directory": working_directory,
+                        "environment_vars": environment_vars
+                    }
+                    
+                    # Run async handler in sync context
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    result_contents = loop.run_until_complete(handlers.handle_maestro_execute(arguments))
+                    return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    
+                except ImportError as e:
+                    return f"❌ Enhanced tool handlers not available: {e}"
 
             except Exception as e:
                 logger.error(f"Error in maestro_execute: {e}")
                 return f"❌ Code execution error: {str(e)}"
         
         @self.mcp.tool(description="🔧 Adaptive error handling with intelligent problem resolution")
-        async def maestro_error_handler(
+        def maestro_error_handler(
             error_details: Dict[str, Any],
             available_tools: List[str] = None,
             context: Dict[str, Any] = None
@@ -535,30 +550,42 @@ Please provide specific parameters for detailed computational analysis.
                 context: Current operational context
             """
             try:
-                ctx = self.mcp.get_context()
-                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
-                if not handlers:
-                    return "❌ Enhanced tool handlers are not available."
+                # Lazy initialization of enhanced tool handlers
+                try:
+                    from maestro.enhanced_tools import EnhancedToolHandlers
+                    handlers = EnhancedToolHandlers()
 
-                if available_tools is None:
-                    available_tools = []
-                if context is None:
-                    context = {}
+                    if available_tools is None:
+                        available_tools = []
+                    if context is None:
+                        context = {}
 
-                arguments = {
-                    "error_details": error_details,
-                    "available_tools": available_tools,
-                    "context": context
-                }
-                result_contents = await handlers.handle_maestro_error_handler(arguments)
-                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    arguments = {
+                        "error_details": error_details,
+                        "available_tools": available_tools,
+                        "context": context
+                    }
+                    
+                    # Run async handler in sync context
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    result_contents = loop.run_until_complete(handlers.handle_maestro_error_handler(arguments))
+                    return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    
+                except ImportError as e:
+                    return f"❌ Enhanced tool handlers not available: {e}"
 
             except Exception as e:
                 logger.error(f"Error in maestro_error_handler: {e}")
                 return f"❌ Error handling failed: {str(e)}"
         
         @self.mcp.tool(description="⏰ Temporal context awareness for information currency and relevance")
-        async def maestro_temporal_context(
+        def maestro_temporal_context(
             query: str,
             time_sensitivity: str = "medium",
             reference_date: str = None
@@ -572,18 +599,30 @@ Please provide specific parameters for detailed computational analysis.
                 reference_date: Specific reference date for context (optional)
             """
             try:
-                ctx = self.mcp.get_context()
-                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
-                if not handlers:
-                    return "❌ Enhanced tool handlers are not available."
+                # Lazy initialization of enhanced tool handlers
+                try:
+                    from maestro.enhanced_tools import EnhancedToolHandlers
+                    handlers = EnhancedToolHandlers()
 
-                arguments = {
-                    "query": query,
-                    "time_sensitivity": time_sensitivity,
-                    "reference_date": reference_date
-                }
-                result_contents = await handlers.handle_maestro_temporal_context(arguments)
-                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    arguments = {
+                        "query": query,
+                        "time_sensitivity": time_sensitivity,
+                        "reference_date": reference_date
+                    }
+                    
+                    # Run async handler in sync context
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    result_contents = loop.run_until_complete(handlers.handle_maestro_temporal_context(arguments))
+                    return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+                    
+                except ImportError as e:
+                    return f"❌ Enhanced tool handlers not available: {e}"
 
             except Exception as e:
                 logger.error(f"Error in maestro_temporal_context: {e}")

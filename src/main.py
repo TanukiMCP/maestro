@@ -151,24 +151,23 @@ def _register_tools():
     logger.info("Registered: maestro_tool_selection")
     
     # Maestro IAE (from ComputationalTools)
-    # Get schema from ComputationalTools.get_mcp_tools()
-    try:
-        from .computational_tools import ComputationalTools
-        temp_comp_tools = ComputationalTools() # Assumed lightweight __init__
-        iae_tool_schema = next((t for t in temp_comp_tools.get_mcp_tools() if t.name == "maestro_iae"), None)
-        if iae_tool_schema:
-            mcp.tool(
-                name=iae_tool_schema.name,
-                description=iae_tool_schema.description,
-                inputSchema=iae_tool_schema.inputSchema
-            )(handle_maestro_iae)
-            logger.info(f"Registered: {iae_tool_schema.name}")
-        else:
-            logger.error("Could not find 'maestro_iae' schema in ComputationalTools.")
-    except ImportError:
-        logger.error("Could not import ComputationalTools to get 'maestro_iae' schema.")
-    except Exception as e:
-        logger.error(f"Error getting 'maestro_iae' schema from ComputationalTools: {e}")
+    # Hardcoded schema instead of loading from ComputationalTools during initialization
+    mcp.tool(
+        name="maestro_iae",
+        description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "engine_domain": {"type": "string"},
+                "computation_type": {"type": "string"},
+                "parameters": {"type": "object"},
+                "precision_requirements": {"type": "string", "default": "machine_precision"},
+                "validation_level": {"type": "string", "default": "standard"}
+            },
+            "required": ["engine_domain", "computation_type", "parameters"]
+        }
+    )(handle_maestro_iae)
+    logger.info("Registered: maestro_iae")
 
     logger.info("Tool registration process completed.")
 

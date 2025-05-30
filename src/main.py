@@ -82,6 +82,18 @@ def get_computational_tools_instance():
         log_debug(f"ComputationalTools instance created lazily in {load_time:.2f} seconds")
     return _computational_tools_instance
 
+# --- Enhanced Tool Handlers ---
+_enhanced_tool_handlers_instance = None
+
+def get_enhanced_tool_handlers_instance():
+    """Lazily get an instance of EnhancedToolHandlers."""
+    global _enhanced_tool_handlers_instance
+    if _enhanced_tool_handlers_instance is None:
+        log_debug("Creating EnhancedToolHandlers instance")
+        from .maestro.enhanced_tools import EnhancedToolHandlers
+        _enhanced_tool_handlers_instance = EnhancedToolHandlers()
+    return _enhanced_tool_handlers_instance
+
 # --- Tool Handlers ---
 # These handlers will be registered with MCP.
 # They call the actual logic in MaestroTools or ComputationalTools.
@@ -132,6 +144,27 @@ async def handle_maestro_iae(engine_domain: str, computation_type: str, paramete
     }
     return await instance.handle_tool_call(name="maestro_iae", arguments=args)
 
+# Enhanced tool handler wrappers
+async def handle_maestro_search(arguments: dict) -> list:
+    instance = get_enhanced_tool_handlers_instance()
+    return await instance.handle_maestro_search(arguments)
+
+async def handle_maestro_scrape(arguments: dict) -> list:
+    instance = get_enhanced_tool_handlers_instance()
+    return await instance.handle_maestro_scrape(arguments)
+
+async def handle_maestro_execute(arguments: dict) -> list:
+    instance = get_enhanced_tool_handlers_instance()
+    return await instance.handle_maestro_execute(arguments)
+
+async def handle_maestro_error_handler(arguments: dict) -> list:
+    instance = get_enhanced_tool_handlers_instance()
+    return await instance.handle_maestro_error_handler(arguments)
+
+async def handle_maestro_temporal_context(arguments: dict) -> list:
+    instance = get_enhanced_tool_handlers_instance()
+    return await instance.handle_maestro_temporal_context(arguments)
+
 # --- Tool Registration ---
 
 def _register_tools():
@@ -180,6 +213,62 @@ def _register_tools():
         logger.info("Registered: maestro_iae")
     except Exception as e:
         log_debug(f"Error registering maestro_iae: {e}")
+        log_debug(traceback.format_exc())
+
+    # Register enhanced tools
+    try:
+        log_debug("Registering maestro_search tool")
+        mcp.tool(
+            name="maestro_search",
+            description="🌐 LLM-driven web search with temporal filtering and structured results."
+        )(handle_maestro_search)
+        logger.info("Registered: maestro_search")
+    except Exception as e:
+        log_debug(f"Error registering maestro_search: {e}")
+        log_debug(traceback.format_exc())
+
+    try:
+        log_debug("Registering maestro_scrape tool")
+        mcp.tool(
+            name="maestro_scrape",
+            description="🕷️ LLM-driven web scraping and content extraction with selectors and format options."
+        )(handle_maestro_scrape)
+        logger.info("Registered: maestro_scrape")
+    except Exception as e:
+        log_debug(f"Error registering maestro_scrape: {e}")
+        log_debug(traceback.format_exc())
+
+    try:
+        log_debug("Registering maestro_execute tool")
+        mcp.tool(
+            name="maestro_execute",
+            description="⚡ LLM-driven code execution with output capture and validation."
+        )(handle_maestro_execute)
+        logger.info("Registered: maestro_execute")
+    except Exception as e:
+        log_debug(f"Error registering maestro_execute: {e}")
+        log_debug(traceback.format_exc())
+
+    try:
+        log_debug("Registering maestro_error_handler tool")
+        mcp.tool(
+            name="maestro_error_handler",
+            description="🔧 Adaptive error handling and recovery with LLM-driven analysis."
+        )(handle_maestro_error_handler)
+        logger.info("Registered: maestro_error_handler")
+    except Exception as e:
+        log_debug(f"Error registering maestro_error_handler: {e}")
+        log_debug(traceback.format_exc())
+
+    try:
+        log_debug("Registering maestro_temporal_context tool")
+        mcp.tool(
+            name="maestro_temporal_context",
+            description="🕐 Temporal context analysis for information freshness and deadline awareness."
+        )(handle_maestro_temporal_context)
+        logger.info("Registered: maestro_temporal_context")
+    except Exception as e:
+        log_debug(f"Error registering maestro_temporal_context: {e}")
         log_debug(traceback.format_exc())
 
     # Use _tool_map for tool listing

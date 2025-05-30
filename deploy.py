@@ -182,6 +182,12 @@ def main():
     else:
         host = "127.0.0.1"
     
+    # For smithery mode, use port 8001 by default to avoid conflicts
+    if args.mode == "smithery" and args.port == 8000 and "--port" not in sys.argv:
+        port = 8001
+    else:
+        port = args.port
+    
     # Run the appropriate mode
     try:
         if args.mode == "dev":
@@ -191,7 +197,7 @@ def main():
         elif args.mode == "test":
             run_test_mode()
         elif args.mode == "smithery":
-            run_smithery_mode(host, args.port)
+            run_smithery_mode(host, port)
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")
     except Exception as e:

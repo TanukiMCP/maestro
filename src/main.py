@@ -146,7 +146,13 @@ async def lightweight_tools():
     log_debug("DIAGNOSTIC MODE - 💡 Lightweight tools endpoint called")
     response_data = [
         {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration... (DIAGNOSTIC)"},
-        # ... (include all tool definitions for Smithery to see)
+        {"name": "maestro_iae_discovery", "description": "🔍 Integrated Analysis Engine discovery... (DIAGNOSTIC)"},
+        {"name": "maestro_tool_selection", "description": "🧰 Intelligent tool selection... (DIAGNOSTIC)"},
+        {"name": "maestro_iae", "description": "🧠 Integrated Analysis Engine... (DIAGNOSTIC)"},
+        {"name": "maestro_search", "description": "🔎 Enhanced search capabilities... (DIAGNOSTIC)"},
+        {"name": "maestro_scrape", "description": "📑 Web scraping functionality... (DIAGNOSTIC)"},
+        {"name": "maestro_execute", "description": "⚙️ Command execution... (DIAGNOSTIC)"},
+        {"name": "maestro_error_handler", "description": "🚨 Error handling... (DIAGNOSTIC)"},
         {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis... (DIAGNOSTIC)"}
     ]
     log_debug(f"DIAGNOSTIC MODE - 💡 Returning {len(response_data)} tools from lightweight endpoint")

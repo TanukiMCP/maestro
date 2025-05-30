@@ -21,43 +21,40 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tanukimcp/tanukimcp-maestro.git"
+    "url": "https://github.com/tanukimcp/maestro.git"
   },
   "bugs": {
-    "url": "https://github.com/tanukimcp/tanukimcp-maestro/issues"
+    "url": "https://github.com/tanukimcp/maestro/issues"
   },
-  "homepage": "https://github.com/tanukimcp/tanukimcp-maestro#readme",
+  "homepage": "https://github.com/tanukimcp/maestro#readme",
   "scripts": {
-    "start": "uvicorn src.main:app --host 0.0.0.0 --port 8001",
-    "dev": "uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload",
-    "test": "python test_server.py && python validate_all_tools.py",
-    "validate": "python validate_all_tools.py"
+    "start": "python src/main.py",
+    "dev": "python src/main.py",
+    "test": "python src/main.py stdio",
+    "validate": "python src/main.py stdio"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "smithery": {
     "type": "remote",
-    "transport": "http-sse",
-    "endpoint": "http://localhost:8001/sse/",
-    "tools": 10,
-    "description": "Enhanced workflow orchestration with 10 specialized AI tools across 5 tiers: Central Orchestration, Intelligence Amplification, Quality Verification, Enhanced Automation, and System Information."
+    "transport": "streamable-http",
+    "endpoint": "http://localhost:8000/mcp",
+    "tools": 7,
+    "description": "Intelligent workflow orchestration MCP server with 7 tools for task breakdown, computational problem solving, web search, content extraction, and code execution."
   },
   "mcp": {
     "server": {
       "name": "maestro",
       "version": "1.0.0",
-      "transport": ["http", "sse"],
+      "transport": ["streamable-http"],
       "tools": [
         "maestro_orchestrate",
         "maestro_iae", 
         "amplify_capability",
-        "verify_quality",
         "maestro_search",
         "maestro_scrape", 
         "maestro_execute",
-        "maestro_error_handler",
-        "maestro_temporal_context",
         "get_available_engines"
       ]
     }

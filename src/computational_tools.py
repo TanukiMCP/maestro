@@ -6,21 +6,21 @@ computational engines following the MIA protocol.
 """
 
 import json
-import numpy as np
 from typing import Dict, List, Any, Union
 from mcp import types
 import logging
 
-# Import computational engines with graceful fallback
-try:
-    from .engines.quantum_physics_engine import QuantumPhysicsEngine
-    QUANTUM_ENGINE_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Quantum physics engine not available: {e}")
-    QUANTUM_ENGINE_AVAILABLE = False
-    QuantumPhysicsEngine = None
-
 logger = logging.getLogger(__name__)
+
+# Flag to track if quantum engine is available - check at import time is safe
+QUANTUM_ENGINE_AVAILABLE = True
+try:
+    # Just check if the module exists, don't import heavy dependencies yet
+    import importlib
+    importlib.util.find_spec('numpy')
+except ImportError:
+    QUANTUM_ENGINE_AVAILABLE = False
+    logger.warning("NumPy not available - computational engines disabled")
 
 
 class ComputationalTools:
@@ -32,25 +32,51 @@ class ComputationalTools:
     """
     
     def __init__(self):
-        # Initialize all computational engines internally
+        # Initialize all computational engines internally - with lazy loading
         self.engines = {}
+        self._numpy = None
+        self._engines_initialized = False
+        
+        logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
+    
+    def _ensure_numpy(self):
+        """Lazy import numpy only when actually needed."""
+        if self._numpy is None:
+            try:
+                import numpy as np
+                self._numpy = np
+                logger.info("✅ NumPy loaded for computational engines")
+            except ImportError as e:
+                logger.error(f"❌ Failed to import NumPy: {e}")
+                raise ImportError("NumPy is required for computational engines")
+        return self._numpy
+    
+    def _initialize_engines(self):
+        """Lazy initialization of computational engines."""
+        if self._engines_initialized:
+            return
+        
+        self._engines_initialized = True
+        
+        # Ensure numpy is available before initializing engines
+        if not QUANTUM_ENGINE_AVAILABLE:
+            logger.warning("⚠️ Computational engines not available (missing dependencies)")
+            return
         
         # Add quantum physics engine if available
-        if QUANTUM_ENGINE_AVAILABLE and QuantumPhysicsEngine is not None:
-            try:
-                self.engines['quantum_physics'] = QuantumPhysicsEngine()
-                logger.info("✅ Quantum physics engine loaded")
-            except Exception as e:
-                logger.warning(f"Failed to initialize quantum physics engine: {e}")
-        else:
-            logger.info("⚠️ Quantum physics engine not available")
+        try:
+            from .engines.quantum_physics_engine import QuantumPhysicsEngine
+            self.engines['quantum_physics'] = QuantumPhysicsEngine()
+            logger.info("✅ Quantum physics engine loaded")
+        except Exception as e:
+            logger.warning(f"Failed to initialize quantum physics engine: {e}")
             
         # Future engines will be added here:
         # 'molecular_modeling': MolecularModelingEngine(),
         # 'statistical_analysis': StatisticalAnalysisEngine(),
         # etc.
         
-        logger.info(f"🔧 Computational engines initialized internally ({len(self.engines)} active)")
+        logger.info(f"🔧 Computational engines initialized ({len(self.engines)} active)")
     
     def get_mcp_tools(self) -> List[types.Tool]:
         """Return single maestro_iae tool - the gateway to all computational engines."""
@@ -192,6 +218,9 @@ class ComputationalTools:
                 )]
             
             logger.info(f"🔬 Processing IAE computation request")
+            
+            # Initialize engines lazily only when actually needed
+            self._initialize_engines()
             
             engine_domain = arguments.get("engine_domain")
             computation_type = arguments.get("computation_type") 

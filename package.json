@@ -1,5 +1,5 @@
 {
-  "name": "tanukimcp-orchestra",
+  "name": "tanukimcp-maestro",
   "version": "1.0.0",
   "description": "MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration - Transform any LLM into superintelligent AI through advanced orchestration",
   "main": "src/main.py",
@@ -16,9 +16,9 @@
   ],
   "author": "tanukimcp",
   "license": "MIT",
-  "repository": "https://github.com/tanukimcp/orchestra",
-  "homepage": "https://github.com/tanukimcp/orchestra#readme",
-  "bugs": "https://github.com/tanukimcp/orchestra/issues",
+  "repository": "https://github.com/tanukimcp/maestro",
+  "homepage": "https://github.com/tanukimcp/maestro#readme",
+  "bugs": "https://github.com/tanukimcp/maestro/issues",
   "mcp": {
     "server": true,
     "protocol_version": "2025-01-28",

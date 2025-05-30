@@ -16,41 +16,22 @@ from mcp.server import Server, InitializationOptions
 from mcp import stdio_server
 from mcp import types
 
-# Import enhanced Maestro components
-try:
-    from .maestro import MAESTROOrchestrator
-    from .maestro.context_aware_orchestrator import ContextAwareOrchestrator
-    from .maestro.orchestration_framework import (
-        EnhancedOrchestrationEngine, 
-        ContextSurvey, 
-        OrchestrationResult,
-        TaskComplexity
-    )
-    from .maestro.adaptive_error_handler import (
-        AdaptiveErrorHandler,
-        TemporalContext,
-        ErrorContext,
-        ReconsiderationResult
-    )
-    from .maestro.puppeteer_tools import MAESTROPuppeteerTools
-    from .computational_tools import ComputationalTools
-except ImportError:
-    from maestro import MAESTROOrchestrator
-    from maestro.context_aware_orchestrator import ContextAwareOrchestrator
-    from maestro.orchestration_framework import (
-        EnhancedOrchestrationEngine, 
-        ContextSurvey, 
-        OrchestrationResult,
-        TaskComplexity
-    )
-    from maestro.adaptive_error_handler import (
-        AdaptiveErrorHandler,
-        TemporalContext,
-        ErrorContext,
-        ReconsiderationResult
-    )
-    from maestro.puppeteer_tools import MAESTROPuppeteerTools
-    from computational_tools import ComputationalTools
+# Import enhanced Maestro components with proper error handling
+from maestro import MAESTROOrchestrator
+from maestro.context_aware_orchestrator import ContextAwareOrchestrator
+from maestro.orchestration_framework import (
+    EnhancedOrchestrationEngine, 
+    ContextSurvey, 
+    OrchestrationResult,
+    TaskComplexity
+)
+from maestro.adaptive_error_handler import (
+    AdaptiveErrorHandler,
+    TemporalContext,
+    ErrorContext,
+    ReconsiderationResult
+)
+from maestro.puppeteer_tools import MAESTROPuppeteerTools
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -92,7 +73,7 @@ class MaestroMCPServer:
         if self._computational_tools is None and self._computational_tools_error is None:
             try:
                 logger.info("🔄 Lazy initializing computational tools...")
-                from .computational_tools import ComputationalTools
+                from computational_tools import ComputationalTools
                 self._computational_tools = ComputationalTools()
                 logger.info("✅ Computational tools initialized")
             except Exception as e:

@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tanukimcp-orchestra"
+name = "tanukimcp-maestro"
 version = "1.0.0"
 description = "MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration - Transform any LLM into superintelligent AI"
 readme = "README.md"
@@ -72,10 +72,10 @@ visualization = [
     "seaborn>=0.12.0",
 ]
 all = [
-    "tanukimcp-orchestra[language,code-quality,web,visualization]"
+    "tanukimcp-maestro[language,code-quality,web,visualization]"
 ]
 dev = [
-    "tanukimcp-orchestra[all]",
+    "tanukimcp-maestro[all]",
     "pytest>=7.4.0",
     "coverage>=7.0.0",
     "mypy>=1.5.0",
@@ -83,10 +83,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tanukimcp/orchestra"
-Documentation = "https://github.com/tanukimcp/orchestra#readme"
-Repository = "https://github.com/tanukimcp/orchestra"
-"Bug Tracker" = "https://github.com/tanukimcp/orchestra/issues"
+Homepage = "https://github.com/tanukimcp/maestro"
+Documentation = "https://github.com/tanukimcp/maestro#readme"
+Repository = "https://github.com/tanukimcp/maestro"
+"Bug Tracker" = "https://github.com/tanukimcp/maestro/issues"
 
 [project.scripts]
 maestro = "main:main"

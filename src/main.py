@@ -2,131 +2,82 @@
 Maestro MCP Server - Enhanced Workflow Orchestration
 
 Provides intelligent workflow orchestration tools for LLM enhancement.
-Ultra-lightweight implementation for Smithery MCP compliance.
+HTTP/SSE transport implementation for Smithery compatibility.
 """
 
 import asyncio
-import json
-from typing import Any, Dict, List, Union
-
-from mcp.server import Server, InitializationOptions
-from mcp import stdio_server
-from mcp import types
-
-# Configure logging but DON'T log during startup to avoid stdio interference
 import logging
-# Only configure after the server is initialized
-# logging.basicConfig(level=logging.INFO)
+from contextlib import asynccontextmanager
+from typing import AsyncIterator, Dict, Any, List
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class MaestroMCPServer:
     """
-    Maestro MCP Server - Ultra-lightweight for MCP compliance
+    Maestro MCP Server - HTTP/SSE transport for Smithery compatibility
     
-    Provides core orchestration tools with lazy loading to ensure
-    fast tool scanning and deployment compatibility.
+    Provides core orchestration tools with FastMCP for remote deployment.
     """
     
     def __init__(self):
-        # Initialize MCP server with minimal configuration
-        self.app = Server("maestro")
-        self._register_handlers()
+        # Application context for lifespan management
+        self.context = {}
         
-        # NO LOGGING during init - it interferes with stdio!
-        # logger.info("🎭 Maestro MCP Server Ready (Ultra-lightweight for Smithery)")
+        # Initialize FastMCP server
+        self.mcp = FastMCP("maestro", lifespan=self.app_lifespan)
+        self._register_tools()
+        
+        logger.info("🎭 Maestro MCP Server Ready (HTTP/SSE for Smithery)")
     
-    def _register_handlers(self):
-        """Register MCP server handlers - lightweight static definitions only."""
-        
-        @self.app.list_tools()
-        async def handle_list_tools() -> list[types.Tool]:
-            """List available tools - ultra-lightweight for MCP scanning."""
-            # NO LOGGING during tool listing - critical for MCP handshake!
-            # logger.info("📋 Listing Maestro tools...")
-            
-            # Static tool definitions only - no heavy initialization
-            return [
-                types.Tool(
-                    name="maestro_orchestrate",
-                    description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "task": {
-                                "type": "string",
-                                "description": "Task description to orchestrate"
-                            },
-                            "context": {
-                                "type": "object",
-                                "description": "Additional context (optional)",
-                                "additionalProperties": True
-                            }
-                        },
-                        "required": ["task"]
-                    }
-                ),
-                types.Tool(
-                    name="maestro_iae",
-                    description="🧠 Intelligence Amplification Engine - computational problem solving",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "engine_domain": {
-                                "type": "string",
-                                "enum": ["quantum_physics", "advanced_mathematics", "computational_modeling"],
-                                "description": "Computational domain"
-                            },
-                            "computation_type": {
-                                "type": "string",
-                                "description": "Type of computation to perform"
-                            },
-                            "parameters": {
-                                "type": "object",
-                                "description": "Parameters for computation",
-                                "additionalProperties": True
-                            }
-                        },
-                        "required": ["engine_domain", "computation_type"]
-                    }
-                )
-            ]
-        
-        @self.app.call_tool()
-        async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
-            """Handle tool calls with lazy loading."""
-            try:
-                # Enable logging AFTER the handshake is complete
-                logging.basicConfig(level=logging.INFO)
-                logger.info(f"🔧 Tool called: {name}")
-                
-                if name == "maestro_orchestrate":
-                    return await self._handle_orchestrate(arguments)
-                elif name == "maestro_iae":
-                    return await self._handle_iae(arguments)
-                else:
-                    return [types.TextContent(
-                        type="text",
-                        text=f"❌ Unknown tool: {name}"
-                    )]
-            
-            except Exception as e:
-                # Only log errors after handshake
-                if logger.handlers:
-                    logger.error(f"Tool execution failed: {str(e)}")
-                return [types.TextContent(
-                    type="text", 
-                    text=f"❌ Tool execution failed: {str(e)}"
-                )]
-    
-    async def _handle_orchestrate(self, arguments: dict) -> list[types.TextContent]:
-        """Handle orchestration with lightweight processing."""
-        task = arguments["task"]
-        context = arguments.get("context", {})
-        
+    @asynccontextmanager
+    async def app_lifespan(self, server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
+        """Manage application lifecycle with resources."""
         try:
-            # Provide intelligent orchestration guidance without heavy computation
-            response = f"""# 🎭 Maestro Orchestration
+            # Initialize resources on startup
+            logger.info("🚀 Initializing Maestro resources...")
+            
+            # Load computational tools if available
+            try:
+                from computational_tools import ComputationalTools
+                computational_tools = ComputationalTools()
+                self.context["computational_tools"] = computational_tools
+                logger.info("🧠 Computational tools loaded successfully")
+            except ImportError as e:
+                logger.warning(f"⚠️ Computational tools not available: {e}")
+                self.context["computational_tools"] = None
+            
+            yield self.context
+            
+        except Exception as e:
+            logger.error(f"❌ Error during startup: {e}")
+            raise
+        finally:
+            # Cleanup on shutdown
+            logger.info("🔄 Shutting down Maestro resources...")
+    
+    def _register_tools(self):
+        """Register MCP tools using FastMCP decorators."""
+        
+        @self.mcp.tool(description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation")
+        def maestro_orchestrate(task: str, context: Dict[str, Any] = None) -> str:
+            """
+            Intelligent workflow orchestration with context analysis.
+            
+            Args:
+                task: Task description to orchestrate
+                context: Additional context (optional)
+            """
+            try:
+                context = context or {}
+                
+                response = f"""# 🎭 Maestro Orchestration
 
 **Task:** {task}
 
@@ -173,34 +124,47 @@ Use `maestro_iae` for:
 
 **Status:** Ready for execution 🚀
 """
-            
-            return [types.TextContent(type="text", text=response)]
-            
-        except Exception as e:
-            if logger.handlers:
+                return response
+                
+            except Exception as e:
                 logger.error(f"Orchestration failed: {str(e)}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ Orchestration failed: {str(e)}"
-            )]
-    
-    async def _handle_iae(self, arguments: dict) -> list[types.TextContent]:
-        """Handle Intelligence Amplification Engine requests."""
-        engine_domain = arguments["engine_domain"]
-        computation_type = arguments["computation_type"]
-        parameters = arguments.get("parameters", {})
+                return f"❌ Orchestration failed: {str(e)}"
         
-        try:
-            # Lazy load computational tools only when needed
-            ComputationalToolsClass = self._get_computational_tools_class()
-            if ComputationalToolsClass:
-                computational_tools_instance = ComputationalToolsClass()
-                return await computational_tools_instance.handle_tool_call("maestro_iae", arguments)
-            else:
-                # Fallback response when computational tools not available
-                return [types.TextContent(
-                    type="text",
-                    text=f"""# 🧠 Intelligence Amplification Engine
+        @self.mcp.tool(description="🧠 Intelligence Amplification Engine - computational problem solving")
+        def maestro_iae(
+            engine_domain: str,
+            computation_type: str,
+            parameters: Dict[str, Any] = None
+        ) -> str:
+            """
+            Intelligence Amplification Engine for computational problem solving.
+            
+            Args:
+                engine_domain: Computational domain (quantum_physics, advanced_mathematics, computational_modeling)
+                computation_type: Type of computation to perform
+                parameters: Parameters for computation
+            """
+            try:
+                parameters = parameters or {}
+                
+                # Get computational tools from context
+                ctx = self.mcp.get_context()
+                computational_tools = ctx.request_context.lifespan_context.get("computational_tools")
+                
+                if computational_tools:
+                    # Use actual computational tools
+                    result = asyncio.run(computational_tools.handle_tool_call(
+                        "maestro_iae", 
+                        {
+                            "engine_domain": engine_domain,
+                            "computation_type": computation_type,
+                            "parameters": parameters
+                        }
+                    ))
+                    return result[0].text if result else "❌ No result from computational tools"
+                else:
+                    # Fallback response when computational tools not available
+                    return f"""# 🧠 Intelligence Amplification Engine
 
 **Domain:** {engine_domain}
 **Computation:** {computation_type}
@@ -214,51 +178,130 @@ IAE computational engines are available for:
 **Note:** Computational tools will be initialized on first use for optimal performance.
 
 Please provide specific parameters for detailed computational analysis.
+
+**Parameters received:** {parameters}
 """
-                )]
-        
-        except Exception as e:
-            if logger.handlers:
+            
+            except Exception as e:
                 logger.error(f"IAE processing failed: {str(e)}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ IAE processing failed: {str(e)}"
-            )]
-    
-    def _get_computational_tools_class(self):
-        """Lazy load computational_tools module and return the ComputationalTools class."""
-        try:
-            from computational_tools import ComputationalTools
-            return ComputationalTools
-        except Exception as e:
-            if logger.handlers:
-                logger.warning(f"ComputationalTools class not available: {str(e)}")
-            return None
+                return f"❌ IAE processing failed: {str(e)}"
+        
+        # Add resource for server status
+        @self.mcp.resource("maestro://status")
+        def get_server_status() -> str:
+            """Get current server status and capabilities"""
+            return """# 🎭 Maestro MCP Server Status
+
+## Server Information
+- **Name:** Maestro
+- **Version:** 1.0.0
+- **Transport:** HTTP/SSE (Smithery Compatible)
+- **Status:** Active ✅
+
+## Available Tools
+1. **maestro_orchestrate** - Intelligent workflow orchestration
+2. **maestro_iae** - Intelligence Amplification Engine
+
+## Capabilities
+- ✅ Context Analysis
+- ✅ Workflow Design
+- ✅ Task Orchestration
+- ✅ Computational Processing
+- ✅ Remote Deployment Ready
+
+## Deployment
+Compatible with:
+- Smithery MCP Platform
+- Claude Desktop
+- Any MCP client supporting HTTP/SSE transport
+
+**Ready for AI orchestration tasks! 🚀**
+"""
 
 
-# Server Entry Point
-async def main():
-    """Main entry point for the Maestro MCP server."""
-    # Create server instance - NO LOGGING during startup!
-    server = MaestroMCPServer()
+# FastAPI Application Setup
+def create_app():
+    """Create the FastAPI application with MCP server."""
     
-    # Run the MCP server
-    async with stdio_server(server.app) as (read_stream, write_stream):
-        await server.app.run(
-            read_stream,
-            write_stream,
-            InitializationOptions(
-                server_name="maestro",
-                server_version="1.0.0",
-                capabilities=server.app.get_capabilities(
-                    notification_options=None,
-                    experimental_capabilities={}
-                )
+    # Create FastAPI app
+    app = FastAPI(
+        title="Maestro MCP Server",
+        description="Enhanced Workflow Orchestration for LLM Intelligence Amplification",
+        version="1.0.0"
+    )
+    
+    # Create Maestro server instance
+    maestro_server = MaestroMCPServer()
+    
+    # Create SSE transport
+    transport = SseServerTransport("/messages/")
+    
+    # Health check endpoint
+    @app.get("/")
+    async def health_check():
+        return {
+            "service": "Maestro MCP Server",
+            "status": "active",
+            "version": "1.0.0",
+            "transport": "HTTP/SSE",
+            "endpoints": {
+                "sse": "/sse/",
+                "messages": "/messages/",
+                "health": "/"
+            },
+            "smithery_compatible": True
+        }
+    
+    # SSE endpoint - handle as raw ASGI
+    @app.get("/sse/")
+    async def sse_endpoint(request: Request):
+        scope = request.scope
+        receive = request.receive
+        
+        async def send_wrapper(message):
+            # Handle the send properly for SSE
+            if message["type"] == "http.response.start":
+                # Ensure SSE headers are set
+                headers = dict(message.get("headers", []))
+                headers[b"content-type"] = b"text/event-stream"
+                headers[b"cache-control"] = b"no-cache" 
+                headers[b"connection"] = b"keep-alive"
+                message["headers"] = [(k, v) for k, v in headers.items()]
+            await request._send(message)
+        
+        # Use the transport to handle SSE connection
+        async with transport.connect_sse(scope, receive, send_wrapper) as streams:
+            await maestro_server.mcp._mcp_server.run(
+                streams[0], streams[1], maestro_server.mcp._mcp_server.create_initialization_options()
             )
-        )
+    
+    # Mount the messages handler
+    app.mount("/messages/", transport.handle_post_message)
+    
+    return app
+
+
+# Create the app instance
+app = create_app()
+
+
+# Alternative direct execution (for testing)
+async def run_direct():
+    """Run the MCP server directly (for development/testing)."""
+    maestro_server = MaestroMCPServer()
+    
+    # Run as Streamable HTTP server
+    await maestro_server.mcp.run(transport="streamable-http", port=8000)
 
 
 if __name__ == "__main__":
-    # NO LOGGING during startup - it interferes with stdio!
-    # logger.info("🚀 Starting Maestro MCP Server...")
-    asyncio.run(main())
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "direct":
+        # Direct execution for testing
+        print("🎭 Starting Maestro MCP Server (Direct Mode)")
+        asyncio.run(run_direct())
+    else:
+        # FastAPI/ASGI execution (for deployment)
+        print("🎭 Maestro MCP Server Ready for ASGI deployment")
+        print("Use: uvicorn src.main:app --host 0.0.0.0 --port 8000")

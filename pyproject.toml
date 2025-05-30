@@ -49,6 +49,10 @@ dependencies = [
     "matplotlib>=3.7.0",
     "requests>=2.31.0",
     "asyncio",
+    # HTTP/SSE transport dependencies
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+    "uvicorn[standard]>=0.23.0",
 ]
 
 [project.optional-dependencies]

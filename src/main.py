@@ -463,6 +463,23 @@ async def debug_info():
         }
     }
 
+# Add a new lightweight /tools endpoint
+@fastapi_app.get("/tools")
+async def lightweight_tools():
+    """Extremely lightweight tool listing endpoint that bypasses FastMCP's internal mechanisms."""
+    log_debug("Lightweight tools endpoint called - bypassing FastMCP for fast scanning")
+    return [
+        {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration with context analysis and success criteria validation."},
+        {"name": "maestro_iae_discovery", "description": "💡 Discover Intelligence Amplification Engines and their capabilities."},
+        {"name": "maestro_tool_selection", "description": "🎯 Intelligent tool selection based on task requirements and computational needs."},
+        {"name": "maestro_iae", "description": "🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."},
+        {"name": "maestro_search", "description": "🌐 LLM-driven web search with temporal filtering and structured results."},
+        {"name": "maestro_scrape", "description": "🕷️ LLM-driven web scraping and content extraction with selectors and format options."},
+        {"name": "maestro_execute", "description": "⚡ LLM-driven code execution with output capture and validation."},
+        {"name": "maestro_error_handler", "description": "🔧 Adaptive error handling and recovery with LLM-driven analysis."},
+        {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis for information freshness and deadline awareness."}
+    ]
+
 # Add a dedicated healthcheck endpoint for Smithery
 @fastapi_app.get("/health")
 async def healthcheck():

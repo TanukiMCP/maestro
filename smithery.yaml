@@ -6,6 +6,7 @@ start:
   health_timeout: 120  # Extended timeout for health check
   scan_timeout: 120    # Extended timeout for tool scanning
   health_endpoint: "/health"  # Use our dedicated health endpoint
+  tools_endpoint: "/tools"  # Use our lightweight endpoint for tool scanning
 configSchema:
   type: object
   properties:

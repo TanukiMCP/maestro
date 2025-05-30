@@ -29,30 +29,35 @@ Maestro is a Model Context Protocol (MCP) server that provides workflow orchestr
 
 ## Quick Start
 
-### 1. Installation
+### 1. Install via npm
 
 ```bash
-# Clone the repository
-git clone https://github.com/TanukiMCP/maestro.git
-cd maestro
-
-# Install dependencies
-pip install -r requirements.txt
+npm install tanuki-maestro-mcp
 ```
 
-### 2. Local Development
+### 2. Deploy via Smithery (Recommended)
 
-```bash
-# Run with STDIO transport (for Claude Desktop)
-python src/main.py stdio
+Maestro is optimized for deployment on [Smithery](https://smithery.ai). Simply:
 
-# Run with HTTP transport (for web deployment)
-python src/main.py
+1. Sign up for Smithery
+2. Search for "Maestro" in the tool catalog
+3. Click "Install" to add it to your AI assistant
+4. Tools become automatically available
+
+### 3. Manual Configuration (Advanced)
+
+For direct integration with Claude Desktop, add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "maestro": {
+      "command": "npx",
+      "args": ["tanuki-maestro-mcp"]
+    }
+  }
+}
 ```
-
-### 3. Deploy to Smithery
-
-Maestro is optimized for deployment on [Smithery](https://smithery.ai). Simply connect your GitHub repository and Smithery will automatically deploy and make the tools available.
 
 ## Usage Examples
 
@@ -106,8 +111,8 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "maestro": {
-      "command": "python",
-      "args": ["/path/to/maestro/src/main.py", "stdio"]
+      "command": "npx",
+      "args": ["tanuki-maestro-mcp"]
     }
   }
 }
@@ -119,47 +124,43 @@ Maestro integrates automatically when deployed via Smithery.
 ## Development
 
 ### Prerequisites
-- Python 3.11+
-- FastMCP library
-- Standard Python development tools
+- Node.js 18+
+- npm or yarn package manager
 
-### Project Structure
-```
-maestro/
-├── src/
-│   └── main.py          # Main MCP server implementation
-├── requirements.txt     # Python dependencies
-├── Dockerfile          # Container configuration for deployment
-└── README.md           # This file
-```
-
-### Running Tests
+### Using in Your Projects
 ```bash
-# Test the MCP server locally
-python src/main.py stdio
+# Install the package
+npm install tanuki-maestro-mcp
+
+# Use with MCP clients
+npx tanuki-maestro-mcp
 ```
+
+### Supported MCP Clients
+- Claude Desktop
+- Cursor IDE (via Smithery)
+- Any MCP-compatible client
 
 ## Deployment
 
-### Docker
-```bash
-# Build and run locally
-docker build -t maestro .
-docker run -p 8000:8000 maestro
-```
+### Smithery Platform (Recommended)
+1. Visit [Smithery](https://smithery.ai)
+2. Search for "Maestro" in the tool catalog  
+3. Click "Install" to deploy to your AI assistants
+4. Tools become immediately available
 
-### Smithery Platform
-1. Push code to GitHub repository
-2. Connect repository to Smithery
-3. Tools become automatically available to AI assistants
+### Enterprise Deployment
+For enterprise deployments or custom configurations, contact us through GitHub Issues.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test with MCP clients
-5. Submit a pull request
+We welcome feedback and feature requests! Please:
+
+1. Open an issue to discuss new features or report bugs
+2. Provide detailed examples and use cases
+3. Check existing issues before creating new ones
+
+For enterprise integrations or custom development, please contact us through GitHub Issues.
 
 ## License
 

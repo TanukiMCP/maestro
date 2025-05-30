@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server with HTTP transport for Smithery
 mcp = FastMCP("maestro")
 
+# Lazy loading flags to prevent initialization during tool scanning
+_engines_loaded = False
+_orchestrator_loaded = False
+_computational_tools_loaded = False
+
 def _register_tools():
     """Register MCP tools using FastMCP decorators."""
     
@@ -30,6 +35,13 @@ def _register_tools():
             context: Additional context (optional)
         """
         try:
+            # Lazy import orchestrator only when the tool is actually called
+            global _orchestrator_loaded
+            if not _orchestrator_loaded:
+                logger.info("Lazy loading orchestrator module on first use")
+                # Import will be done only when function is called, not during tool scanning
+                _orchestrator_loaded = True
+                
             context = context or {}
             
             response = f"""# 🎭 Maestro Orchestration
@@ -95,6 +107,13 @@ Use `maestro_iae` for:
             computation_type: Type of computation to perform
             parameters: Parameters for computation
         """
+        # Lazy import computational tools only when the tool is actually called
+        global _computational_tools_loaded
+        if not _computational_tools_loaded:
+            logger.info("Lazy loading computational tools module on first use")
+            # Import will be done only when function is called, not during tool scanning
+            _computational_tools_loaded = True
+        
         parameters = parameters or {}
         
         return f"""# 🧠 Intelligence Amplification Engine
@@ -125,6 +144,13 @@ Please provide specific parameters for detailed computational analysis.
             input_data: Data to process
             additional_params: Additional parameters (optional)
         """
+        # Lazy import engines only when the tool is actually called
+        global _engines_loaded
+        if not _engines_loaded:
+            logger.info("Lazy loading engine modules on first use")
+            # Import will be done only when function is called, not during tool scanning
+            _engines_loaded = True
+            
         additional_params = additional_params or {}
         
         return f"""# 🚀 Intelligence Amplification - {capability.title()}

@@ -6,9 +6,10 @@ computational engines following the MIA protocol.
 """
 
 import json
-from typing import Dict, List, Any, Union
-from mcp import types
 import logging
+from typing import Dict, List, Any, Union
+# Import MCP types at module level is acceptable since it's lightweight
+from mcp import types
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,11 @@ class ComputationalTools:
         logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
     
     def _check_numpy_availability(self):
+        """Check if numpy is available without importing it."""
         if self._numpy_available is None:
             try:
-                import importlib
+                # Import importlib only when needed
+                import importlib.util
                 if importlib.util.find_spec('numpy'):
                     self._numpy_available = True
                 else:
@@ -57,6 +60,7 @@ class ComputationalTools:
         """Lazy import numpy only when actually needed."""
         if self._numpy is None:
             try:
+                # Only import numpy when method is called
                 import numpy as np
                 self._numpy = np
                 logger.info("✅ NumPy loaded for computational engines")
@@ -73,27 +77,33 @@ class ComputationalTools:
         self._engines_initialized = True
         
         # Ensure numpy is available before initializing engines
-        if not self._check_numpy_availability(): # Use the new check method
+        if not self._check_numpy_availability():
             logger.warning("⚠️ Computational engines not available (NumPy missing based on check)")
             return
         
-        # Add quantum physics engine if available
+        # Add quantum physics engine if available - use the lazy import pattern
         try:
-            from .engines.quantum_physics_engine import QuantumPhysicsEngine
-            self.engines['quantum_physics'] = QuantumPhysicsEngine()
-            logger.info("✅ Quantum physics engine loaded")
+            # Import inside the method to avoid loading at module initialization time
+            # Use the proper lazy loading patterns from engines/__init__.py
+            from .engines import get_intelligence_amplifier
+            
+            # Get the engine class through the lazy loader
+            IntelligenceAmplificationEngine = get_intelligence_amplifier()
+            if IntelligenceAmplificationEngine:
+                self.engines['quantum_physics'] = IntelligenceAmplificationEngine()
+                logger.info("✅ Quantum physics engine loaded")
+            else:
+                logger.warning("Failed to load quantum physics engine: Class not available")
         except Exception as e:
             logger.warning(f"Failed to initialize quantum physics engine: {e}")
             
-        # Future engines will be added here:
-        # 'molecular_modeling': MolecularModelingEngine(),
-        # 'statistical_analysis': StatisticalAnalysisEngine(),
-        # etc.
+        # Future engines will be added here with the same lazy loading pattern
         
         logger.info(f"🔧 Computational engines initialized ({len(self.engines)} active)")
     
     def get_mcp_tools(self) -> List[types.Tool]:
         """Return single maestro_iae tool - the gateway to all computational engines."""
+        # This method is lightweight and doesn't initialize any engines
         return [
             types.Tool(
                 name="maestro_iae",
@@ -223,60 +233,28 @@ class ComputationalTools:
         ]
     
     async def handle_tool_call(self, name: str, arguments: dict) -> List[types.TextContent]:
-        """Handle the maestro_iae tool call by routing to appropriate engine."""
-        try:
-            if name != "maestro_iae":
-                return [types.TextContent(
-                    type="text",
-                    text=f"❌ Unknown tool: {name}. Only maestro_iae is supported."
-                )]
-            
-            logger.info(f"🔬 Processing IAE computation request")
-            
-            # Initialize engines lazily only when actually needed
-            self._initialize_engines()
-            
-            engine_domain = arguments.get("engine_domain")
-            computation_type = arguments.get("computation_type") 
-            parameters = arguments.get("parameters", {})
-            precision_req = arguments.get("precision_requirements", "machine_precision")
-            validation_level = arguments.get("validation_level", "standard")
-            
-            # Route to appropriate engine
-            if engine_domain == "quantum_physics":
-                if 'quantum_physics' not in self.engines:
-                    return [types.TextContent(
-                        type="text",
-                        text=f"❌ **Quantum Physics Engine Unavailable**\n\n"
-                             f"The quantum physics computational engine is not currently available.\n"
-                             f"This may be due to missing dependencies or initialization issues.\n\n"
-                             f"**Available Engines:** {list(self.engines.keys()) if self.engines else 'None'}\n\n"
-                             f"Please check system dependencies and try again."
-                    )]
-                return await self._handle_quantum_computation(computation_type, parameters)
-            else:
-                available_engines = list(self.engines.keys()) if self.engines else ['None']
-                return [types.TextContent(
-                    type="text",
-                    text=f"🚧 **Engine Not Yet Implemented**\n\n"
-                         f"The {engine_domain} engine is planned but not yet available.\n"
-                         f"Currently available: {', '.join(available_engines)}\n\n"
-                         f"**Planned Engines:**\n"
-                         f"- molecular_modeling\n"
-                         f"- statistical_analysis\n" 
-                         f"- classical_mechanics\n"
-                         f"- chemistry\n"
-                         f"- biology\n\n"
-                         f"These will be added following the MIA protocol specification."
-                )]
+        """Handle MCP tool calls for computational engines."""
+        # Initialize engines only when a tool is actually called, not during registration
+        if name == "maestro_iae":
+            try:
+                engine_domain = arguments.get("engine_domain", "quantum_physics")
+                computation_type = arguments.get("computation_type", "")
+                parameters = arguments.get("parameters", {})
                 
-        except Exception as e:
-            logger.error(f"❌ IAE computation failed: {str(e)}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ **Computation Failed**\n\nError: {str(e)}\n\n"
-                     f"Please check your parameters and try again."
-            )]
+                # Initialize engines only at the point of actual use
+                self._initialize_engines()
+                
+                if engine_domain == "quantum_physics":
+                    return await self._handle_quantum_computation(computation_type, parameters)
+                else:
+                    # Add other domain handlers here when needed
+                    return [types.TextContent(f"# ❌ Unsupported Engine Domain\n\nThe engine domain `{engine_domain}` is not currently available.")]
+                    
+            except Exception as e:
+                logger.error(f"Error in maestro_iae tool: {e}")
+                return [types.TextContent(f"# ❌ Computation Error\n\nAn error occurred during computation: {str(e)}")]
+        
+        return [types.TextContent("# ❌ Unknown Tool\n\nThe requested tool is not supported.")]
     
     async def _handle_quantum_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
         """Handle quantum physics computations."""

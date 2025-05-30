@@ -1,17 +1,59 @@
-from typing import List
-from maestro.types import TextContent
-from maestro.logger import logger
+"""
+Maestro Tools - Enhanced tool implementations for MCP
+
+This module provides orchestration, intelligence amplification, and enhanced tools
+with proper lazy loading to optimize Smithery scanning performance.
+"""
+
+import logging
+from typing import List, Dict, Any
+
+# Set up logging - lightweight operation
+logger = logging.getLogger(__name__)
 
 class MaestroTools:
-    async def _handle_orchestrate(self, arguments: dict) -> List[TextContent]:
+    """
+    Provides enhanced tools for the Maestro MCP server.
+    
+    Implements lazy loading to ensure that Smithery tool scanning
+    doesn't timeout by avoiding heavy dependency loading during startup.
+    """
+    
+    def __init__(self):
+        # Initialize flags for lazy loading
+        self._computational_tools = None
+        self._engines_loaded = False
+        self._orchestrator_loaded = False
+        
+        logger.info("🎭 MaestroTools initialized with lazy loading")
+    
+    def _ensure_computational_tools(self):
+        """Lazy load computational tools only when needed."""
+        if self._computational_tools is None:
+            try:
+                # Import only when method is called, not at initialization
+                from .computational_tools import ComputationalTools
+                self._computational_tools = ComputationalTools()
+                logger.info("✅ ComputationalTools loaded on first use")
+            except ImportError as e:
+                logger.error(f"❌ Failed to import ComputationalTools: {e}")
+                self._computational_tools = None
+    
+    async def _handle_orchestrate(self, arguments: dict) -> List[Dict[str, Any]]:
         """Handle orchestration requests with enhanced Intelligence Amplification Engine integration."""
         try:
+            # Lazy import TextContent only when needed
+            from mcp.types import TextContent
+            
             task_description = arguments.get("task_description", "")
             context = arguments.get("context", {})
             success_criteria = arguments.get("success_criteria", {})
             complexity_level = arguments.get("complexity_level", "moderate")
             
             logger.info(f"🎭 Orchestrating task: {task_description[:100]}...")
+            
+            # Only load computational tools when actually needed
+            self._ensure_computational_tools()
             
             # Analyze task requirements and map to computational engines
             computational_needs = self._analyze_computational_requirements(task_description, context)
@@ -69,26 +111,33 @@ Recommended approach: Use reasoning and context analysis tools.
 
 *This orchestration leverages Intelligence Amplification Engines for computational tasks beyond token prediction.*"""
             
-            return [TextContent(type="text", text=response)]
+            return [TextContent(text=response)]
             
         except Exception as e:
+            # Import TextContent here to ensure lazy loading
+            from mcp.types import TextContent
             logger.error(f"❌ Orchestration failed: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"❌ **Orchestration Failed**\n\nError: {str(e)}\n\nPlease refine your task description and try again."
-            )]
+            return [TextContent(text=f"❌ **Orchestration Failed**\n\nError: {str(e)}\n\nPlease refine your task description and try again.")]
 
-    async def _handle_iae_discovery(self, arguments: dict) -> List[TextContent]:
+    async def _handle_iae_discovery(self, arguments: dict) -> List[Dict[str, Any]]:
         """Handle Intelligence Amplification Engine discovery and mapping."""
         try:
+            # Lazy import TextContent only when needed
+            from mcp.types import TextContent
+            
             task_type = arguments.get("task_type", "general")
             domain_context = arguments.get("domain_context", "")
             complexity_requirements = arguments.get("complexity_requirements", {})
             
             logger.info(f"🔍 Discovering IAEs for: {task_type}")
             
+            # Lazy load computational tools only when needed
+            self._ensure_computational_tools()
+            
             # Get available engines from computational tools
-            available_engines = self.computational_tools.get_available_engines()
+            available_engines = {}
+            if self._computational_tools:
+                available_engines = self._computational_tools.get_available_engines()
             
             response = f"""# 🔍 Intelligence Amplification Engine Discovery
 
@@ -140,16 +189,77 @@ Parameters:
 
 *The MIA protocol ensures computational amplification through standardized engine interfaces.*"""
             
-            return [TextContent(type="text", text=response)]
+            return [TextContent(text=response)]
             
         except Exception as e:
+            # Import TextContent here to ensure lazy loading
+            from mcp.types import TextContent
             logger.error(f"❌ IAE discovery failed: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"❌ **Discovery Failed**\n\nError: {str(e)}"
-            )]
+            return [TextContent(text=f"❌ **Discovery Failed**\n\nError: {str(e)}")]
 
-    async def _handle_tool_selection(self, arguments: dict) -> List[TextContent]:
+    # Continue with the rest of the class, ensuring imports are inside methods
+    
+    def _analyze_computational_requirements(self, task_description: str, context: dict) -> dict:
+        """Analyze if a task requires computational engines or strategic tools."""
+        # Implementation that doesn't require heavy imports
+        # Default result with minimal assumptions
+        result = {
+            "requires_computation": False,
+            "primary_domain": "general",
+            "computation_types": [],
+            "workflow_steps": [],
+            "engine_recommendations": "No specialized engines required for this task."
+        }
+        
+        # Simple keyword-based analysis without heavy imports
+        computation_keywords = [
+            "calculate", "compute", "solve", "equation", "formula", 
+            "optimization", "statistics", "probability", "quantum",
+            "simulation", "numerical", "matrix", "vector", "algorithm"
+        ]
+        
+        # Check if any computation keywords are present
+        if any(keyword in task_description.lower() for keyword in computation_keywords):
+            result["requires_computation"] = True
+            result["primary_domain"] = "advanced_mathematics"
+            result["computation_types"] = ["optimization", "statistical_analysis"]
+            result["workflow_steps"] = [
+                "Define computational parameters",
+                "Select appropriate engine domain",
+                "Execute computation",
+                "Interpret results"
+            ]
+            result["engine_recommendations"] = """
+- **Mathematics Engine**: For optimization, statistics, and symbolic math
+- **Quantum Physics Engine**: For quantum simulations and calculations
+- **Data Analysis Engine**: For statistical analysis and modeling
+"""
+        
+        return result
+    
+    def _format_success_criteria(self, criteria: dict) -> str:
+        """Format success criteria for output."""
+        if not criteria:
+            return "- Task completed according to requirements\n- Results verified for accuracy\n- Documentation provided"
+        
+        result = ""
+        for key, value in criteria.items():
+            result += f"- **{key}**: {value}\n"
+        
+        return result
+    
+    def _get_engine_recommendations(self, task_type: str, domain_context: str) -> str:
+        """Get engine recommendations based on task type."""
+        recommendations = {
+            "mathematics": "Use the advanced_mathematics engine for symbolic computation, optimization, and numerical analysis.",
+            "physics": "The quantum_physics engine provides quantum simulation and physical modeling capabilities.",
+            "data_analysis": "Statistical engines can process datasets, perform statistical tests, and generate models.",
+            "general": "Start with the mathematics engine for general computational needs."
+        }
+        
+        return recommendations.get(task_type.lower(), recommendations["general"])
+
+    async def _handle_tool_selection(self, arguments: dict) -> List[Dict[str, Any]]:
         """Handle tool selection recommendations."""
         try:
             request_description = arguments.get("request_description", "")
@@ -226,86 +336,8 @@ If numerical calculations become necessary:
 
 *Choose tools based on precision requirements: computational engines for exact results, strategic tools for reasoning and coordination.*"""
             
-            return [TextContent(type="text", text=response)]
+            return [TextContent(text=response)]
             
         except Exception as e:
             logger.error(f"❌ Tool selection analysis failed: {str(e)}")
-            return [TextContent(
-                type="text",
-                text=f"❌ **Tool Selection Failed**\n\nError: {str(e)}"
-            )]
-
-    def _analyze_computational_requirements(self, task_description: str, context: dict) -> dict:
-        """Analyze if task requires computational engines and which ones."""
-        task_lower = task_description.lower()
-        
-        # Check for computational keywords
-        computational_indicators = {
-            "quantum": ["quantum_physics", ["entanglement_entropy", "bell_violation", "quantum_fidelity", "pauli_decomposition"]],
-            "molecular": ["molecular_modeling", ["molecular_properties", "conformation_analysis"]],
-            "statistical": ["statistical_analysis", ["regression_analysis", "statistical_test"]],
-            "calculate": ["quantum_physics", ["entanglement_entropy", "quantum_fidelity"]],
-            "compute": ["quantum_physics", ["bell_violation", "pauli_decomposition"]],
-            "analyze": ["statistical_analysis", ["regression_analysis", "statistical_test"]],
-            "entropy": ["quantum_physics", ["entanglement_entropy"]],
-            "bell": ["quantum_physics", ["bell_violation"]],
-            "fidelity": ["quantum_physics", ["quantum_fidelity"]],
-            "pauli": ["quantum_physics", ["pauli_decomposition"]],
-            "chemistry": ["chemistry", ["molecular_properties"]],
-            "biology": ["biology", ["sequence_alignment"]]
-        }
-        
-        detected_domains = []
-        detected_computations = []
-        
-        for keyword, (domain, computations) in computational_indicators.items():
-            if keyword in task_lower:
-                if domain not in detected_domains:
-                    detected_domains.append(domain)
-                detected_computations.extend(computations)
-        
-        requires_computation = len(detected_domains) > 0
-        
-        if requires_computation:
-            recommendations = f"""
-#### Computational Requirements Detected
-- **Primary Domain**: {detected_domains[0]}
-- **Available Engines**: {', '.join(detected_domains)}
-- **Suggested Computations**: {', '.join(set(detected_computations))}
-
-#### Integration Approach
-Use `maestro_iae` as the primary computational gateway with:
-- Engine routing to appropriate domain
-- Precise numerical calculations
-- MIA protocol compliance
-"""
-        else:
-            recommendations = """
-#### Strategic Analysis Required
-No specific computational requirements detected.
-Focus on reasoning, planning, and coordination tools.
-"""
-        
-        workflow_steps = []
-        if requires_computation:
-            workflow_steps = [
-                f"Call `maestro_iae` with engine_domain: '{detected_domains[0]}'",
-                "Process computational results with machine precision",
-                "Integrate numerical findings with strategic analysis",
-                "Provide comprehensive response combining computation and reasoning"
-            ]
-        else:
-            workflow_steps = [
-                "Use `maestro_orchestrate` for strategic planning",
-                "Apply reasoning and context analysis",
-                "Provide strategic recommendations",
-                "Consider `maestro_iae` if computational needs emerge"
-            ]
-        
-        return {
-            "requires_computation": requires_computation,
-            "primary_domain": detected_domains[0] if detected_domains else "general",
-            "computation_types": list(set(detected_computations)),
-            "engine_recommendations": recommendations,
-            "workflow_steps": workflow_steps
-        } 
+            return [TextContent(text=f"❌ **Tool Selection Failed**\n\nError: {str(e)}")] 

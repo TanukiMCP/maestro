@@ -1,9 +1,10 @@
 """
 MAESTRO Protocol Core Orchestration Components
+
+This module implements lazy loading to ensure Smithery compatibility.
 """
 
-from .orchestrator import MAESTROOrchestrator
-from .quality_controller import QualityController
+# Import data models directly as they are lightweight
 from .data_models import (
     MAESTROResult,
     TaskAnalysis,
@@ -13,9 +14,24 @@ from .data_models import (
     QualityMetrics
 )
 
+# Implement lazy loading for heavier components
+def get_orchestrator():
+    """Get MAESTROOrchestrator lazily."""
+    from .orchestrator import MAESTROOrchestrator
+    return MAESTROOrchestrator
+
+def get_quality_controller():
+    """Get QualityController lazily."""
+    from .quality_controller import QualityController
+    return QualityController
+
+# Define module exports
 __all__ = [
-    "MAESTROOrchestrator",
-    "QualityController", 
+    # Lazy loaded components - functions
+    "get_orchestrator",
+    "get_quality_controller",
+    
+    # Direct imports - lightweight data models
     "MAESTROResult",
     "TaskAnalysis",
     "Workflow",

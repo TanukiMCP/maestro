@@ -31,19 +31,18 @@ class MaestroMCPServer:
         self.context = {}
         
         # Initialize FastMCP server
-        self.mcp = FastMCP("maestro", lifespan=self.app_lifespan)
+        self.mcp = FastMCP("maestro", lifespan=self.lifespan)
         self._register_tools()
         
         logger.info("🎭 Maestro MCP Server Ready (HTTP/SSE for Smithery)")
     
     @asynccontextmanager
-    async def app_lifespan(self, server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
-        """Manage application lifecycle with resources."""
+    async def lifespan(self, server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
+        """Lifespan context manager for MCP server."""
         try:
-            # Initialize resources on startup
             logger.info("🚀 Initializing Maestro resources...")
             
-            # Load computational tools if available
+            # Initialize computational tools with graceful degradation
             try:
                 from computational_tools import ComputationalTools
                 computational_tools = ComputationalTools()
@@ -52,6 +51,18 @@ class MaestroMCPServer:
             except ImportError as e:
                 logger.warning(f"⚠️ Computational tools not available: {e}")
                 self.context["computational_tools"] = None
+            
+            # Initialize EnhancedToolHandlers
+            try:
+                from maestro.enhanced_tools import EnhancedToolHandlers
+                enhanced_tool_handlers = EnhancedToolHandlers()
+                # It's better if enhanced_tool_handlers has an async init method
+                # await enhanced_tool_handlers.initialize() # if it had one
+                self.context["enhanced_tool_handlers"] = enhanced_tool_handlers
+                logger.info("🛠️ Enhanced tool handlers loaded successfully")
+            except ImportError as e:
+                logger.warning(f"⚠️ Enhanced tool handlers not available: {e}")
+                self.context["enhanced_tool_handlers"] = None
             
             yield self.context
             
@@ -118,17 +129,13 @@ class MaestroMCPServer:
 ## Intelligence Amplification Available
 Use `maestro_iae` for:
 - Complex calculations
-- Scientific computations  
-- Mathematical modeling
-- Quantum physics problems
+- Scientific computations"""
 
-**Status:** Ready for execution 🚀
-"""
                 return response
                 
             except Exception as e:
-                logger.error(f"Orchestration failed: {str(e)}")
-                return f"❌ Orchestration failed: {str(e)}"
+                logger.error(f"Error in maestro_orchestrate: {e}")
+                return f"❌ Orchestration error: {str(e)}"
         
         @self.mcp.tool(description="🧠 Intelligence Amplification Engine - computational problem solving")
         def maestro_iae(
@@ -181,7 +188,7 @@ Please provide specific parameters for detailed computational analysis.
 
 **Parameters received:** {parameters}
 """
-            
+        
             except Exception as e:
                 logger.error(f"IAE processing failed: {str(e)}")
                 return f"❌ IAE processing failed: {str(e)}"
@@ -385,186 +392,136 @@ Please provide specific parameters for detailed computational analysis.
                 return f"❌ Quality verification failed: {str(e)}"
         
         @self.mcp.tool(description="🔍 LLM-driven web search with intelligent query handling")
-        def maestro_search(
+        async def maestro_search(
             query: str,
-            search_type: str = "comprehensive",
-            max_results: int = 5
+            search_engine: str = "duckduckgo",
+            max_results: int = 5,
+            temporal_filter: str = "any",
+            result_format: str = "structured"
         ) -> str:
             """
             LLM-driven web search with intelligent query handling.
             
             Args:
-                query: Search query
-                search_type: Type of search (comprehensive, quick, academic)
+                query: Search query string
+                search_engine: Search engine to use (duckduckgo, bing, google)
                 max_results: Maximum number of results to return
+                temporal_filter: Filter by time (e.g., 24h, 1w, 1m, 1y, or 'any')
+                result_format: Format of results (structured, markdown, json)
             """
             try:
-                response = f"""# 🔍 MAESTRO Web Search Results
+                ctx = self.mcp.get_context()
+                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
+                if not handlers:
+                    return "❌ Enhanced tool handlers are not available."
 
-**Query:** {query}
-**Search Type:** {search_type}
-**Results Found:** {max_results}
-
-## Search Results
-
-### 1. Primary Result
-**Title:** {query.title()} - Comprehensive Guide
-**URL:** https://example.com/comprehensive-guide
-**Snippet:** Detailed information about {query} with up-to-date content and best practices...
-**Relevance:** 95%
-
-### 2. Technical Documentation  
-**Title:** {query.title()} Technical Reference
-**URL:** https://docs.example.com/reference
-**Snippet:** Official documentation covering implementation details and API references...
-**Relevance:** 90%
-
-### 3. Community Discussion
-**Title:** Best Practices for {query.title()}
-**URL:** https://forum.example.com/discussion
-**Snippet:** Community insights and real-world experiences with {query}...
-**Relevance:** 85%
-
-## Search Intelligence
-- Query optimized for comprehensive results
-- Sources filtered for reliability
-- Content freshness verified
-- Multiple perspectives included
-
-**Note:** This is a demonstration response. In production, this would connect to actual search APIs and provide real results.
-
-**Status:** ✅ Search completed successfully
-"""
+                arguments = {
+                    "query": query,
+                    "search_engine": search_engine,
+                    "max_results": max_results,
+                    "temporal_filter": temporal_filter,
+                    "result_format": result_format
+                }
                 
-                return response
-                
+                # The handler returns a list of TextContent, convert to string for now
+                # Smithery might expect a specific format; this might need adjustment
+                result_contents = await handlers.handle_maestro_search(arguments)
+                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
+
             except Exception as e:
-                logger.error(f"MAESTRO search failed: {str(e)}")
-                return f"❌ Search failed: {str(e)}"
+                logger.error(f"Error in maestro_search: {e}")
+                return f"❌ Search error: {str(e)}"
         
         @self.mcp.tool(description="📄 LLM-driven web scraping with intelligent content extraction")
-        def maestro_scrape(
+        async def maestro_scrape(
             url: str,
-            extraction_type: str = "content",
-            selectors: List[str] = None
+            output_format: str = "markdown",
+            selectors: List[str] = None,
+            wait_for: str = None,
+            extract_links: bool = False,
+            extract_images: bool = False
         ) -> str:
             """
             LLM-driven web scraping with intelligent content extraction.
             
             Args:
                 url: URL to scrape
-                extraction_type: Type of extraction (content, data, links, images)
-                selectors: CSS selectors for specific elements (optional)
+                output_format: Format for output (markdown, json, text, html)
+                selectors: CSS selectors for specific content extraction
+                wait_for: Element or condition to wait for before scraping
+                extract_links: Whether to extract all links
+                extract_images: Whether to extract image information
             """
             try:
-                selectors = selectors or []
-                
-                response = f"""# 📄 MAESTRO Web Scraping Results
+                ctx = self.mcp.get_context()
+                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
+                if not handlers:
+                    return "❌ Enhanced tool handlers are not available."
 
-**URL:** {url}
-**Extraction Type:** {extraction_type}
-**Selectors:** {', '.join(selectors) if selectors else 'Auto-detection'}
+                if selectors is None:
+                    selectors = []
 
-## Extracted Content
+                arguments = {
+                    "url": url,
+                    "output_format": output_format,
+                    "selectors": selectors,
+                    "wait_for": wait_for,
+                    "extract_links": extract_links,
+                    "extract_images": extract_images
+                }
+                result_contents = await handlers.handle_maestro_scrape(arguments)
+                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
 
-### Page Metadata
-- **Title:** Example Page Title
-- **Description:** Page description extracted from meta tags
-- **Content Type:** HTML Document
-- **Last Modified:** Recently updated
-
-### Main Content
-```
-[Extracted content would appear here]
-This is demonstration content showing what would be extracted
-from the specified URL using intelligent content detection.
-```
-
-### Additional Data
-- **Links Found:** 15 internal, 8 external
-- **Images:** 5 images with alt text
-- **Forms:** 2 contact forms detected
-- **Scripts:** 3 JavaScript files
-
-## Extraction Intelligence
-- Content structure analyzed
-- Relevant sections identified
-- Navigation elements filtered out
-- Clean text extraction performed
-
-**Note:** This is a demonstration response. In production, this would perform actual web scraping with proper error handling and rate limiting.
-
-**Status:** ✅ Scraping completed successfully
-"""
-                
-                return response
-                
             except Exception as e:
-                logger.error(f"MAESTRO scraping failed: {str(e)}")
-                return f"❌ Scraping failed: {str(e)}"
+                logger.error(f"Error in maestro_scrape: {e}")
+                return f"❌ Scrape error: {str(e)}"
         
         @self.mcp.tool(description="⚡ LLM-driven code execution with intelligent analysis")
-        def maestro_execute(
+        async def maestro_execute(
             code: str,
             language: str = "python",
-            timeout: int = 30
+            timeout: int = 30,
+            capture_output: bool = True,
+            working_directory: str = None,
+            environment_vars: Dict[str, str] = None
         ) -> str:
             """
             LLM-driven code execution with intelligent analysis.
             
             Args:
                 code: Code to execute
-                language: Programming language (python, javascript, bash, etc.)
+                language: Programming language (python, javascript, shell)
                 timeout: Execution timeout in seconds
+                capture_output: Whether to capture stdout/stderr
+                working_directory: Directory to execute in
+                environment_vars: Environment variables for execution
             """
             try:
-                response = f"""# ⚡ MAESTRO Code Execution
+                ctx = self.mcp.get_context()
+                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
+                if not handlers:
+                    return "❌ Enhanced tool handlers are not available."
 
-**Language:** {language}
-**Code Length:** {len(code)} characters
-**Timeout:** {timeout}s
+                if environment_vars is None:
+                    environment_vars = {}
 
-## Code Analysis
-```{language}
-{code}
-```
+                arguments = {
+                    "code": code,
+                    "language": language,
+                    "timeout": timeout,
+                    "capture_output": capture_output,
+                    "working_directory": working_directory,
+                    "environment_vars": environment_vars
+                }
+                result_contents = await handlers.handle_maestro_execute(arguments)
+                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
 
-## Execution Results
-**Status:** ✅ SUCCESS
-**Return Code:** 0
-**Execution Time:** 0.12s
-
-### Output
-```
-[Execution output would appear here]
-Code executed successfully with the following results...
-```
-
-### Validation
-- **Syntax Check:** ✅ Valid
-- **Security Scan:** ✅ Safe
-- **Performance:** ✅ Efficient
-- **Best Practices:** ✅ Good
-
-## Intelligence Analysis
-- Code structure: Well-organized
-- Error handling: Present
-- Documentation: Adequate
-- Maintainability: High
-
-**Note:** This is a demonstration response. In production, this would execute code in a secure sandbox environment.
-
-**Status:** ✅ Execution completed successfully
-"""
-                
-                return response
-                
             except Exception as e:
-                logger.error(f"MAESTRO execution failed: {str(e)}")
-                return f"❌ Execution failed: {str(e)}"
+                logger.error(f"Error in maestro_execute: {e}")
+                return f"❌ Code execution error: {str(e)}"
         
         @self.mcp.tool(description="🔧 Adaptive error handling with intelligent problem resolution")
-        def maestro_error_handler(
+        async def maestro_error_handler(
             error_details: Dict[str, Any],
             available_tools: List[str] = None,
             context: Dict[str, Any] = None
@@ -573,66 +530,35 @@ Code executed successfully with the following results...
             Adaptive error handling with intelligent problem resolution.
             
             Args:
-                error_details: Details about the error
+                error_details: Dictionary containing details of the error
                 available_tools: List of available tools for resolution
-                context: Additional context for error analysis
+                context: Current operational context
             """
             try:
-                available_tools = available_tools or []
-                context = context or {}
-                
-                error_type = error_details.get("type", "unknown")
-                error_message = error_details.get("message", "No message provided")
-                
-                response = f"""# 🔧 MAESTRO Adaptive Error Handler
+                ctx = self.mcp.get_context()
+                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
+                if not handlers:
+                    return "❌ Enhanced tool handlers are not available."
 
-**Error Type:** {error_type}
-**Error Message:** {error_message}
-**Available Tools:** {', '.join(available_tools)}
+                if available_tools is None:
+                    available_tools = []
+                if context is None:
+                    context = {}
 
-## Error Analysis
+                arguments = {
+                    "error_details": error_details,
+                    "available_tools": available_tools,
+                    "context": context
+                }
+                result_contents = await handlers.handle_maestro_error_handler(arguments)
+                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
 
-### Root Cause Analysis
-- **Primary Cause:** {error_type} error detected
-- **Contributing Factors:** Multiple factors identified
-- **Error Context:** Analysis in progress
-- **Resolution Confidence:** High
-
-### Intelligent Resolution Strategy
-
-#### Immediate Actions
-1. **Error Classification:** {error_type} - handled by adaptive engine
-2. **Context Evaluation:** Environment and dependencies checked
-3. **Tool Assessment:** {len(available_tools)} tools available for resolution
-
-#### Recommended Resolution Path
-1. **Diagnose:** Use available diagnostic tools
-2. **Isolate:** Identify specific failure points
-3. **Resolve:** Apply targeted fixes
-4. **Validate:** Confirm resolution effectiveness
-
-### Fallback Strategies
-- Alternative approaches identified
-- Graceful degradation options available
-- Recovery procedures established
-
-## Next Steps
-1. Apply primary resolution strategy
-2. Monitor for resolution success
-3. Implement preventive measures
-4. Document solution for future reference
-
-**Status:** ✅ Error handling strategy prepared
-"""
-                
-                return response
-                
             except Exception as e:
-                logger.error(f"Error handler failed: {str(e)}")
+                logger.error(f"Error in maestro_error_handler: {e}")
                 return f"❌ Error handling failed: {str(e)}"
         
         @self.mcp.tool(description="⏰ Temporal context awareness for information currency and relevance")
-        def maestro_temporal_context(
+        async def maestro_temporal_context(
             query: str,
             time_sensitivity: str = "medium",
             reference_date: str = None
@@ -641,56 +567,27 @@ Code executed successfully with the following results...
             Temporal context awareness for information currency and relevance.
             
             Args:
-                query: Query requiring temporal context
-                time_sensitivity: How time-sensitive the information is (low, medium, high)
-                reference_date: Reference date for temporal analysis (optional)
+                query: Query requiring temporal awareness
+                time_sensitivity: Level of time sensitivity (high, medium, low)
+                reference_date: Specific reference date for context (optional)
             """
             try:
-                from datetime import datetime
-                current_date = datetime.now().strftime("%Y-%m-%d")
-                ref_date = reference_date or current_date
-                
-                response = f"""# ⏰ MAESTRO Temporal Context Analysis
+                ctx = self.mcp.get_context()
+                handlers = ctx.request_context.lifespan_context.get("enhanced_tool_handlers")
+                if not handlers:
+                    return "❌ Enhanced tool handlers are not available."
 
-**Query:** {query}
-**Time Sensitivity:** {time_sensitivity}
-**Reference Date:** {ref_date}
-**Current Date:** {current_date}
+                arguments = {
+                    "query": query,
+                    "time_sensitivity": time_sensitivity,
+                    "reference_date": reference_date
+                }
+                result_contents = await handlers.handle_maestro_temporal_context(arguments)
+                return "\n".join([content.text for content in result_contents if hasattr(content, 'text')])
 
-## Temporal Analysis
-
-### Information Currency Assessment
-- **Freshness Required:** {time_sensitivity.upper()}
-- **Currency Status:** Up-to-date ✅
-- **Temporal Relevance:** High
-- **Information Age:** Current
-
-### Context Timeline
-- **Query Context:** Present-day relevance
-- **Historical Context:** Background information available
-- **Future Implications:** Forward-looking insights included
-- **Temporal Scope:** Comprehensive coverage
-
-### Recommendations
-- Information appears current and relevant
-- Consider periodic updates for high-sensitivity queries
-- Cross-reference with recent sources when critical
-- Monitor for emerging developments
-
-## Temporal Intelligence
-- Context freshness validated
-- Time-sensitive elements identified
-- Currency requirements assessed
-- Relevance window optimized
-
-**Status:** ✅ Temporal context analysis complete
-"""
-                
-                return response
-                
             except Exception as e:
-                logger.error(f"Temporal context analysis failed: {str(e)}")
-                return f"❌ Temporal context analysis failed: {str(e)}"
+                logger.error(f"Error in maestro_temporal_context: {e}")
+                return f"❌ Temporal context error: {str(e)}"
         
         @self.mcp.tool(description="📊 Get available computational engines and their capabilities")
         def get_available_engines() -> str:

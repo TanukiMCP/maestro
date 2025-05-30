@@ -23,12 +23,13 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 # Check for puppeteer availability
-try:
-    import pyppeteer
-    PUPPETEER_AVAILABLE = True
-except ImportError:
-    logger.warning("pyppeteer not available - puppeteer tools will be limited")
-    PUPPETEER_AVAILABLE = False
+# try:
+#     import pyppeteer
+#     PUPPETEER_AVAILABLE = True
+# except ImportError:
+#     logger.warning("pyppeteer not available - puppeteer tools will be limited")
+#     PUPPETEER_AVAILABLE = False
+PUPPETEER_AVAILABLE = None # Will check dynamically
 
 
 @dataclass
@@ -92,10 +93,21 @@ class MAESTROPuppeteerTools:
         """
         logger.info(f"🔍 Executing MAESTRO search: '{query}' via {search_engine}")
         
+        global PUPPETEER_AVAILABLE
+        if PUPPETEER_AVAILABLE is None:
+            try:
+                import pyppeteer
+                PUPPETEER_AVAILABLE = True
+            except ImportError:
+                logger.warning("pyppeteer not available - puppeteer tools will be limited")
+                PUPPETEER_AVAILABLE = False
+        
         if not PUPPETEER_AVAILABLE:
             return self._fallback_search(query, max_results)
         
         try:
+            # Dynamically import pyppeteer here too, if needed by launch
+            import pyppeteer 
             # Initialize browser if needed
             if not self.browser:
                 self.browser = await pyppeteer.launch({
@@ -177,10 +189,21 @@ class MAESTROPuppeteerTools:
         """
         logger.info(f"🕷️ Executing MAESTRO scrape: {url}")
         
+        global PUPPETEER_AVAILABLE # Ensure it's seen if not already checked
+        if PUPPETEER_AVAILABLE is None: # Check again if not already determined
+            try:
+                import pyppeteer
+                PUPPETEER_AVAILABLE = True
+            except ImportError:
+                logger.warning("pyppeteer not available - puppeteer tools will be limited")
+                PUPPETEER_AVAILABLE = False
+
         if not PUPPETEER_AVAILABLE:
             return self._fallback_scrape(url, output_format)
         
         try:
+            # Dynamically import pyppeteer here too
+            import pyppeteer
             if not self.browser:
                 self.browser = await pyppeteer.launch({
                     'headless': True,

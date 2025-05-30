@@ -5,9 +5,12 @@ Provides intelligent workflow orchestration tools for LLM enhancement.
 HTTP transport implementation for Smithery compatibility.
 """
 
+import time # Add time for logging
+# VERY EARLY LOGGING - Check if module is even being imported
+print(f"SRC.MAIN.PY MODULE IMPORT STARTED AT: {time.time()}", flush=True)
+
 import asyncio
 import logging
-import time
 import os
 import sys
 import traceback
@@ -444,11 +447,11 @@ async def handle_all_mcp_methods(request: Request):
     
     # Check if MCP is initialized
     if not mcp or not _mcp_initialized:
-        log_debug("MCP endpoint called before FastMCP initialization complete")
+        log_debug("💡 MCP endpoint called before FastMCP initialization complete")
         if request.method == "GET":
-            # For GET requests (tool scanning), redirect to our lightweight endpoint
-            log_debug("Redirecting GET request to /tools endpoint")
-            return await lightweight_tools()
+            # For GET requests (tool scanning), return our lightweight tools list directly
+            log_debug("💡 Redirecting /mcp GET request to lightweight_tools function internally")
+            return await lightweight_tools() # Call the same function
         else:
             # For other methods, return a 503 Service Unavailable
             log_debug("Returning 503 - Service Unavailable (MCP not initialized)")

@@ -24,6 +24,10 @@ import argparse
 import asyncio
 from pathlib import Path
 import os
+import time # Add time for logging
+
+# VERY EARLY LOGGING
+print(f"DEPLOY.PY EXECUTION STARTED AT: {time.time()}", flush=True)
 
 def run_dev_mode(host="127.0.0.1", port=8000):
     """Run in development mode with hot reload."""

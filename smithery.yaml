@@ -6,9 +6,8 @@ start:
   health_timeout: 120  # Extended timeout for health check
   scan_timeout: 120    # Extended timeout for tool scanning
   health_endpoint: "/health"  # Use our dedicated health endpoint
-  # Ensure Smithery uses our lightweight endpoint for tool scanning
-  # This is critical to avoid timeouts caused by FastMCP initialization
-  tools_endpoint: "/tools"
+  # Temporarily remove tools_endpoint to see if Smithery has a different default behavior
+  # for tool scanning, or if the server is too slow to respond on ANY path.
 configSchema:
   type: object
   properties:

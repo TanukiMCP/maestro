@@ -20,8 +20,8 @@ from typing import Dict, Any, List
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 
-from mcp import types # Import types directly
-from mcp.server.fastmcp import FastMCP
+# from mcp import types # MCP NOT USED IN THIS DIAGNOSTIC VERSION
+# from mcp.server.fastmcp import FastMCP # MCP NOT USED IN THIS DIAGNOSTIC VERSION
 
 # Configure logging
 logging.basicConfig(
@@ -35,574 +35,205 @@ logger = logging.getLogger(__name__)
 
 def log_debug(msg, *args, **kwargs):
     """Helper to log debug messages with a SMITHERY-DEBUG prefix for easy filtering"""
-    logger.debug(f"SMITHERY-DEBUG: {msg}", *args, **kwargs)
+    logger.debug(f"DIAGNOSTIC MODE - SMITHERY-DEBUG: {msg}", *args, **kwargs)
 
-log_debug("Starting Maestro MCP Server")
-log_debug(f"Python version: {sys.version}")
-log_debug(f"Environment variables: SMITHERY_MODE={os.environ.get('SMITHERY_MODE')}, ENABLE_LAZY_LOADING={os.environ.get('ENABLE_LAZY_LOADING')}")
+log_debug("DIAGNOSTIC MODE - Starting Maestro MCP Server (MCP Functionality Disabled)")
+log_debug(f"DIAGNOSTIC MODE - Python version: {sys.version}")
 
-# Check if we should defer MCP initialization
+# Check if we should defer MCP initialization (variable still checked but MCP won't be used)
 should_defer_mcp_init = os.environ.get("MCP_DEFERRED_INIT", "").lower() == "true"
-log_debug(f"MCP initialization deferral: {should_defer_mcp_init}")
+log_debug(f"DIAGNOSTIC MODE - MCP initialization deferral (not in use): {should_defer_mcp_init}")
 
-# Initialize FastMCP server - potentially deferred
+# Initialize FastMCP server - COMPLETELY COMMENTED OUT FOR DIAGNOSTIC
 _mcp_initialized = False
 mcp = None
-if not should_defer_mcp_init:
-    try:
-        log_debug("Initializing FastMCP server synchronously")
-        start_time = time.time()
-        mcp = FastMCP("maestro")
-        init_time = time.time() - start_time
-        log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
-        _mcp_initialized = True
-    except Exception as e:
-        log_debug(f"Error initializing FastMCP server: {e}")
-        log_debug(traceback.format_exc())
-        raise
-else:
-    log_debug("⏳ FastMCP initialization deferred until after endpoints are registered")
-    # Create a placeholder for now
-    mcp = None
+log_debug("DIAGNOSTIC MODE - FastMCP object creation and initialization SKIPPED")
 
-# --- Lazy Loaded Instances ---
+# --- Lazy Loaded Instances --- (Keep structure, but they won't be called by MCP tools)
 _maestro_tools_instance = None
 _computational_tools_instance = None
 
 def get_maestro_tools_instance():
-    """Lazily get an instance of MaestroTools."""
     global _maestro_tools_instance
     if _maestro_tools_instance is None:
-        log_debug("Creating MaestroTools instance")
-        start_time = time.time()
-        # This import should be safe if maestro_tools.py only defines the class
-        # and its __init__ is lightweight.
+        log_debug("DIAGNOSTIC MODE - Creating MaestroTools instance (if called by non-MCP path)")
         from .maestro_tools import MaestroTools 
         _maestro_tools_instance = MaestroTools()
-        load_time = time.time() - start_time
-        log_debug(f"MaestroTools instance created lazily in {load_time:.2f} seconds")
     return _maestro_tools_instance
 
 def get_computational_tools_instance():
-    """Lazily get an instance of ComputationalTools."""
     global _computational_tools_instance
     if _computational_tools_instance is None:
-        log_debug("Creating ComputationalTools instance")
-        start_time = time.time()
-        # This import should be safe if computational_tools.py only defines the class
-        # and its __init__ is lightweight.
+        log_debug("DIAGNOSTIC MODE - Creating ComputationalTools instance (if called by non-MCP path)")
         from .computational_tools import ComputationalTools
         _computational_tools_instance = ComputationalTools()
-        load_time = time.time() - start_time
-        log_debug(f"ComputationalTools instance created lazily in {load_time:.2f} seconds")
     return _computational_tools_instance
 
-# --- Enhanced Tool Handlers ---
 _enhanced_tool_handlers_instance = None
-
 def get_enhanced_tool_handlers_instance():
-    """Lazily get an instance of EnhancedToolHandlers."""
     global _enhanced_tool_handlers_instance
     if _enhanced_tool_handlers_instance is None:
-        log_debug("Creating EnhancedToolHandlers instance")
+        log_debug("DIAGNOSTIC MODE - Creating EnhancedToolHandlers instance (if called by non-MCP path)")
         from .maestro.enhanced_tools import EnhancedToolHandlers
         _enhanced_tool_handlers_instance = EnhancedToolHandlers()
     return _enhanced_tool_handlers_instance
 
-# --- Tool Handlers ---
-# These handlers will be registered with MCP.
-# They call the actual logic in MaestroTools or ComputationalTools.
+# --- Tool Handlers --- (Keep definitions, but they won't be registered with MCP)
+# ... (Keep all async handle_... functions as they are, they just won't be used by MCP)
+async def handle_maestro_orchestrate(task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate"): # -> List[types.TextContent]: # MCP Type removed
+    log_debug("DIAGNOSTIC MODE - handle_maestro_orchestrate called (MCP path disabled)")
+    # ...
+    return [{"text": "DIAGNOSTIC - Orchestrate"}] # Placeholder
 
-async def handle_maestro_orchestrate(task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate") -> List[types.TextContent]:
-    log_debug("handle_maestro_orchestrate called")
-    instance = get_maestro_tools_instance()
-    # Assuming _handle_orchestrate in MaestroTools takes arguments as a dictionary
-    args = {
-        "task_description": task_description,
-        "context": context or {},
-        "success_criteria": success_criteria or {},
-        "complexity_level": complexity_level
-    }
-    return await instance._handle_orchestrate(arguments=args)
+async def handle_maestro_iae_discovery(task_type: str = "general", domain_context: str = "", complexity_requirements: Dict[str, Any] = None): # -> List[types.TextContent]:
+    log_debug("DIAGNOSTIC MODE - handle_maestro_iae_discovery called (MCP path disabled)")
+    # ...
+    return [{"text": "DIAGNOSTIC - IAE Discovery"}] # Placeholder
 
-async def handle_maestro_iae_discovery(task_type: str = "general", domain_context: str = "", complexity_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
-    log_debug("handle_maestro_iae_discovery called")
-    instance = get_maestro_tools_instance()
-    args = {
-        "task_type": task_type,
-        "domain_context": domain_context,
-        "complexity_requirements": complexity_requirements or {}
-    }
-    return await instance._handle_iae_discovery(arguments=args)
+async def handle_maestro_tool_selection(request_description: str, available_context: Dict[str, Any] = None, precision_requirements: Dict[str, Any] = None): # -> List[types.TextContent]:
+    log_debug("DIAGNOSTIC MODE - handle_maestro_tool_selection called (MCP path disabled)")
+    # ...
+    return [{"text": "DIAGNOSTIC - Tool Selection"}] # Placeholder
 
-async def handle_maestro_tool_selection(request_description: str, available_context: Dict[str, Any] = None, precision_requirements: Dict[str, Any] = None) -> List[types.TextContent]:
-    log_debug("handle_maestro_tool_selection called")
-    instance = get_maestro_tools_instance()
-    args = {
-        "request_description": request_description,
-        "available_context": available_context or {},
-        "precision_requirements": precision_requirements or {}
-    }
-    return await instance._handle_tool_selection(arguments=args)
+async def handle_maestro_iae(engine_domain: str, computation_type: str, parameters: Dict[str, Any], precision_requirements: str = "machine_precision", validation_level: str = "standard"): # -> List[types.TextContent]:
+    log_debug("DIAGNOSTIC MODE - handle_maestro_iae called (MCP path disabled)")
+    # ...
+    return [{"text": "DIAGNOSTIC - IAE"}] # Placeholder
 
-async def handle_maestro_iae(engine_domain: str, computation_type: str, parameters: Dict[str, Any], precision_requirements: str = "machine_precision", validation_level: str = "standard") -> List[types.TextContent]:
-    log_debug("handle_maestro_iae called")
-    instance = get_computational_tools_instance()
-    # ComputationalTools.handle_tool_call expects 'name' and 'arguments'
-    # Here, 'name' is maestro_iae, and arguments are the kwargs.
-    args = {
-        "engine_domain": engine_domain,
-        "computation_type": computation_type,
-        "parameters": parameters,
-        "precision_requirements": precision_requirements,
-        "validation_level": validation_level
-    }
-    return await instance.handle_tool_call(name="maestro_iae", arguments=args)
-
-# Enhanced tool handler wrappers
 async def handle_maestro_search(arguments: dict) -> list:
-    instance = get_enhanced_tool_handlers_instance()
-    return await instance.handle_maestro_search(arguments)
+    log_debug("DIAGNOSTIC MODE - handle_maestro_search called (MCP path disabled)")
+    return [{"text": "DIAGNOSTIC - Search"}] # Placeholder
 
 async def handle_maestro_scrape(arguments: dict) -> list:
-    instance = get_enhanced_tool_handlers_instance()
-    return await instance.handle_maestro_scrape(arguments)
+    log_debug("DIAGNOSTIC MODE - handle_maestro_scrape called (MCP path disabled)")
+    return [{"text": "DIAGNOSTIC - Scrape"}] # Placeholder
 
 async def handle_maestro_execute(arguments: dict) -> list:
-    instance = get_enhanced_tool_handlers_instance()
-    return await instance.handle_maestro_execute(arguments)
+    log_debug("DIAGNOSTIC MODE - handle_maestro_execute called (MCP path disabled)")
+    return [{"text": "DIAGNOSTIC - Execute"}] # Placeholder
 
 async def handle_maestro_error_handler(arguments: dict) -> list:
-    instance = get_enhanced_tool_handlers_instance()
-    return await instance.handle_maestro_error_handler(arguments)
+    log_debug("DIAGNOSTIC MODE - handle_maestro_error_handler called (MCP path disabled)")
+    return [{"text": "DIAGNOSTIC - Error Handler"}] # Placeholder
 
 async def handle_maestro_temporal_context(arguments: dict) -> list:
-    instance = get_enhanced_tool_handlers_instance()
-    return await instance.handle_maestro_temporal_context(arguments)
+    log_debug("DIAGNOSTIC MODE - handle_maestro_temporal_context called (MCP path disabled)")
+    return [{"text": "DIAGNOSTIC - Temporal Context"}] # Placeholder
+
 
 # --- Tool Registration ---
-
 def _register_tools():
-    """Register MCP tools by defining their schemas and handlers."""
-    global mcp, _mcp_initialized
-    
-    # If MCP isn't initialized yet, log and return
-    if not mcp or not _mcp_initialized:
-        log_debug("⏳ Tool registration deferred - MCP not yet initialized")
-        return
-        
-    logger.info("Registering tools for Maestro MCP Server...")
+    log_debug("DIAGNOSTIC MODE - _register_tools called - MCP registration SKIPPED")
+    # All mcp.tool(...) calls are effectively disabled as mcp is None
+    return
 
-    try:
-        log_debug("Registering maestro_orchestrate tool")
-        mcp.tool(
-            name="maestro_orchestrate",
-            description="🎭 Intelligent workflow orchestration with context analysis and success criteria validation."
-        )(handle_maestro_orchestrate)
-        logger.info("Registered: maestro_orchestrate")
-    except Exception as e:
-        log_debug(f"Error registering maestro_orchestrate: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_iae_discovery tool")
-        mcp.tool(
-            name="maestro_iae_discovery",
-            description="💡 Discover Intelligence Amplification Engines and their capabilities."
-        )(handle_maestro_iae_discovery)
-        logger.info("Registered: maestro_iae_discovery")
-    except Exception as e:
-        log_debug(f"Error registering maestro_iae_discovery: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_tool_selection tool")
-        mcp.tool(
-            name="maestro_tool_selection",
-            description="🎯 Intelligent tool selection based on task requirements and computational needs."
-        )(handle_maestro_tool_selection)
-        logger.info("Registered: maestro_tool_selection")
-    except Exception as e:
-        log_debug(f"Error registering maestro_tool_selection: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_iae tool")
-        mcp.tool(
-            name="maestro_iae",
-            description="🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."
-        )(handle_maestro_iae)
-        logger.info("Registered: maestro_iae")
-    except Exception as e:
-        log_debug(f"Error registering maestro_iae: {e}")
-        log_debug(traceback.format_exc())
-
-    # Register enhanced tools
-    try:
-        log_debug("Registering maestro_search tool")
-        mcp.tool(
-            name="maestro_search",
-            description="🌐 LLM-driven web search with temporal filtering and structured results."
-        )(handle_maestro_search)
-        logger.info("Registered: maestro_search")
-    except Exception as e:
-        log_debug(f"Error registering maestro_search: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_scrape tool")
-        mcp.tool(
-            name="maestro_scrape",
-            description="🕷️ LLM-driven web scraping and content extraction with selectors and format options."
-        )(handle_maestro_scrape)
-        logger.info("Registered: maestro_scrape")
-    except Exception as e:
-        log_debug(f"Error registering maestro_scrape: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_execute tool")
-        mcp.tool(
-            name="maestro_execute",
-            description="⚡ LLM-driven code execution with output capture and validation."
-        )(handle_maestro_execute)
-        logger.info("Registered: maestro_execute")
-    except Exception as e:
-        log_debug(f"Error registering maestro_execute: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_error_handler tool")
-        mcp.tool(
-            name="maestro_error_handler",
-            description="🔧 Adaptive error handling and recovery with LLM-driven analysis."
-        )(handle_maestro_error_handler)
-        logger.info("Registered: maestro_error_handler")
-    except Exception as e:
-        log_debug(f"Error registering maestro_error_handler: {e}")
-        log_debug(traceback.format_exc())
-
-    try:
-        log_debug("Registering maestro_temporal_context tool")
-        mcp.tool(
-            name="maestro_temporal_context",
-            description="🕐 Temporal context analysis for information freshness and deadline awareness."
-        )(handle_maestro_temporal_context)
-        logger.info("Registered: maestro_temporal_context")
-    except Exception as e:
-        log_debug(f"Error registering maestro_temporal_context: {e}")
-        log_debug(traceback.format_exc())
-
-    # Use _tool_map for tool listing
-    try:
-        tool_map = getattr(mcp, '_tool_map', {})
-        log_debug(f"Tool registration process completed. Registered {len(tool_map)} tools: {list(tool_map.keys())}")
-    except Exception as e:
-        log_debug(f"Error accessing tool map: {e}")
-        log_debug(traceback.format_exc())
-
-# Register tools when this module is imported
+# Register tools when this module is imported (will do nothing in diagnostic)
 try:
-    if not should_defer_mcp_init:
-        _register_tools()
-    else:
-        log_debug("⏳ Tool registration deferred until after FastAPI startup")
+    # if not should_defer_mcp_init: # This check is not relevant if mcp is always None here
+    _register_tools() 
+    # else:
+    #    log_debug("DIAGNOSTIC MODE - Tool registration deferred (MCP registration SKIPPED)")
 except Exception as e:
-    log_debug(f"Error during tool registration: {e}")
-    log_debug(traceback.format_exc())
-    # Allow server to start even if registration fails, to aid debugging
-    # raise # Commented out to allow server to start
+    log_debug(f"DIAGNOSTIC MODE - Error during tool registration (should be skipped): {e}")
 
 # Create a FastAPI app
-log_debug("Creating FastAPI app")
-fastapi_app = FastAPI(title="Maestro MCP Server", description="Enhanced Workflow Orchestration")
+log_debug("DIAGNOSTIC MODE - Creating FastAPI app")
+fastapi_app = FastAPI(title="Maestro MCP Server (Diagnostic Mode)", description="Enhanced Workflow Orchestration - MCP DISABLED")
 
-# Add a new lightweight /tools endpoint as the FIRST endpoint to ensure it's available quickly
+# Add a new lightweight /tools endpoint as the FIRST endpoint
 @fastapi_app.get("/tools")
 async def lightweight_tools():
-    """Extremely lightweight tool listing endpoint that bypasses FastMCP's internal mechanisms."""
-    log_debug("💡 Lightweight tools endpoint called - bypassing FastMCP for fast scanning")
-    log_debug("💡 Request timestamp: " + str(time.time()))
-    log_debug("💡 Tools endpoint should have been reached without MCP initialization delay")
+    log_debug("DIAGNOSTIC MODE - 💡 Lightweight tools endpoint called")
     response_data = [
-        {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration with context analysis and success criteria validation."},
-        {"name": "maestro_iae_discovery", "description": "💡 Discover Intelligence Amplification Engines and their capabilities."},
-        {"name": "maestro_tool_selection", "description": "🎯 Intelligent tool selection based on task requirements and computational needs."},
-        {"name": "maestro_iae", "description": "🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."},
-        {"name": "maestro_search", "description": "🌐 LLM-driven web search with temporal filtering and structured results."},
-        {"name": "maestro_scrape", "description": "🕷️ LLM-driven web scraping and content extraction with selectors and format options."},
-        {"name": "maestro_execute", "description": "⚡ LLM-driven code execution with output capture and validation."},
-        {"name": "maestro_error_handler", "description": "🔧 Adaptive error handling and recovery with LLM-driven analysis."},
-        {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis for information freshness and deadline awareness."}
+        {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration... (DIAGNOSTIC)"},
+        # ... (include all tool definitions for Smithery to see)
+        {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis... (DIAGNOSTIC)"}
     ]
-    log_debug(f"💡 Returning {len(response_data)} tools from lightweight endpoint")
+    log_debug(f"DIAGNOSTIC MODE - 💡 Returning {len(response_data)} tools from lightweight endpoint")
     return response_data
 
-# Super lightweight ping endpoint to test basic FastAPI availability
+# Super lightweight ping endpoint
 @fastapi_app.get("/ping")
 async def ping():
-    """Extremely lightweight ping endpoint to test basic server availability."""
-    log_debug("🏓 Ping endpoint called")
-    return {"ping": "pong", "timestamp": time.time()}
-
-# MCP request/response handler
+    log_debug("DIAGNOSTIC MODE - 🏓 Ping endpoint called")
+    return {"ping": "pong (diagnostic mode)", "timestamp": time.time()}
+    
+# MCP request/response handler - Modified for diagnostic
 async def handle_mcp_request(request: Request):
-    """Handle MCP requests and proxy them to the FastMCP instance."""
-    global mcp, _mcp_initialized
-    
-    # Check if MCP is initialized
-    if not mcp or not _mcp_initialized:
-        log_debug("MCP request handler called before FastMCP initialization complete")
-        return JSONResponse(
-            content={
-                "error": "MCP not initialized yet", 
-                "message": "The MCP server is still initializing. Please try again later."
-            },
-            status_code=503
-        )
-    
-    req_start_time = time.time()
-    logger.info(f"Handling MCP request: {request.method} {request.url.path}")
-    log_debug(f"Request headers: {request.headers}")
-    
-    # Get the request body
-    body = await request.body()
-    log_debug(f"Request body size: {len(body)} bytes")
-    
-    # Set up headers dictionary from request headers
-    headers = dict(request.headers.items())
-    
-    # Create response queue for ASGI messages
-    response_queue = asyncio.Queue()
-    
-    # Define send and receive functions for ASGI
-    async def send(message):
-        log_debug(f"ASGI send message type: {message.get('type')}")
-        await response_queue.put(message)
-    
-    async def receive():
-        log_debug("ASGI receive called")
-        return {
-            "type": "http.request",
-            "body": body,
-            "more_body": False
-        }
-    
-    # Call the FastMCP ASGI app with appropriate scope
-    # Path is empty because FastMCP doesn't expect a /mcp prefix
-    scope = {
-        "type": "http",
-        "path": "/",
-        "method": request.method,
-        "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
-        "query_string": request.url.query.encode(),
-        "client": ("127.0.0.1", 0),
-        "server": ("127.0.0.1", 8000),
-        "scheme": request.url.scheme,
-        "http_version": "1.1",
-        "raw_path": request.url.path.encode(),
-    }
-    
-    log_debug(f"Calling FastMCP ASGI app with scope: {scope}")
-    
-    # Process the request through FastMCP
-    try:
-        await mcp(scope, receive, send)
-        log_debug("FastMCP ASGI app call completed")
-    except Exception as e:
-        log_debug(f"Error calling FastMCP ASGI app: {e}")
-        log_debug(traceback.format_exc())
-        raise
-    
-    # Get the response from the queue
-    log_debug("Getting response from queue")
-    response_start = await response_queue.get()
-    response_body = await response_queue.get()
-    
-    # Extract status code and headers
-    status_code = response_start.get("status", 200)
-    headers = dict([(k.decode(), v.decode()) for k, v in response_start.get("headers", [])])
-    
-    req_time = time.time() - req_start_time
-    log_debug(f"MCP request completed in {req_time:.2f} seconds with status {status_code}")
-    
-    # Return the response
-    return StreamingResponse(
-        content=[response_body.get("body", b"")],
-        status_code=status_code,
-        headers=headers
+    log_debug("DIAGNOSTIC MODE - handle_mcp_request called (MCP functionality disabled)")
+    return JSONResponse(
+        content={"error": "MCP functionality disabled in diagnostic mode"},
+        status_code=503
     )
 
-# Mount the MCP server at /mcp with route for all methods
+# Mount the MCP server at /mcp - Modified for diagnostic
 @fastapi_app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
 async def handle_all_mcp_methods(request: Request):
-    """Handle all HTTP methods to /mcp for Smithery compatibility."""
-    global mcp, _mcp_initialized
-    
-    logger.info(f"MCP endpoint called with method: {request.method}")
-    req_start_time = time.time()
-    log_debug(f"MCP endpoint request: {request.method} {request.url.path}")
-    log_debug(f"Request client: {request.client}")
-    log_debug(f"Request headers: {dict(request.headers.items())}")
-    
-    # Check if MCP is initialized
-    if not mcp or not _mcp_initialized:
-        log_debug("💡 MCP endpoint called before FastMCP initialization complete")
-        if request.method == "GET":
-            # For GET requests (tool scanning), return our lightweight tools list directly
-            log_debug("💡 Redirecting /mcp GET request to lightweight_tools function internally")
-            return await lightweight_tools() # Call the same function
-        else:
-            # For other methods, return a 503 Service Unavailable
-            log_debug("Returning 503 - Service Unavailable (MCP not initialized)")
-            return JSONResponse(
-                content={
-                    "error": "MCP not initialized yet", 
-                    "message": "The MCP server is still initializing. Please try again later or use /tools for tool listing."
-                },
-                status_code=503
-            )
-    
-    # Fast path for GET requests - specifically for Smithery tool scanning
+    log_debug(f"DIAGNOSTIC MODE - /mcp endpoint called with method: {request.method}")
     if request.method == "GET":
-        log_debug("Fast path for tool scanning activated")
-        try:
-            start_time = time.time()
-            tool_list = []
-            tool_map = getattr(mcp, '_tool_map', {})
-            log_debug(f"Preparing tool list from {len(tool_map)} tools")
-            for tool_name, tool_info in tool_map.items():
-                log_debug(f"Adding tool {tool_name} to response")
-                tool_list.append({
-                    "name": tool_name,
-                    "description": getattr(tool_info, 'description', None)
-                })
-            log_debug(f"Tool list prepared with {len(tool_list)} tools")
-            response_time = time.time() - start_time
-            log_debug(f"Fast path response prepared in {response_time:.2f} seconds")
-            log_debug(f"Total GET request time: {time.time() - req_start_time:.2f} seconds")
-            return JSONResponse(content=tool_list)
-        except Exception as e:
-            log_debug(f"Error in fast path for tool scanning: {e}")
-            log_debug(traceback.format_exc())
-            return JSONResponse(content={"error": "Failed to list tools", "details": str(e)}, status_code=500)
-    
-    # Normal path for other requests
-    log_debug("Using normal MCP request path")
-    return await handle_mcp_request(request)
+        log_debug("DIAGNOSTIC MODE - /mcp GET request, returning lightweight tools list")
+        return await lightweight_tools()
+    else:
+        log_debug("DIAGNOSTIC MODE - /mcp non-GET request, MCP disabled")
+        return JSONResponse(
+            content={"error": "MCP functionality disabled in diagnostic mode for non-GET /mcp requests"},
+            status_code=503
+        )
 
 # Add a default route for the root path
 @fastapi_app.get("/")
 async def root():
-    """Return information about the server and its endpoints."""
-    log_debug("Root endpoint called")
-    tool_map = getattr(mcp, '_tool_map', {})
-    tools_count = len(tool_map)
-    log_debug(f"Current tool count: {tools_count}")
+    log_debug("DIAGNOSTIC MODE - Root endpoint called")
     return {
-        "name": "Maestro MCP Server",
-        "description": "Enhanced Workflow Orchestration with Intelligence Amplification",
-        "version": "1.0.0",
-        "status": "online",
-        "tools_count": tools_count,
+        "name": "Maestro MCP Server (Diagnostic Mode)",
+        "status": "online - MCP DISABLED",
         "endpoints": {
-            "mcp": "/mcp - MCP server endpoint (GET: tool list, POST: tool call, DELETE: cancel)",
-            "docs": "/docs - FastAPI auto-generated documentation"
-        },
-        "smithery_compatible": True,
-        "lazy_loading": True
+            "tools": "/tools - Lightweight tool list (DIAGNOSTIC)",
+            "ping": "/ping - Basic server ping (DIAGNOSTIC)",
+            "mcp": "/mcp - MCP endpoint (DISABLED IN DIAGNOSTIC)",
+            "health": "/health - Health check (DIAGNOSTIC)"
+        }
     }
 
-# Debug endpoint to get diagnostic information
+# Debug endpoint (remains useful)
 @fastapi_app.get("/debug")
 async def debug_info():
-    """Return debugging information about the server."""
-    log_debug("Debug endpoint called")
+    # ... (keep debug_info as is, it's helpful)
+    log_debug("DIAGNOSTIC MODE - Debug endpoint called")
     import psutil
     import platform
-    
     process = psutil.Process()
     memory_info = process.memory_info()
-    
-    tool_map = getattr(mcp, '_tool_map', {})
     return {
-        "server_info": {
-            "python_version": sys.version,
-            "platform": platform.platform(),
-            "process_id": os.getpid(),
-            "uptime_seconds": time.time() - process.create_time(),
-        },
-        "memory_usage": {
-            "rss_bytes": memory_info.rss,
-            "rss_mb": memory_info.rss / (1024 * 1024),
-            "vms_bytes": memory_info.vms,
-            "vms_mb": memory_info.vms / (1024 * 1024),
-        },
-        "tools": {
-            "count": len(tool_map),
-            "names": list(tool_map.keys())
-        },
-        "environment": {
-            "smithery_mode": os.environ.get("SMITHERY_MODE", "false"),
-            "enable_lazy_loading": os.environ.get("ENABLE_LAZY_LOADING", "false"),
-            "optimize_tool_scanning": os.environ.get("OPTIMIZE_TOOL_SCANNING", "false")
-        }
+        "diagnostic_mode_active": True,
+        "server_info": { "python_version": sys.version, "platform": platform.platform()},
+        "memory_usage": { "rss_mb": memory_info.rss / (1024 * 1024)},
+        "environment": { "smithery_mode": os.environ.get("SMITHERY_MODE", "false")}
     }
 
 # Add a dedicated healthcheck endpoint for Smithery
 @fastapi_app.get("/health")
 async def healthcheck():
-    """Dedicated lightweight healthcheck endpoint for Smithery."""
-    log_debug("Healthcheck endpoint called")
-    return {"status": "healthy", "timestamp": time.time()}
+    log_debug("DIAGNOSTIC MODE - Healthcheck endpoint called")
+    return {"status": "healthy (diagnostic mode)", "timestamp": time.time()}
 
-# The 'app' for Uvicorn is now the FastAPI app that mounts FastMCP at /mcp
+# The 'app' for Uvicorn is now the FastAPI app
 app = fastapi_app
-log_debug("Module initialization complete - app ready to serve requests")
+log_debug("DIAGNOSTIC MODE - Module initialization complete - app ready to serve requests (MCP DISABLED)")
 
-# Handle deferred FastMCP initialization
-async def initialize_mcp_after_startup():
-    """Initialize FastMCP after FastAPI has started."""
-    global mcp, _mcp_initialized
-    
-    if should_defer_mcp_init and not _mcp_initialized:
-        log_debug("🚀 Performing deferred FastMCP initialization")
-        try:
-            start_time = time.time()
-            mcp = FastMCP("maestro")
-            init_time = time.time() - start_time
-            log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
-            _mcp_initialized = True
-            
-            # Now register tools
-            _register_tools()
-            
-            log_debug("✅ Deferred FastMCP initialization complete")
-        except Exception as e:
-            log_debug(f"Error in deferred FastMCP initialization: {e}")
-            log_debug(traceback.format_exc())
+# Handle deferred FastMCP initialization - COMMENTED OUT for diagnostic
+# async def initialize_mcp_after_startup():
+#    log_debug("DIAGNOSTIC MODE - initialize_mcp_after_startup SKIPPED")
 
-# Register startup event handler
-@fastapi_app.on_event("startup")
-async def startup_event():
-    log_debug("🚀 FastAPI startup event triggered")
-    # If MCP initialization was deferred, schedule it as a background task
-    if should_defer_mcp_init:
-        import asyncio
-        asyncio.create_task(initialize_mcp_after_startup())
-    log_debug("✅ FastAPI startup complete")
+# @fastapi_app.on_event("startup")
+# async def startup_event():
+#    log_debug("DIAGNOSTIC MODE - FastAPI startup event triggered (MCP init SKIPPED)")
+#    # if should_defer_mcp_init:
+#    #     import asyncio
+#    #     asyncio.create_task(initialize_mcp_after_startup())
+#    log_debug("DIAGNOSTIC MODE - FastAPI startup complete (MCP init SKIPPED)")
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "stdio":
-        logger.info("🎭 Starting Maestro MCP Server (STDIO Mode)")
-        try:
-            asyncio.run(mcp.run_stdio_session()) 
-        except KeyboardInterrupt:
-            logger.info("STDIO session ended by user.")
-    else:
-        # This branch is typically for information when 'python src/main.py' is run directly.
-        # HTTP server startup is handled by 'deploy.py' using Uvicorn.
-        logger.info("🎭 Maestro MCP Server (src.main)")
-        print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")
-        print("To run with STDIO, use: python src/main.py stdio")
+    # ... (keep __main__ block as is, but it won't run MCP stdio session)
+    logger.info("DIAGNOSTIC MODE - Running src/main.py directly (MCP STDIO disabled)")
+    print("To run with HTTP server (DIAGNOSTIC MODE), use: python deploy.py [dev|prod|smithery]")

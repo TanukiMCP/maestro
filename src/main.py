@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server with HTTP transport for Smithery
-mcp = FastMCP("maestro", transport_type="streamable-http")
+mcp = FastMCP("maestro")
 
 def _register_tools():
     """Register MCP tools using FastMCP decorators."""
@@ -356,12 +356,6 @@ Content from {url} would be extracted here using intelligent parsing algorithms.
 # Register tools
 _register_tools()
 
-# Simple run function for direct execution
-async def run_server():
-    """Run the MCP server directly."""
-    logger.info("🎭 Starting Maestro MCP Server")
-    await mcp.run(port=8000)
-
 if __name__ == "__main__":
     # Direct execution
     import sys
@@ -369,8 +363,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "stdio":
         # STDIO mode for local development
         logger.info("🎭 Starting Maestro MCP Server (STDIO Mode)")
-        asyncio.run(mcp.run())
+        mcp.run(transport="stdio")
     else:
         # HTTP mode for Smithery deployment
         logger.info("🎭 Starting Maestro MCP Server (HTTP Mode)")
-        asyncio.run(run_server())
+        mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)

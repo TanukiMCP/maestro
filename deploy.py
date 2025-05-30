@@ -76,6 +76,7 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
     print(f"📍 Server will be available at: http://{host}:{port}")
     print(f"🔗 SSE endpoint: http://{host}:{port}/sse/")
     print(f"📡 MCP endpoint: http://{host}:{port}/mcp")
+    print(f"🧰 Tools endpoint: http://{host}:{port}/tools")
     print("🌟 Optimized for Smithery MCP platform")
     
     # Set environment variables to signal Smithery mode to the application
@@ -83,6 +84,8 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
     os.environ["SMITHERY_MODE"] = "true"
     os.environ["ENABLE_LAZY_LOADING"] = "true"
     os.environ["OPTIMIZE_TOOL_SCANNING"] = "true"
+    os.environ["FASTAPI_PRIORITY_ROUTES"] = "true"  # Signal to prioritize route registration
+    os.environ["MCP_DEFERRED_INIT"] = "true"  # Defer full MCP initialization 
     
     cmd = [
         "uvicorn", 
@@ -91,7 +94,8 @@ def run_smithery_mode(host="0.0.0.0", port=8000):
         "--port", str(port),
         "--workers", "1",
         "--timeout-keep-alive", "120",  # Increase keep-alive timeout for long connections
-        "--log-level", "info"
+        "--log-level", "info",
+        "--lifespan", "on"  # Ensure lifespan events are processed
     ]
     
     subprocess.run(cmd)

@@ -38,17 +38,29 @@ log_debug("Starting Maestro MCP Server")
 log_debug(f"Python version: {sys.version}")
 log_debug(f"Environment variables: SMITHERY_MODE={os.environ.get('SMITHERY_MODE')}, ENABLE_LAZY_LOADING={os.environ.get('ENABLE_LAZY_LOADING')}")
 
-# Initialize FastMCP server
-try:
-    log_debug("Initializing FastMCP server")
-    start_time = time.time()
-    mcp = FastMCP("maestro")
-    init_time = time.time() - start_time
-    log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
-except Exception as e:
-    log_debug(f"Error initializing FastMCP server: {e}")
-    log_debug(traceback.format_exc())
-    raise
+# Check if we should defer MCP initialization
+should_defer_mcp_init = os.environ.get("MCP_DEFERRED_INIT", "").lower() == "true"
+log_debug(f"MCP initialization deferral: {should_defer_mcp_init}")
+
+# Initialize FastMCP server - potentially deferred
+_mcp_initialized = False
+mcp = None
+if not should_defer_mcp_init:
+    try:
+        log_debug("Initializing FastMCP server synchronously")
+        start_time = time.time()
+        mcp = FastMCP("maestro")
+        init_time = time.time() - start_time
+        log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
+        _mcp_initialized = True
+    except Exception as e:
+        log_debug(f"Error initializing FastMCP server: {e}")
+        log_debug(traceback.format_exc())
+        raise
+else:
+    log_debug("⏳ FastMCP initialization deferred until after endpoints are registered")
+    # Create a placeholder for now
+    mcp = None
 
 # --- Lazy Loaded Instances ---
 _maestro_tools_instance = None
@@ -169,6 +181,13 @@ async def handle_maestro_temporal_context(arguments: dict) -> list:
 
 def _register_tools():
     """Register MCP tools by defining their schemas and handlers."""
+    global mcp, _mcp_initialized
+    
+    # If MCP isn't initialized yet, log and return
+    if not mcp or not _mcp_initialized:
+        log_debug("⏳ Tool registration deferred - MCP not yet initialized")
+        return
+        
     logger.info("Registering tools for Maestro MCP Server...")
 
     try:
@@ -281,7 +300,10 @@ def _register_tools():
 
 # Register tools when this module is imported
 try:
-    _register_tools()
+    if not should_defer_mcp_init:
+        _register_tools()
+    else:
+        log_debug("⏳ Tool registration deferred until after FastAPI startup")
 except Exception as e:
     log_debug(f"Error during tool registration: {e}")
     log_debug(traceback.format_exc())
@@ -292,9 +314,50 @@ except Exception as e:
 log_debug("Creating FastAPI app")
 fastapi_app = FastAPI(title="Maestro MCP Server", description="Enhanced Workflow Orchestration")
 
+# Add a new lightweight /tools endpoint as the FIRST endpoint to ensure it's available quickly
+@fastapi_app.get("/tools")
+async def lightweight_tools():
+    """Extremely lightweight tool listing endpoint that bypasses FastMCP's internal mechanisms."""
+    log_debug("💡 Lightweight tools endpoint called - bypassing FastMCP for fast scanning")
+    log_debug("💡 Request timestamp: " + str(time.time()))
+    log_debug("💡 Tools endpoint should have been reached without MCP initialization delay")
+    response_data = [
+        {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration with context analysis and success criteria validation."},
+        {"name": "maestro_iae_discovery", "description": "💡 Discover Intelligence Amplification Engines and their capabilities."},
+        {"name": "maestro_tool_selection", "description": "🎯 Intelligent tool selection based on task requirements and computational needs."},
+        {"name": "maestro_iae", "description": "🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."},
+        {"name": "maestro_search", "description": "🌐 LLM-driven web search with temporal filtering and structured results."},
+        {"name": "maestro_scrape", "description": "🕷️ LLM-driven web scraping and content extraction with selectors and format options."},
+        {"name": "maestro_execute", "description": "⚡ LLM-driven code execution with output capture and validation."},
+        {"name": "maestro_error_handler", "description": "🔧 Adaptive error handling and recovery with LLM-driven analysis."},
+        {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis for information freshness and deadline awareness."}
+    ]
+    log_debug(f"💡 Returning {len(response_data)} tools from lightweight endpoint")
+    return response_data
+
+# Super lightweight ping endpoint to test basic FastAPI availability
+@fastapi_app.get("/ping")
+async def ping():
+    """Extremely lightweight ping endpoint to test basic server availability."""
+    log_debug("🏓 Ping endpoint called")
+    return {"ping": "pong", "timestamp": time.time()}
+
 # MCP request/response handler
 async def handle_mcp_request(request: Request):
     """Handle MCP requests and proxy them to the FastMCP instance."""
+    global mcp, _mcp_initialized
+    
+    # Check if MCP is initialized
+    if not mcp or not _mcp_initialized:
+        log_debug("MCP request handler called before FastMCP initialization complete")
+        return JSONResponse(
+            content={
+                "error": "MCP not initialized yet", 
+                "message": "The MCP server is still initializing. Please try again later."
+            },
+            status_code=503
+        )
+    
     req_start_time = time.time()
     logger.info(f"Handling MCP request: {request.method} {request.url.path}")
     log_debug(f"Request headers: {request.headers}")
@@ -371,11 +434,31 @@ async def handle_mcp_request(request: Request):
 @fastapi_app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
 async def handle_all_mcp_methods(request: Request):
     """Handle all HTTP methods to /mcp for Smithery compatibility."""
+    global mcp, _mcp_initialized
+    
     logger.info(f"MCP endpoint called with method: {request.method}")
     req_start_time = time.time()
     log_debug(f"MCP endpoint request: {request.method} {request.url.path}")
     log_debug(f"Request client: {request.client}")
     log_debug(f"Request headers: {dict(request.headers.items())}")
+    
+    # Check if MCP is initialized
+    if not mcp or not _mcp_initialized:
+        log_debug("MCP endpoint called before FastMCP initialization complete")
+        if request.method == "GET":
+            # For GET requests (tool scanning), redirect to our lightweight endpoint
+            log_debug("Redirecting GET request to /tools endpoint")
+            return await lightweight_tools()
+        else:
+            # For other methods, return a 503 Service Unavailable
+            log_debug("Returning 503 - Service Unavailable (MCP not initialized)")
+            return JSONResponse(
+                content={
+                    "error": "MCP not initialized yet", 
+                    "message": "The MCP server is still initializing. Please try again later or use /tools for tool listing."
+                },
+                status_code=503
+            )
     
     # Fast path for GET requests - specifically for Smithery tool scanning
     if request.method == "GET":
@@ -463,23 +546,6 @@ async def debug_info():
         }
     }
 
-# Add a new lightweight /tools endpoint
-@fastapi_app.get("/tools")
-async def lightweight_tools():
-    """Extremely lightweight tool listing endpoint that bypasses FastMCP's internal mechanisms."""
-    log_debug("Lightweight tools endpoint called - bypassing FastMCP for fast scanning")
-    return [
-        {"name": "maestro_orchestrate", "description": "🎭 Intelligent workflow orchestration with context analysis and success criteria validation."},
-        {"name": "maestro_iae_discovery", "description": "💡 Discover Intelligence Amplification Engines and their capabilities."},
-        {"name": "maestro_tool_selection", "description": "🎯 Intelligent tool selection based on task requirements and computational needs."},
-        {"name": "maestro_iae", "description": "🧮 Intelligent Amplification Engine for specialized computational tasks across multiple domains."},
-        {"name": "maestro_search", "description": "🌐 LLM-driven web search with temporal filtering and structured results."},
-        {"name": "maestro_scrape", "description": "🕷️ LLM-driven web scraping and content extraction with selectors and format options."},
-        {"name": "maestro_execute", "description": "⚡ LLM-driven code execution with output capture and validation."},
-        {"name": "maestro_error_handler", "description": "🔧 Adaptive error handling and recovery with LLM-driven analysis."},
-        {"name": "maestro_temporal_context", "description": "🕐 Temporal context analysis for information freshness and deadline awareness."}
-    ]
-
 # Add a dedicated healthcheck endpoint for Smithery
 @fastapi_app.get("/health")
 async def healthcheck():
@@ -490,6 +556,38 @@ async def healthcheck():
 # The 'app' for Uvicorn is now the FastAPI app that mounts FastMCP at /mcp
 app = fastapi_app
 log_debug("Module initialization complete - app ready to serve requests")
+
+# Handle deferred FastMCP initialization
+async def initialize_mcp_after_startup():
+    """Initialize FastMCP after FastAPI has started."""
+    global mcp, _mcp_initialized
+    
+    if should_defer_mcp_init and not _mcp_initialized:
+        log_debug("🚀 Performing deferred FastMCP initialization")
+        try:
+            start_time = time.time()
+            mcp = FastMCP("maestro")
+            init_time = time.time() - start_time
+            log_debug(f"FastMCP server initialized in {init_time:.2f} seconds")
+            _mcp_initialized = True
+            
+            # Now register tools
+            _register_tools()
+            
+            log_debug("✅ Deferred FastMCP initialization complete")
+        except Exception as e:
+            log_debug(f"Error in deferred FastMCP initialization: {e}")
+            log_debug(traceback.format_exc())
+
+# Register startup event handler
+@fastapi_app.on_event("startup")
+async def startup_event():
+    log_debug("🚀 FastAPI startup event triggered")
+    # If MCP initialization was deferred, schedule it as a background task
+    if should_defer_mcp_init:
+        import asyncio
+        asyncio.create_task(initialize_mcp_after_startup())
+    log_debug("✅ FastAPI startup complete")
 
 if __name__ == "__main__":
     import sys

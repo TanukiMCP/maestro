@@ -1,21 +1,12 @@
-version: 1
-type: http
-start:
-  command: ["python", "deploy.py", "smithery", "--host", "0.0.0.0", "--port", "8000"]
+startCommand:
+  type: http
+  command:
+    - python
+    - deploy.py
+    - smithery
+    - --host
+    - 0.0.0.0
+    - --port
+    - "8000"
   port: 8000
-  health_timeout: 120  # Extended timeout for health check
-  scan_timeout: 120    # Extended timeout for tool scanning
-  health_endpoint: "/health"  # Use our dedicated health endpoint
-  # Temporarily remove tools_endpoint to see if Smithery has a different default behavior
-  # for tool scanning, or if the server is too slow to respond on ANY path.
-configSchema:
-  type: object
-  properties:
-    api_key:
-      type: string
-      description: Optional API key for accessing external services
-    debug:
-      type: boolean
-      description: Enable debug mode for additional logging
-      default: false
-  required: [] 
+  healthCheckPath: /health

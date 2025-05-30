@@ -227,7 +227,7 @@ def _register_tools():
 
 # Register tools when this module is imported
 try:
-    _register_tools() 
+    _register_tools()
 except Exception as e:
     log_debug(f"Error during tool registration: {e}")
 
@@ -258,7 +258,7 @@ async def lightweight_tools():
 async def ping():
     log_debug("🏓 Ping endpoint called")
     return {"ping": "pong", "timestamp": time.time()}
-    
+
 # MCP request/response handler
 async def handle_mcp_request(request: Request):
     log_debug("MCP request handler called")
@@ -269,7 +269,7 @@ async def handle_mcp_request(request: Request):
             body = await request.json()
             tool_name = body.get("tool")
             arguments = body.get("arguments", {})
-            
+    
             # Route to the appropriate handler
             if tool_name == "maestro_orchestrate":
                 return await handle_maestro_orchestrate(**arguments)
@@ -294,12 +294,12 @@ async def handle_mcp_request(request: Request):
                     content={"error": f"Unknown tool: {tool_name}"},
                     status_code=400
                 )
-        except Exception as e:
+    except Exception as e:
             log_debug(f"Error handling MCP request: {str(e)}")
             return JSONResponse(
                 content={"error": f"Error processing request: {str(e)}"},
                 status_code=500
-            )
+    )
 
 # Mount the MCP server at /mcp
 @fastapi_app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
@@ -348,4 +348,4 @@ log_debug("Module initialization complete - app ready to serve requests")
 
 if __name__ == "__main__":
     logger.info("Running src/main.py directly")
-    print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")
+        print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")

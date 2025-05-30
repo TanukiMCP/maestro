@@ -225,8 +225,7 @@ class IntelligenceAmplificationEngine:
             }
             
             logger.info(f"✅ Cognitive load optimization complete: {len(selected_tasks)} tasks selected")
-            return result
-            
+                
         except Exception as e:
             logger.error(f"❌ Cognitive load optimization failed: {str(e)}")
             return {"error": f"Calculation failed: {str(e)}"}

@@ -26,6 +26,13 @@ try:
         OrchestrationResult,
         TaskComplexity
     )
+    from .maestro.adaptive_error_handler import (
+        AdaptiveErrorHandler,
+        TemporalContext,
+        ErrorContext,
+        ReconsiderationResult
+    )
+    from .maestro.puppeteer_tools import MAESTROPuppeteerTools
     from .computational_tools import ComputationalTools
 except ImportError:
     from maestro import MAESTROOrchestrator
@@ -36,6 +43,13 @@ except ImportError:
         OrchestrationResult,
         TaskComplexity
     )
+    from maestro.adaptive_error_handler import (
+        AdaptiveErrorHandler,
+        TemporalContext,
+        ErrorContext,
+        ReconsiderationResult
+    )
+    from maestro.puppeteer_tools import MAESTROPuppeteerTools
     from computational_tools import ComputationalTools
 
 # Configure logging
@@ -59,6 +73,7 @@ class MaestroMCPServer:
         self._orchestrator = None
         self._context_orchestrator = None
         self._enhanced_orchestrator = None
+        self._enhanced_tools = None
         self._initialization_error = None
         self._initialization_attempted = False
         
@@ -70,7 +85,7 @@ class MaestroMCPServer:
         self.app = Server("maestro")
         self._register_handlers()
         
-        logger.info("🎭 Maestro MCP Server Ready (Enhanced Intelligence Amplification with MIA)")
+        logger.info("🎭 Maestro MCP Server Ready (Enhanced Intelligence Amplification with MIA + Adaptive Capabilities)")
     
     def _get_computational_tools(self):
         """Get computational tools with lazy initialization for lightweight tool scanning."""
@@ -229,16 +244,16 @@ class MaestroMCPServer:
                                     "description": "Description of the request to analyze"
                                 },
                                 "available_context": {
-                                    "type": "object",
+                            "type": "object",
                                     "description": "Available context information",
                                     "additionalProperties": True
                                 },
                                 "precision_requirements": {
-                                    "type": "object",
+                            "type": "object",
                                     "description": "Precision and accuracy requirements",
-                                    "properties": {
+                            "properties": {
                                         "level": {
-                                            "type": "string",
+                                    "type": "string",
                                             "enum": ["basic", "standard", "high", "machine_precision"],
                                             "default": "standard"
                                         }
@@ -318,7 +333,7 @@ class MaestroMCPServer:
                                     "default": "quantum_physics"
                                 },
                                 "computation_type": {
-                                    "type": "string", 
+                                    "type": "string",
                                     "description": "Type of calculation to perform",
                                     "enum": ["entanglement_entropy", "bell_violation", "quantum_fidelity", 
                                            "pauli_decomposition", "molecular_properties", "statistical_test",
@@ -346,6 +361,284 @@ class MaestroMCPServer:
                             "idempotentHint": False,
                             "openWorldHint": True
                         }
+                    ),
+                    types.Tool(
+                        name="maestro_search",
+                        description=(
+                            "🔍 LLM-driven web search with intelligent fallback capabilities. "
+                            "Provides web search functionality when client doesn't support built-in search. "
+                            "Uses puppeteer for automated search with temporal filtering and result formatting. "
+                            "Automatically discovers if client has web search tools and falls back to built-in when needed."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Search query string"
+                                },
+                                "max_results": {
+                                    "type": "integer",
+                                    "description": "Maximum number of results to return",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "maximum": 50
+                                },
+                                "search_engine": {
+                                    "type": "string",
+                                    "description": "Search engine to use",
+                                    "enum": ["duckduckgo", "bing", "google"],
+                                    "default": "duckduckgo"
+                                },
+                                "temporal_filter": {
+                                    "type": "string",
+                                    "description": "Filter results by time period",
+                                    "enum": ["24h", "1w", "1m", "1y", "any"],
+                                    "default": "any"
+                                },
+                                "result_format": {
+                                    "type": "string",
+                                    "description": "Format for search results",
+                                    "enum": ["structured", "markdown", "json"],
+                                    "default": "structured"
+                                }
+                            },
+                            "required": ["query"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Web Search",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": True
+                        }
+                    ),
+                    types.Tool(
+                        name="maestro_scrape",
+                        description=(
+                            "🕷️ LLM-driven web scraping with intelligent content extraction and formatting. "
+                            "Provides web scraping functionality when client doesn't support built-in scraping. "
+                            "Uses puppeteer for automated content extraction with CSS selectors, link extraction, "
+                            "and multiple output formats (markdown, JSON, text, HTML)."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL to scrape content from"
+                                },
+                                "output_format": {
+                                    "type": "string",
+                                    "description": "Format for extracted content",
+                                    "enum": ["markdown", "json", "text", "html"],
+                                    "default": "markdown"
+                                },
+                                "selectors": {
+                                    "type": "array",
+                                    "description": "CSS selectors for specific content extraction",
+                                    "items": {"type": "string"},
+                                    "default": []
+                                },
+                                "wait_for": {
+                                    "type": "string",
+                                    "description": "CSS selector to wait for before scraping"
+                                },
+                                "extract_links": {
+                                    "type": "boolean",
+                                    "description": "Whether to extract all links from the page",
+                                    "default": false
+                                },
+                                "extract_images": {
+                                    "type": "boolean",
+                                    "description": "Whether to extract image information",
+                                    "default": false
+                                }
+                            },
+                            "required": ["url"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Web Scraping",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": true,
+                            "openWorldHint": True
+                        }
+                    ),
+                    types.Tool(
+                        name="maestro_execute",
+                        description=(
+                            "⚡ LLM-driven code execution for validation and testing. "
+                            "Executes code in isolated environment for validation purposes. "
+                            "Supports Python, JavaScript, and Bash execution with timeout controls, "
+                            "output capture, and error analysis. Provides detailed validation results."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string",
+                                    "description": "Code to execute"
+                                },
+                                "language": {
+                                    "type": "string",
+                                    "description": "Programming language",
+                                    "enum": ["python", "javascript", "bash", "node"],
+                                    "default": "python"
+                                },
+                                "timeout": {
+                                    "type": "integer",
+                                    "description": "Execution timeout in seconds",
+                                    "default": 30,
+                                    "minimum": 1,
+                                    "maximum": 300
+                                },
+                                "capture_output": {
+                                    "type": "boolean",
+                                    "description": "Whether to capture stdout/stderr",
+                                    "default": true
+                                },
+                                "working_directory": {
+                                    "type": "string",
+                                    "description": "Working directory for execution"
+                                },
+                                "environment_vars": {
+                                    "type": "object",
+                                    "description": "Environment variables to set",
+                                    "additionalProperties": {"type": "string"}
+                                }
+                            },
+                            "required": ["code"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Code Execution",
+                            "readOnlyHint": False,
+                            "destructiveHint": True,
+                            "idempotentHint": False,
+                            "openWorldHint": True
+                        }
+                    ),
+                    types.Tool(
+                        name="maestro_error_handler",
+                        description=(
+                            "🔧 LLM-driven adaptive error handling with approach reconsideration. "
+                            "Analyzes errors intelligently and determines if approach should be reconsidered. "
+                            "Detects when success criteria can't be verified with available tools and "
+                            "provides alternative approaches, modified success criteria, and tool recommendations."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "error_details": {
+                                    "type": "object",
+                                    "description": "Details about the error that occurred",
+                                    "properties": {
+                                        "type": {"type": "string"},
+                                        "message": {"type": "string"},
+                                        "component": {"type": "string"},
+                                        "impact": {"type": "string"},
+                                        "attempted_approaches": {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        }
+                                    },
+                                    "required": ["message"]
+                                },
+                                "available_tools": {
+                                    "type": "array",
+                                    "description": "Tools currently available for execution",
+                                    "items": {"type": "string"}
+                                },
+                                "success_criteria": {
+                                    "type": "array",
+                                    "description": "Current success criteria",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "description": {"type": "string"},
+                                            "validation_tools": {
+                                                "type": "array",
+                                                "items": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                },
+                                "temporal_context": {
+                                    "type": "object",
+                                    "description": "Current temporal context for information currency",
+                                    "properties": {
+                                        "context_freshness_required": {"type": "boolean"},
+                                        "temporal_relevance_window": {"type": "string"},
+                                        "task_deadline": {"type": "string"}
+                                    }
+                                }
+                            },
+                            "required": ["error_details"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Adaptive Error Handler",
+                            "readOnlyHint": False,
+                            "destructiveHint": False,
+                            "idempotentHint": False,
+                            "openWorldHint": True
+                        }
+                    ),
+                    types.Tool(
+                        name="maestro_temporal_context",
+                        description=(
+                            "🕐 Temporal context awareness for information currency and RAG enhancement. "
+                            "Provides date/time context awareness for ensuring up-to-date information. "
+                            "Analyzes information freshness requirements and suggests when information "
+                            "needs to be refreshed or updated for current relevance."
+                        ),
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "Description of the task requiring temporal context"
+                                },
+                                "information_sources": {
+                                    "type": "array",
+                                    "description": "Information sources with timestamps",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "source": {"type": "string"},
+                                            "timestamp": {"type": "string"},
+                                            "content_summary": {"type": "string"}
+                                        },
+                                        "required": ["source", "timestamp"]
+                                    }
+                                },
+                                "temporal_requirements": {
+                                    "type": "object",
+                                    "description": "Temporal freshness requirements",
+                                    "properties": {
+                                        "freshness_required": {"type": "boolean"},
+                                        "relevance_window": {
+                                            "type": "string",
+                                            "enum": ["1h", "6h", "24h", "1w", "1m", "1y"],
+                                            "default": "24h"
+                                        },
+                                        "deadline": {"type": "string"}
+                                    }
+                                }
+                            },
+                            "required": ["task_description"],
+                            "additionalProperties": False
+                        },
+                        annotations={
+                            "title": "MAESTRO Temporal Context",
+                            "readOnlyHint": True,
+                            "destructiveHint": False,
+                            "idempotentHint": True,
+                            "openWorldHint": True
+                        }
                     )
                 ]
                 logger.info(f"✅ Successfully listed {len(tools)} Enhanced Maestro orchestration tools")
@@ -371,6 +664,16 @@ class MaestroMCPServer:
                     return await self._handle_tool_selection(arguments)
                 elif name == "maestro_enhancement":
                     return await self._handle_enhancement(arguments)
+                elif name == "maestro_search":
+                    return await self._handle_maestro_search(arguments)
+                elif name == "maestro_scrape":
+                    return await self._handle_maestro_scrape(arguments)
+                elif name == "maestro_execute":
+                    return await self._handle_maestro_execute(arguments)
+                elif name == "maestro_error_handler":
+                    return await self._handle_maestro_error_handler(arguments)
+                elif name == "maestro_temporal_context":
+                    return await self._handle_maestro_temporal_context(arguments)
                 elif name == "maestro_iae":
                     # Use lazy loading for computational tools
                     computational_tools = self._get_computational_tools()
@@ -462,7 +765,7 @@ You can proceed directly with orchestration using the `maestro_orchestrate` tool
                 # Generate survey for gaps
                 survey = context_engine.generate_context_survey(gaps, task_description)
                 response = self._format_context_survey_response(survey, task_description)
-                else:
+            else:
                 # Just report gaps without survey
                 response = f"""# 🧠 Context Intelligence Analysis ⚠️
 
@@ -750,8 +1053,8 @@ Each engine provides analytical frameworks to enhance your reasoning capabilitie
         logger.info(f"🔄 Using fallback implementation for tool: {name}")
         
         # Implementation would call original tool handlers
-            return [types.TextContent(
-                type="text", 
+        return [types.TextContent(
+            type="text", 
             text=f"🔄 Fallback tool execution for {name} - Enhanced implementation in progress"
         )]
     
@@ -785,8 +1088,8 @@ Type: {question.question_type}
 {f"Options: {', '.join(question.options)}" if question.options else ""}
 
 """
-                
-                response += f"""
+        
+        response += f"""
 ## 🔄 Next Steps
 
 1. **Answer the questions above**
@@ -814,7 +1117,7 @@ Providing this context enables:
 **Remember:** Intelligence Amplification > Raw Parameter Count
 """
         
-            return response
+        return response
             
     def _format_orchestration_result_response(self, result: OrchestrationResult) -> str:
         """Format orchestration result for user presentation."""
@@ -851,7 +1154,7 @@ Providing this context enables:
 **Orchestrated with Intelligence Amplification** - Enhanced capabilities through {len(workflow.iae_mappings)} cognitive enhancement engines.
 """
         
-            return response
+        return response
     
     def _process_survey_responses(self, responses: Dict[str, Any]) -> Dict[str, Any]:
         """Process survey responses into structured context."""

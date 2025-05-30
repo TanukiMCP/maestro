@@ -61,10 +61,11 @@ class TaskAnalysis:
     task_type: TaskType
     complexity: ComplexityLevel
     capabilities: List[str]
-    estimated_duration: int  # seconds
+    estimated_duration: str  # Changed from int to str for better readability
     required_tools: List[str]
     success_criteria: List[str]
     quality_requirements: Dict[str, float]
+    assigned_operator: Optional[str] = None  # Operator profile ID assigned
     metadata: Optional[Dict[str, Any]] = None  # For knowledge graph integration
     
     

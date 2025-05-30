@@ -565,6 +565,54 @@ Quality standards:
         
         return base_prompt
 
+    def select_optimal_profile(self, task_type: str, complexity_level: str, task_description: str) -> str:
+        """
+        Select optimal operator profile for a task (alias for select_profile)
+        
+        Args:
+            task_type: Type of task to be performed
+            complexity_level: Complexity level of the task
+            task_description: Description of the task for context
+            
+        Returns:
+            Profile ID of the selected operator
+        """
+        # Map task types to profile selection keys
+        task_mapping = {
+            'mathematics': 'data_analysis',
+            'web_development': 'technical_design', 
+            'code_development': 'code_review',
+            'data_analysis': 'data_analysis',
+            'research': 'research',
+            'language_processing': 'content_creation',
+            'general': 'problem_solving',
+            'creative': 'content_creation'
+        }
+        
+        profile_key = task_mapping.get(task_type, 'problem_solving')
+        
+        # Extract requirements from task description
+        requirements = {
+            'capabilities': [],
+            'quality_criteria': {'accuracy': 0.85, 'completeness': 0.80}
+        }
+        
+        # Add capability hints based on task description keywords
+        if any(word in task_description.lower() for word in ['analyze', 'data', 'statistics']):
+            requirements['capabilities'].append('data_analysis')
+        if any(word in task_description.lower() for word in ['code', 'program', 'function']):
+            requirements['capabilities'].append('code_analysis')
+        if any(word in task_description.lower() for word in ['design', 'creative', 'visual']):
+            requirements['capabilities'].append('creative_thinking')
+        
+        selected_profile = self.select_profile(
+            task_type=profile_key,
+            complexity_level=complexity_level,
+            requirements=requirements
+        )
+        
+        return selected_profile.profile_id
+
 class OperatorProfileFactory:
     """
     Factory class for creating and managing operator profiles

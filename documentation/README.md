@@ -1,179 +1,116 @@
-# MIA Protocol Documentation
-## Model Intelligence Amplification Protocol Documentation Suite
+# MIA Standard & Maestro MCP Server
 
-Welcome to the complete documentation for the Model Intelligence Amplification (MIA) Protocol - a standardized framework for providing computational amplification to Large Language Models.
+## Overview
 
----
+The MIA Standard (Mathematical Intelligence Augmentation) is a unified interface specification for connecting Large Language Models (LLMs) to computational tools. Maestro is an open-source MCP (Model Context Protocol) server that implements the MIA Standard, providing LLMs with access to mathematical and computational capabilities.
 
-## 📚 **Documentation Contents**
+## The Case for Tool Enhancement
 
-### **🎯 Core Protocol Documentation**
+### LLM Training Costs Are Rising Exponentially
 
-#### **[MIA_PROTOCOL_OVERVIEW.md](./MIA_PROTOCOL_OVERVIEW.md)**
-- **Purpose**: High-level introduction to the MIA Protocol concept
-- **Audience**: Anyone new to MIA - researchers, developers, LLM users
-- **Contents**: Problem statement, solution overview, benefits, and vision
-- **Key Topics**: Intelligence amplification vs parameter scaling, real-world examples
+Recent research demonstrates that training costs for frontier AI models are growing at an unsustainable rate:
 
-#### **[MIA_PROTOCOL_SPECIFICATION.md](./MIA_PROTOCOL_SPECIFICATION.md)**
-- **Purpose**: Complete technical specification of the MIA Protocol
-- **Audience**: Developers implementing MIA engines or servers
-- **Contents**: Data structures, interfaces, validation rules, performance requirements
-- **Key Topics**: Protocol layers, engine specifications, domain extensions
+- **Training costs increase 2.4x per year since 2016** (90% CI: 2.0x to 2.9x) [Source: "The rising costs of training frontier AI models" - arXiv:2405.21015]
+- **GPT-4 training cost exceeded $100 million** with some estimates reaching $78-100 million in compute costs alone [Source: Multiple industry analyses]
+- **Gemini Ultra estimated at $191 million** in training compute costs [Source: CUDO Compute analysis]
+- **Future models may cost over $1 billion by 2027** if current trends continue [Source: Cost modeling research]
 
-### **🔧 Implementation Analysis**
+### LLMs Have Well-Documented Mathematical Limitations
 
-#### **[MAESTRO_TOOLS_COMMUNICATION_REPORT.md](./MAESTRO_TOOLS_COMMUNICATION_REPORT.md)**
-- **Purpose**: Detailed analysis of our Maestro MCP Server implementation
-- **Audience**: Users and developers working with our specific server
-- **Contents**: Tool-by-tool communication analysis, performance characteristics
-- **Key Topics**: Orchestration vs computational tools, MIA compliance, deployment
+Extensive research has documented systematic limitations in LLM mathematical reasoning:
 
----
+- **Hallucination rates remain significant** across mathematical tasks, with models generating confident but incorrect answers [Source: Multiple academic studies]
+- **Arithmetic computation limitations** where LLMs struggle with basic calculations due to their token-based nature [Source: Academic research on LLM mathematical capabilities]
+- **Limited precision** in numerical computations compared to dedicated mathematical tools [Source: LLM evaluation studies]
 
-## 🎯 **What is the MIA Protocol?**
+### Tool Enhancement Offers Better ROI
 
-The **Model Intelligence Amplification (MIA) Protocol** standardizes how Large Language Models communicate with computational engines to overcome a fundamental limitation: **LLMs cannot perform precise mathematical calculations**.
+Research suggests that augmenting models with computational tools can be more cost-effective than parameter scaling:
 
-### **Core Concept**
-```
-LLM Reasoning + Computational Engines = Amplified Intelligence
-```
+- **Smaller models with tools can match larger models** on specific tasks while using significantly less compute [Source: Tool enhancement research]
+- **Specialized tools provide deterministic accuracy** for mathematical computations without hallucination risk
+- **Modular approach allows targeted improvements** without retraining entire models
 
-Instead of relying on token prediction for numerical results, MIA enables LLMs to:
-- ✅ **Call specialized computational engines**
-- ✅ **Receive machine-precision calculations**
-- ✅ **Validate numerical results**
-- ✅ **Access domain-specific computations**
+## MIA Standard
 
----
+The MIA Standard defines a consistent interface for mathematical and computational tool integration with LLMs. It provides:
 
-## 🏗️ **Architecture Summary**
+- **Unified API**: Consistent interface across different computational tools
+- **Type Safety**: Well-defined input/output schemas for reliable operation  
+- **Extensibility**: Framework for adding new mathematical capabilities
+- **Error Handling**: Robust error reporting and recovery mechanisms
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   LLM       │───▶│ MCP Server  │───▶│ MIA Protocol│───▶│ Computational│
-│             │    │             │    │   Layer     │    │   Engine    │
-│ - Reasoning │    │ - Transport │    │ - Validation│    │ - NumPy     │
-│ - Context   │    │ - Discovery │    │ - Formatting│    │ - SciPy     │
-│ - Language  │◀───│ - Tools     │◀───│ - Standards │◀───│ - Libraries │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
+## Maestro MCP Server
 
-### **Key Components**
-1. **Transport Layer (MCP)**: Client-server communication
-2. **MIA Standardization Layer**: Parameter validation, result formatting
-3. **Computational Engine Layer**: Actual numerical computations
+Maestro is an implementation of the MIA Standard using the Model Context Protocol (MCP), an open standard developed by Anthropic for connecting AI assistants to external systems.
 
----
+### Features
 
-## 🔬 **Example: Quantum Physics Calculation**
+- **Mathematical Operations**: Linear algebra, calculus, statistics
+- **Data Processing**: Matrix operations, numerical analysis
+- **Symbolic Math**: Computer algebra system integration
+- **Visualization**: Graph and chart generation capabilities
 
-### **Traditional LLM Approach**
-```
-User: "Calculate entanglement entropy for this quantum state"
-LLM: "The entropy is approximately 0.7 bits..." 
-(Token prediction - not actual calculation)
-```
+### Integration
 
-### **MIA-Enhanced Approach**
-```
-User: "Calculate entanglement entropy for this quantum state"
-LLM: *calls quantum_entanglement_entropy with density matrix*
-MIA Engine: *performs eigenvalue decomposition using SciPy*
-Result: von_neumann_entropy = 1.000000 bits (machine precision)
-LLM: "The von Neumann entropy is exactly 1.000000 bits, indicating 
-maximal entanglement. This was computed using eigenvalue 
-decomposition of the reduced density matrix."
+Maestro integrates with MCP-compatible systems including:
+- Claude Desktop
+- Cursor IDE  
+- Other MCP-enabled applications
+
+## Getting Started
+
+### Requirements
+
+- Node.js 18+ or Python 3.9+
+- MCP-compatible client application
+
+### Installation
+
+```bash
+# Install via npm
+npm install -g @maestro/mcp-server
+
+# Or via pip  
+pip install maestro-mcp-server
 ```
 
----
+### Configuration
 
-## 🚀 **Current Implementation Status**
+Add to your MCP client configuration:
 
-### **✅ Completed (Corrected Architecture)**
-- **MIA Protocol v1.0 Specification**
-- **5 Core Orchestration Tools** (clean MCP interface)
-- **Single MIA Gateway Tool** (`maestro_iae` - access to all computational engines)
-- **Quantum Physics Computational Engine** (internal, accessed via gateway)
-- **Maestro MCP Server Integration** (corrected abstraction)
-- **Clean Tool Architecture** (no individual computational tool pollution)
+```json
+{
+  "mcpServers": {
+    "maestro": {
+      "command": "maestro-mcp-server",
+      "args": []
+    }
+  }
+}
+```
 
-### **⭐ Planned**
-- **43 Additional Computational Engines** (chemistry, biology, engineering, etc.)
-- **Enhanced Tool Orchestration** (improved multi-engine coordination)
-- **Distributed Computing Support**
-- **GPU Acceleration**
-- **Extended Precision Mathematics**
+## Documentation
 
----
+- [MIA Standard Specification](./MIA_PROTOCOL_SPECIFICATION.md)
+- [Integration Guide](./integration-guide.md)
+- [API Reference](./api-reference.md)
 
-## 📖 **How to Use This Documentation**
+## Contributing
 
-### **🆕 New to MIA?**
-1. Start with **[MIA_PROTOCOL_OVERVIEW.md](./MIA_PROTOCOL_OVERVIEW.md)**
-2. Understand the problem and solution approach
-3. See real-world examples and benefits
+We welcome contributions to both the MIA Standard specification and Maestro implementation. Please see our contribution guidelines for details.
 
-### **🔧 Want to Implement MIA?**
-1. Read **[MIA_PROTOCOL_SPECIFICATION.md](./MIA_PROTOCOL_SPECIFICATION.md)**
-2. Follow the technical specifications
-3. Implement engine interface requirements
-4. Ensure protocol compliance
+## License
 
-### **🎯 Using Our Maestro Server?**
-1. Review **[MAESTRO_TOOLS_COMMUNICATION_REPORT.md](./MAESTRO_TOOLS_COMMUNICATION_REPORT.md)**
-2. Understand available tools and their capabilities
-3. Learn communication patterns and usage examples
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### **🔬 Researcher or Scientist?**
-1. Identify your computational needs
-2. Map them to available engines
-3. Use MIA tools for precise calculations
-4. Validate results and contribute feedback
+## References
+
+1. Cottier, B., et al. (2024). "The rising costs of training frontier AI models." arXiv:2405.21015
+2. Anthropic. (2024). "Introducing the Model Context Protocol." Anthropic Blog
+3. Various academic studies on LLM mathematical reasoning limitations
+4. Industry analysis of AI training costs and scaling trends
 
 ---
 
-## 🌟 **Key Benefits of MIA**
-
-### **For Users**
-- **Precision**: Machine-accurate calculations
-- **Reliability**: Validated computational results
-- **Efficiency**: No manual verification needed
-- **Comprehensive**: Reasoning + computation in one interface
-
-### **For Developers**
-- **Standardized**: Consistent interfaces across engines
-- **Modular**: Easy to add new computational domains
-- **Scalable**: Distributed and parallel computation support
-- **Maintainable**: Clear separation of concerns
-
-### **For the AI Community**
-- **Intelligence Amplification**: Beyond parameter scaling
-- **Reproducibility**: Standardized computational methods
-- **Accessibility**: Complex calculations available to all
-- **Innovation**: Foundation for next-generation AI systems
-
----
-
-## 🤝 **Contributing to MIA**
-
-The MIA Protocol is designed as an open standard. We welcome:
-
-- **Engine Developers**: Create new computational engines
-- **Server Implementers**: Build MIA-compliant MCP servers  
-- **Researchers**: Use and validate MIA computational results
-- **Feedback**: Suggestions for protocol improvements
-
----
-
-## 📞 **Getting Help**
-
-- **Technical Questions**: Review the specification document
-- **Implementation Help**: Check the Maestro tools report
-- **Conceptual Questions**: Start with the overview document
-- **Protocol Discussion**: Reference implementation in `../src/`
-
----
-
-**The MIA Protocol represents a paradigm shift from "bigger models" to "smarter systems" - enabling precise computational amplification for Large Language Models through standardized, modular engines.** 
+*The MIA Standard and Maestro project aim to provide a practical, research-backed approach to enhancing LLM capabilities through tool integration rather than parameter scaling alone.* 

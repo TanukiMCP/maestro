@@ -8,7 +8,7 @@ and data quality assessment using pandas, NumPy, SciPy, and other computational 
 import json
 import re
 import statistics
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 import logging
 
 logger = logging.getLogger(__name__)
@@ -146,7 +146,7 @@ class DataAnalysisEngine:
             
             logger.info(f"✅ Statistical summary complete: {len(clean_data)} data points analyzed")
             return result
-            
+                    
         except Exception as e:
             logger.error(f"❌ Statistical summary failed: {str(e)}")
             return {"error": f"Calculation failed: {str(e)}"}

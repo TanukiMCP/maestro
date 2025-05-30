@@ -23,7 +23,10 @@ from .web_verification import WebVerificationEngine
 from .data_analysis import DataAnalysisEngine
 from .grammar import GrammarEngine
 from .apa_citation import APACitationEngine
-from .intelligence_amplifier import IntelligenceAmplifier, AmplificationResult
+from .intelligence_amplifier import IntelligenceAmplificationEngine
+
+# Create alias for backward compatibility
+IntelligenceAmplifier = IntelligenceAmplificationEngine
 
 __all__ = [
     'MathematicsEngine',
@@ -33,6 +36,5 @@ __all__ = [
     'DataAnalysisEngine',
     'GrammarEngine',
     'APACitationEngine',
-    'IntelligenceAmplifier',
-    'AmplificationResult'
+    'IntelligenceAmplifier'
 ] 

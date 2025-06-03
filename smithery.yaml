@@ -17,3 +17,5 @@ toolScanning:
   timeout: 30
   retries: 3
   lazyLoad: true
+  enabled: true
+  mcpVersion: "2025-03-26"

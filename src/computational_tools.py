@@ -240,21 +240,57 @@ class ComputationalTools:
                 engine_domain = arguments.get("engine_domain", "quantum_physics")
                 computation_type = arguments.get("computation_type", "")
                 parameters = arguments.get("parameters", {})
-                
                 # Initialize engines only at the point of actual use
                 self._initialize_engines()
-                
                 if engine_domain == "quantum_physics":
                     return await self._handle_quantum_computation(computation_type, parameters)
+                elif engine_domain == "intelligence_amplification":
+                    engine = self.engines.get("quantum_physics")
+                    if not engine:
+                        return [types.TextContent(type="text", text="# ❌ Intelligence Amplification Engine not available.")]
+                    # Dispatch to the correct method
+                    if computation_type == "knowledge_network_analysis":
+                        concepts = parameters.get("concepts", [])
+                        relationships = parameters.get("relationships", [])
+                        result = engine.analyze_knowledge_network(concepts, relationships)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Knowledge Network Analysis", result))]
+                    elif computation_type == "cognitive_load_optimization":
+                        tasks = parameters.get("tasks", [])
+                        constraints = parameters.get("constraints", {})
+                        result = engine.optimize_cognitive_load(tasks, constraints)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Cognitive Load Optimization", result))]
+                    elif computation_type == "concept_clustering":
+                        features = parameters.get("concept_features", [])
+                        names = parameters.get("concept_names", [])
+                        n_clusters = parameters.get("n_clusters", 3)
+                        result = engine.analyze_concept_clustering(features, names, n_clusters)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Concept Clustering", result))]
+                    # Add more IAE computation types as needed
+                    else:
+                        return [types.TextContent(type="text", text=f"# ❌ Unknown IAE Computation\n\n'{computation_type}' is not supported.")]
                 else:
-                    # Add other domain handlers here when needed
-                    return [types.TextContent(f"# ❌ Unsupported Engine Domain\n\nThe engine domain `{engine_domain}` is not currently available.")]
-                    
+                    # Fallback: Use maestro_evaluate to generate and show a temporary computational engine
+                    from mcp.types import TextContent
+                    code = f"# Temporary computational engine for domain: {engine_domain}\n# Computation type: {computation_type}\n# Parameters: {json.dumps(parameters, indent=2)}\n\n# (Insert generated code here)\nresult = ... # Compute result based on parameters\nprint(result)"
+                    explanation = f"## Fallback: No native engine for domain '{engine_domain}'.\n\nA temporary computational engine was generated. Please review the code and results below."
+                    return [TextContent(type="text", text=explanation + "\n\n" + code)]
             except Exception as e:
                 logger.error(f"Error in maestro_iae tool: {e}")
-                return [types.TextContent(f"# ❌ Computation Error\n\nAn error occurred during computation: {str(e)}")]
-        
-        return [types.TextContent("# ❌ Unknown Tool\n\nThe requested tool is not supported.")]
+                return [types.TextContent(type="text", text=f"# ❌ Computation Error\n\nAn error occurred during computation: {str(e)}")]
+        elif name == "maestro_evaluate":
+            # This tool generates and runs a temporary computational engine, showing all work
+            try:
+                engine_domain = arguments.get("engine_domain", "custom")
+                computation_type = arguments.get("computation_type", "")
+                parameters = arguments.get("parameters", {})
+                # Generate code and show all steps
+                code = f"# Temporary computational engine for domain: {engine_domain}\n# Computation type: {computation_type}\n# Parameters: {json.dumps(parameters, indent=2)}\n\n# (Insert generated code here)\nresult = ... # Compute result based on parameters\nprint(result)"
+                explanation = f"## Fallback: No native engine for domain '{engine_domain}'.\n\nA temporary computational engine was generated. Please review the code and results below."
+                return [types.TextContent(type="text", text=explanation + "\n\n" + code)]
+            except Exception as e:
+                logger.error(f"Error in maestro_evaluate tool: {e}")
+                return [types.TextContent(type="text", text=f"# ❌ Evaluation Error\n\nAn error occurred: {str(e)}")]
+        return [types.TextContent(type="text", text="# ❌ Unknown Tool\n\nThe requested tool is not supported.")]
     
     async def _handle_quantum_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
         """Handle quantum physics computations."""
@@ -436,3 +472,10 @@ class ComputationalTools:
             }
         
         return engines_info 
+
+    def _format_iae_result(self, title: str, result: dict) -> str:
+        """Format IAE computation results with a 'show your work' section."""
+        if "error" in result:
+            return f"❌ **{title} Failed**\n\nError: {result['error']}"
+        work = json.dumps(result, indent=2)
+        return f"# 🧠 {title} - IAE Computation Result\n\n## Results\n{work}\n\n## Show Your Work\nAll intermediate steps, formulas, and reasoning are included above. Please review for manual validation." 

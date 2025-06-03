@@ -7,6 +7,10 @@ with proper lazy loading to optimize Smithery scanning performance.
 
 import logging
 from typing import List, Dict, Any
+from mcp.server.fastmcp import Context
+from mcp.types import TextContent # Added for clarity in return types
+import json
+import traceback
 
 # Set up logging - lightweight operation
 logger = logging.getLogger(__name__)
@@ -24,6 +28,7 @@ class MaestroTools:
         self._computational_tools = None
         self._engines_loaded = False
         self._orchestrator_loaded = False
+        self._enhanced_tool_handlers = None # Added for other enhanced tools
         
         logger.info("🎭 MaestroTools initialized with lazy loading")
     
@@ -39,85 +44,177 @@ class MaestroTools:
                 logger.error(f"❌ Failed to import ComputationalTools: {e}")
                 self._computational_tools = None
     
-    async def _handle_orchestrate(self, arguments: dict) -> List[Dict[str, Any]]:
-        """Handle orchestration requests with enhanced Intelligence Amplification Engine integration."""
+    def _ensure_enhanced_tool_handlers(self):
+        """Lazy load enhanced tool handlers only when needed."""
+        if self._enhanced_tool_handlers is None:
+            try:
+                from .maestro.enhanced_tools import EnhancedToolHandlers
+                self._enhanced_tool_handlers = EnhancedToolHandlers()
+                logger.info("✅ EnhancedToolHandlers loaded on first use")
+            except ImportError as e:
+                logger.error(f"❌ Failed to import EnhancedToolHandlers: {e}")
+                self._enhanced_tool_handlers = None
+    
+    async def _call_internal_tool(self, ctx: Context, tool_name: str, arguments: Dict[str, Any]) -> str:
+        """Helper to call other MCP tools internally and return formatted string output."""
         try:
-            # Lazy import TextContent only when needed
-            from mcp.types import TextContent
-            
-            task_description = arguments.get("task_description", "")
-            context = arguments.get("context", {})
-            success_criteria = arguments.get("success_criteria", {})
-            complexity_level = arguments.get("complexity_level", "moderate")
-            
-            logger.info(f"🎭 Orchestrating task: {task_description[:100]}...")
-            
-            # Only load computational tools when actually needed
-            self._ensure_computational_tools()
-            
-            # Analyze task requirements and map to computational engines
-            computational_needs = self._analyze_computational_requirements(task_description, context)
-            
-            response = f"""# 🎭 Maestro Orchestration Framework
-
-## Task Analysis
-**Description:** {task_description}
-**Complexity Level:** {complexity_level}
-
-## Computational Amplification Strategy
-"""
-            
-            if computational_needs["requires_computation"]:
-                response += f"""
-### Intelligence Amplification Engines Required
-{computational_needs["engine_recommendations"]}
-
-### Orchestration Workflow
-1. **Primary Tool**: `maestro_iae` - Gateway to computational engines
-2. **Engine Domain**: {computational_needs["primary_domain"]}
-3. **Computation Types**: {', '.join(computational_needs["computation_types"])}
-
-### Recommended Tool Sequence
-"""
-                for i, step in enumerate(computational_needs["workflow_steps"], 1):
-                    response += f"{i}. {step}\n"
-                
-                response += f"""
-### maestro_iae Usage Pattern
-```
-Tool Call: maestro_iae
-Parameters:
-  engine_domain: "{computational_needs["primary_domain"]}"
-  computation_type: "{computational_needs["computation_types"][0] if computational_needs["computation_types"] else 'custom'}"
-  parameters: {{specific computation parameters}}
-```
-"""
+            if tool_name == "maestro_iae":
+                self._ensure_computational_tools()
+                if self._computational_tools:
+                    results = await self._computational_tools.handle_tool_call(tool_name, arguments)
+                    # Assuming results is a list of TextContent; concatenate their text
+                    return "\n".join([t.text for t in results])
+                else:
+                    return f"❌ Error: Computational tools not available for {tool_name}."
+            elif tool_name in ["maestro_search", "maestro_scrape", "maestro_execute", "maestro_error_handler", "maestro_temporal_context"]:
+                self._ensure_enhanced_tool_handlers()
+                if self._enhanced_tool_handlers:
+                    # Directly call the handler method for these tools
+                    handler_map = {
+                        "maestro_search": self._enhanced_tool_handlers.search,
+                        "maestro_scrape": self._enhanced_tool_handlers.scrape,
+                        "maestro_execute": self._enhanced_tool_handlers.execute,
+                        "maestro_error_handler": self._enhanced_tool_handlers.handle_error,
+                        "maestro_temporal_context": self._enhanced_tool_handlers.analyze_temporal_context,
+                    }
+                    if tool_name in handler_map:
+                        result_text = await handler_map[tool_name](**arguments)
+                        return f"✅ Tool '{tool_name}' executed. Result: {result_text}"
+                    else:
+                        return f"❌ Error: Handler for '{tool_name}' not found in EnhancedToolHandlers."
+                else:
+                    return f"❌ Error: Enhanced tool handlers not available for {tool_name}."
             else:
-                response += """
-### Analysis Workflow
-This task requires strategic analysis rather than computational engines.
-Recommended approach: Use reasoning and context analysis tools.
-"""
-            
-            response += f"""
-## Success Metrics
-{self._format_success_criteria(success_criteria)}
-
-## Enhanced Capabilities
-- ✅ **Computational Precision**: Access to MIA engines for exact calculations
-- ✅ **Multi-Domain Integration**: Coordinate across scientific domains
-- ✅ **Validation Framework**: Verify results through computational engines
-- ✅ **Scalable Architecture**: Modular engine selection based on needs
-
-*This orchestration leverages Intelligence Amplification Engines for computational tasks beyond token prediction.*"""
-            
-            return [TextContent(text=response)]
-            
+                return f"❌ Error: Internal tool call to '{tool_name}' is not supported via this helper."
         except Exception as e:
-            # Import TextContent here to ensure lazy loading
-            from mcp.types import TextContent
-            logger.error(f"❌ Orchestration failed: {str(e)}")
-            return [TextContent(text=f"❌ **Orchestration Failed**\n\nError: {str(e)}\n\nPlease refine your task description and try again.")]
+            logger.error(f"❌ Internal tool call to {tool_name} failed: {e}")
+            return f"❌ Internal tool call failed for '{tool_name}': {str(e)}"
+
+    async def orchestrate_task(self, ctx: Context, task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate") -> str:
+        """
+        Orchestrates complex tasks, leveraging Mixture-of-Agents (MoA) for computational
+        amplification and dynamic tool/engine selection. Includes 'show your work' output.
+        """
+        try:
+            # Lazy load necessary components
+            self._ensure_computational_tools()
+            self._ensure_enhanced_tool_handlers()
+
+            orchestration_plan_prompt = f"""
+You are an intelligent workflow orchestrator. Your goal is to break down a complex task
+and plan the sequence of actions, including which specialized computational engines or
+tools should be used.
+If the task requires numerical computations or analysis, identify the appropriate
+'maestro_iae' calls (engine_domain, computation_type, parameters).
+If it requires other operations (search, scrape, execute, error_handling, temporal_context),
+identify calls to 'maestro_search', 'maestro_scrape', 'maestro_execute', 'maestro_error_handler',
+or 'maestro_temporal_context'.
+
+Output your plan as a JSON object with the following structure:
+{{
+    "requires_moa": boolean,
+    "steps": [
+        {{
+            "type": "tool_call",
+            "tool_name": "maestro_iae" | "maestro_search" | "maestro_scrape" | "maestro_execute" | "maestro_error_handler" | "maestro_temporal_context",
+            "arguments": {{...}}
+        }},
+        {{
+            "type": "reasoning",
+            "description": "Explanation of reasoning step"
+        }}
+        // ... more steps
+    ],
+    "final_synthesis_required": boolean,
+    "moa_aggregation_strategy": "consensus" | "confidence_weighted" | "llm_synthesis" | "none"
+}}
+
+Here is the task: "{task_description}"
+Context: {context}
+Success Criteria: {success_criteria}
+Complexity Level: {complexity_level}
+
+Consider if multiple computations/tools are needed and how their results would be aggregated.
+Prioritize using available specialized engines via 'maestro_iae' for computations.
+"""
+            logger.info(f"🎭 Requesting orchestration plan from LLM for task: {task_description[:100]}...")
+            
+            # Use ctx.sample for internal LLM call
+            # This is where the LLM will provide the MoA plan
+            orchestration_response_json = await ctx.sample(
+                prompt=orchestration_plan_prompt,
+                response_format={"type": "json_object"}
+            )
+            
+            orchestration_plan = orchestration_response_json.json()
+            logger.debug(f"🎭 Orchestration plan received: {orchestration_plan}")
+
+            full_workflow_output = []
+            final_results_for_synthesis = []
+
+            full_workflow_output.append(f"# 🎭 Maestro Orchestration for: {task_description}\n")
+            full_workflow_output.append(f"## Orchestration Plan (Generated by LLM)\n```json\n{json.dumps(orchestration_plan, indent=2)}\n```\n")
+            full_workflow_output.append(f"## Execution Log & Intermediate Results\n")
+
+            for i, step in enumerate(orchestration_plan.get("steps", []), 1):
+                full_workflow_output.append(f"### Step {i}: {step.get('type', 'Unknown Type')}\n")
+                if step["type"] == "tool_call":
+                    tool_name = step.get("tool_name")
+                    arguments = step.get("arguments", {})
+                    full_workflow_output.append(f"Calling tool: `{tool_name}` with arguments: ```json\n{json.dumps(arguments, indent=2)}\n```\n")
+                    
+                    tool_output = await self._call_internal_tool(ctx, tool_name, arguments)
+                    full_workflow_output.append(f"Tool Output:\n```\n{tool_output}\n```\n")
+                    final_results_for_synthesis.append({
+                        "step_name": f"Tool Call: {tool_name}",
+                        "output": tool_output
+                    })
+                elif step["type"] == "reasoning":
+                    description = step.get("description", "No description provided.")
+                    full_workflow_output.append(f"Reasoning Step: {description}\n")
+                    final_results_for_synthesis.append({
+                        "step_name": "Reasoning",
+                        "output": description
+                    })
+                else:
+                    full_workflow_output.append(f"Unsupported step type: {step.get('type')}\n")
+            
+            final_synthesis_output = ""
+            if orchestration_plan.get("final_synthesis_required", False) and final_results_for_synthesis:
+                synthesis_prompt = f"""
+You are a highly capable AI assistant tasked with synthesizing diverse results from a complex workflow.
+Combine the following intermediate results and observations into a coherent, comprehensive final answer.
+Explain your reasoning and how the different pieces of information contribute to the final conclusion.
+Highlight any key insights, contradictions, or uncertainties.
+
+Intermediate Results:
+{json.dumps(final_results_for_synthesis, indent=2)}
+
+Original Task: "{task_description}"
+Original Context: {context}
+Original Success Criteria: {success_criteria}
+
+Based on the above, provide the final synthesized answer and a brief explanation of how you arrived at it.
+Ensure to include a "show your work" section demonstrating the aggregation strategy.
+"""
+                logger.info(f"🎭 Requesting final synthesis from LLM for task: {task_description[:100]}...")
+                synthesis_response = await ctx.sample(
+                    prompt=synthesis_prompt,
+                    response_format={"type": "text"} # Expecting rich text output for synthesis
+                )
+                final_synthesis_output = synthesis_response.text
+                full_workflow_output.append(f"## Final Synthesized Answer (Generated by LLM)\n{final_synthesis_output}\n")
+            else:
+                full_workflow_output.append(f"## Final Answer\nNo specific final synthesis required. The output above contains the direct results of the workflow.\n")
+
+            full_workflow_output.append(f"\n## Overall Success Metrics\n{self._format_success_criteria(success_criteria)}\n")
+            full_workflow_output.append(f"\n*This orchestration utilized advanced Mixture-of-Agents (MoA) principles for enhanced computational intelligence and transparency.*")
+
+            return "".join(full_workflow_output)
+
+        except Exception as e:
+            logger.error(f"❌ Orchestration failed: {str(e)}\n{traceback.format_exc()}")
+            return f"❌ **Orchestration Failed**\n\nAn unexpected error occurred during orchestration: {str(e)}\n\nPlease review the server logs for more details. (Traceback below)\n```\n{traceback.format_exc()}\n```"
 
     async def _handle_iae_discovery(self, arguments: dict) -> List[Dict[str, Any]]:
         """Handle Intelligence Amplification Engine discovery and mapping."""

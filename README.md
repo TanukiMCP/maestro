@@ -276,6 +276,24 @@ Connect any stdio-capable MCP client (e.g., Claude Desktop) to use the tools wit
 - **Issues**: Bug reports and feature requests via GitHub
 - **Enterprise**: Custom deployment and integration support available
 
+## Resources
+
+- `file://{path}`: Exposes file contents or directory listings. (Secured to project root)
+- `log://{name}`: Access logs or execution traces by name.
+- `engine://{engine_name}`: Get details about a computational engine.
+- `engines://list`: List all available computational engines.
+- `config://{section}`: Expose server or environment configuration sections (e.g., `env`).
+
+## Prompts
+
+- `decompose_task(task_description: str)`: Break down a task into actionable steps.
+- `suggest_tools(task: str, context: dict)`: Suggest tools and order for a given task and context.
+- `error_recovery(error_message: str, context: dict)`: Suggest recovery actions for an error and context.
+- `code_review(code: str, criteria: dict)`: Review code according to criteria.
+- `summarize_search(search_results: list)`: Summarize search results.
+- `temporal_reasoning(events: list, time_context: str)`: Analyze events in a time context.
+- `clarify_user_intent(ambiguous_input: str)`: Ask clarifying questions for ambiguous input.
+
 ---
 
 ## Transform Your AI Workflow Today

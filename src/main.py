@@ -70,11 +70,12 @@ def get_enhanced_tool_handlers_instance():
     return _enhanced_tool_handlers_instance
 
 # --- Tool Handlers ---
-async def handle_maestro_orchestrate(task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate"):
+async def handle_maestro_orchestrate(ctx: mcp.server.fastmcp.Context, task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate"):
     log_debug(f"handle_maestro_orchestrate called with task: {task_description}")
     tools_instance = get_maestro_tools_instance()
     try:
         result = await tools_instance.orchestrate_task(
+            ctx=ctx,
             task_description=task_description,
             context=context or {},
             success_criteria=success_criteria or {},
@@ -294,12 +295,12 @@ async def handle_mcp_request(request: Request):
                     content={"error": f"Unknown tool: {tool_name}"},
                     status_code=400
                 )
-    except Exception as e:
+        except Exception as e:
             log_debug(f"Error handling MCP request: {str(e)}")
             return JSONResponse(
                 content={"error": f"Error processing request: {str(e)}"},
                 status_code=500
-    )
+            )
 
 # Mount the MCP server at /mcp
 @fastapi_app.api_route("/mcp", methods=["GET", "POST", "DELETE", "OPTIONS"])
@@ -348,4 +349,4 @@ log_debug("Module initialization complete - app ready to serve requests")
 
 if __name__ == "__main__":
     logger.info("Running src/main.py directly")
-        print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")
+    print("To run with HTTP server, use: python deploy.py [dev|prod|smithery]")

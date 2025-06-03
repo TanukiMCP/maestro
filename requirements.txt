@@ -1,5 +1,69 @@
-# Core MCP dependencies
-mcp>=1.7.0  # Model Context Protocol SDK
-pydantic>=2.0.0  # For data validation
-typing-extensions>=4.5.0  # For enhanced typing support
-python-json-logger>=2.0.0  # For structured logging
+# MCP Framework
+mcp
+
+# HTTP/SSE Transport (for Smithery compatibility)
+fastapi
+starlette
+uvicorn
+python-multipart
+
+# LangChain Orchestration  
+langchain
+langchain-community
+langchain-experimental
+langchain-openai
+
+# Intelligence Amplification Libraries
+sympy
+numpy
+scipy
+pandas
+matplotlib
+plotly
+scikit-learn
+
+# Language Enhancement
+spacy
+nltk
+language-tool-python
+textstat
+pyspellchecker
+
+# Code Quality & Testing
+pylint
+flake8
+black
+pytest
+pytest-asyncio
+coverage
+mypy
+
+# Web & Visual Verification
+playwright
+selenium
+beautifulsoup4
+pillow
+opencv-python
+requests
+
+# Infrastructure
+redis
+streamlit
+ollama
+
+# Additional utilities
+pydantic
+aiohttp
+asyncio-mqtt
+
+# Utilities
+typing-extensions
+httpx
+psutil
+
+# For asyncio and async support
+asyncio
+
+# For optional database connections
+sqlalchemy
+aiomysql 

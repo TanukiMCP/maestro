@@ -1,39 +1,5 @@
-name: maestro-mcp
-version: 1.0.0
-description: Intelligent workflow orchestration tools for LLM enhancement
-author: Your Organization
-license: MIT
-
-# MCP server configuration
-server:
-  module: src.main
-  class: mcp  # This is our FastMCP instance
-  type: stdio  # We're using stdio transport
-
-# Documentation and metadata
-docs:
-  description: |
-    The Maestro MCP server provides intelligent workflow orchestration tools
-    for LLM applications. It includes capabilities for task orchestration,
-    tool selection, and integrated analysis.
-  
-  examples:
-    - name: Orchestrate a Task
-      code: |
-        result = await mcp.tools.orchestrate_task(
-            task_description="Analyze customer feedback data",
-            complexity_level="moderate"
-        )
-    
-    - name: Discover Analysis Engines
-      code: |
-        engines = await mcp.tools.discover_analysis_engines(
-            task_type="data_analysis",
-            domain_context="customer_feedback"
-        )
-
-# GitHub repository info for auto-updates
-repository:
-  url: https://github.com/{your-username}/tanukimcp-maestro
-  branch: main
-  auto_deploy: true
+startCommand:
+  type: stdio
+  command:
+    - python
+    - mcp_stdio_server.py

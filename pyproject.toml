@@ -3,33 +3,57 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maestro-mcp"
+name = "tanukimcp-maestro"
 version = "1.0.0"
-description = "Maestro MCP Server - Intelligent workflow orchestration tools for LLMs"
+description = "MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration - Transform any LLM into superintelligent AI"
 readme = "README.md"
-authors = [
-    {name = "Your Name", email = "your.email@example.com"},
-]
 license = {text = "MIT"}
+authors = [
+    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+]
+maintainers = [
+    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+]
+keywords = [
+    "mcp",
+    "maestro-protocol", 
+    "orchestration",
+    "intelligence-amplification",
+    "python",
+    "langchain",
+    "verification",
+    "quality-control",
+    "ai-democratization"
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "mcp>=1.7.0",
+    "mcp>=1.0.0",
     "pydantic>=2.0.0",
-    "typing-extensions>=4.5.0",
-    "python-json-logger>=2.0.0",
+    "typing-extensions>=4.0.0",
+    "sympy>=1.12",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+    "requests>=2.31.0",
+    "asyncio",
+    # HTTP/SSE transport dependencies
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+    "uvicorn[standard]>=0.23.0",
 ]
-
-[project.scripts]
-maestro-mcp = "smithery_entry:main"
-
-[tool.setuptools]
-packages = ["src"]
 
 [project.optional-dependencies]
 language = [
@@ -67,6 +91,13 @@ Homepage = "https://github.com/tanukimcp/maestro"
 Documentation = "https://github.com/tanukimcp/maestro#readme"
 Repository = "https://github.com/tanukimcp/maestro"
 "Bug Tracker" = "https://github.com/tanukimcp/maestro/issues"
+
+[project.scripts]
+maestro = "main:main"
+maestro-server = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

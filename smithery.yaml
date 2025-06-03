@@ -3,3 +3,17 @@ startCommand:
   command:
     - python
     - mcp_stdio_server.py
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: MCP_DEFERRED_INIT
+      value: "true"
+    - name: ENABLE_LAZY_LOADING
+      value: "true"
+    - name: SMITHERY_COMPATIBLE
+      value: "true"
+
+toolScanning:
+  timeout: 30
+  retries: 3
+  lazyLoad: true

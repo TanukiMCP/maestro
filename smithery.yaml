@@ -34,19 +34,6 @@ docs:
 
 # GitHub repository info for auto-updates
 repository:
-  url: https://github.com/your-org/maestro-mcp
+  url: https://github.com/{your-username}/tanukimcp-maestro
   branch: main
   auto_deploy: true
-
-startCommand:
-  type: http
-  command:
-    - python
-    - deploy.py
-    - smithery
-    - --host
-    - 0.0.0.0
-    - --port
-    - "8000"
-  port: 8000
-  healthCheckPath: /health

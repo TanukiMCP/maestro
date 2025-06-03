@@ -1,5 +1,5 @@
 # MCP Framework
-mcp
+mcp>=1.7.0  # Model Context Protocol SDK
 
 # HTTP/SSE Transport (for Smithery compatibility)
 fastapi
@@ -52,12 +52,12 @@ streamlit
 ollama
 
 # Additional utilities
-pydantic
+pydantic>=2.0.0  # For data validation
 aiohttp
 asyncio-mqtt
 
 # Utilities
-typing-extensions
+typing-extensions>=4.5.0  # For enhanced typing support
 httpx
 psutil
 
@@ -66,4 +66,7 @@ asyncio
 
 # For optional database connections
 sqlalchemy
-aiomysql 
+aiomysql
+
+# Additional dependencies
+python-json-logger>=2.0.0  # For structured logging 

@@ -195,7 +195,7 @@ async def handle_mcp_post(request: Request):
                     }
                 }
             }
-        elif method == "initialized":
+        elif method == "notifications/initialized":
             logger.info("Handling initialized notification")
             # This is a notification, no response needed
             return JSONResponse(content=None, status_code=204)

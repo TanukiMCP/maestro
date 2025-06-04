@@ -276,17 +276,17 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
                         def text(self): return f"Orchestration plan for: {arguments.get('task_description', 'Unknown task')}"
                     return MockResponse()
             
-            return await maestro_tools.orchestrate(MockContext(), **arguments)
+            return await maestro_tools.orchestrate_task(MockContext(), **arguments)
             
         elif tool_name == "maestro_iae_discovery":
             from maestro_tools import MaestroTools
             maestro_tools = MaestroTools()
-            return await maestro_tools.iae_discovery(**arguments)
+            return await maestro_tools._handle_iae_discovery(arguments)
             
         elif tool_name == "maestro_tool_selection":
             from maestro_tools import MaestroTools
             maestro_tools = MaestroTools()
-            return await maestro_tools.tool_selection(**arguments)
+            return await maestro_tools._handle_tool_selection(arguments)
             
         elif tool_name == "maestro_iae":
             from computational_tools import ComputationalTools

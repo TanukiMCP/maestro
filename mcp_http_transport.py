@@ -135,6 +135,42 @@ class SmitheryMCPTransport:
                 }
             }, status_code=500)
     
+    async def _handle_initialize(self, params: Dict[str, Any], request_id: Optional[str]) -> JSONResponse:
+        """Handle MCP initialize method"""
+        try:
+            # Extract client info
+            client_info = params.get("clientInfo", {})
+            protocol_version = params.get("protocolVersion", "2024-11-05")
+            
+            # Return server capabilities
+            return JSONResponse({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "serverInfo": {
+                        "name": "tanukimcp-maestro",
+                        "version": "1.0.0"
+                    },
+                    "capabilities": {
+                        "tools": {},
+                        "logging": {},
+                        "experimental": {}
+                    }
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in initialize: {e}")
+            return JSONResponse({
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32603,
+                    "message": f"Internal error: {str(e)}"
+                }
+            }, status_code=500)
+    
     async def _handle_tool_execution(self, data: Dict[str, Any], config: Dict[str, Any]) -> JSONResponse:
         """Handle tool execution requests"""
         try:
@@ -177,6 +213,46 @@ class SmitheryMCPTransport:
             elif method == "tools/list":
                 # Same as GET /mcp for tool discovery
                 return await self._handle_tool_discovery(config)
+            
+            elif method == "initialize":
+                # Handle MCP initialization
+                return await self._handle_initialize(params, request_id)
+            
+            elif method == "notifications/initialized":
+                # Handle initialization notification (no response needed)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {}
+                })
+            
+            elif method == "ping":
+                # Handle ping requests
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {}
+                })
+            
+            elif method == "resources/list":
+                # Handle resource listing (empty for now)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "resources": []
+                    }
+                })
+            
+            elif method == "prompts/list":
+                # Handle prompt listing (empty for now)
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "prompts": []
+                    }
+                })
             
             else:
                 return JSONResponse({

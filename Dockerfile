@@ -1,6 +1,6 @@
 # Maestro MCP Server - HTTP Transport for Smithery
 # Ultra-lightweight for fast tool scanning
-# Forced rebuild: 2024-05-28-2
+# Forced rebuild: 2024-06-04-1 (MCP methods fix)
 
 # Build stage for compiling and preparing dependencies
 FROM python:3.11-slim AS builder

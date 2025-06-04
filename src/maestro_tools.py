@@ -216,7 +216,7 @@ Ensure to include a "show your work" section demonstrating the aggregation strat
             logger.error(f"❌ Orchestration failed: {str(e)}\n{traceback.format_exc()}")
             return f"❌ **Orchestration Failed**\n\nAn unexpected error occurred during orchestration: {str(e)}\n\nPlease review the server logs for more details. (Traceback below)\n```\n{traceback.format_exc()}\n```"
 
-    async def _handle_iae_discovery(self, arguments: dict) -> List[Dict[str, Any]]:
+    async def _handle_iae_discovery(self, arguments: dict) -> List[TextContent]:
         """Handle Intelligence Amplification Engine discovery and mapping."""
         try:
             # Lazy import TextContent only when needed
@@ -286,13 +286,13 @@ Parameters:
 
 *The MIA protocol ensures computational amplification through standardized engine interfaces.*"""
             
-            return [TextContent(text=response)]
+            return [TextContent(type="text", text=response)]
             
         except Exception as e:
             # Import TextContent here to ensure lazy loading
             from mcp.types import TextContent
             logger.error(f"❌ IAE discovery failed: {str(e)}")
-            return [TextContent(text=f"❌ **Discovery Failed**\n\nError: {str(e)}")]
+            return [TextContent(type="text", text=f"❌ **Discovery Failed**\n\nError: {str(e)}")]
 
     # Continue with the rest of the class, ensuring imports are inside methods
     
@@ -356,9 +356,12 @@ Parameters:
         
         return recommendations.get(task_type.lower(), recommendations["general"])
 
-    async def _handle_tool_selection(self, arguments: dict) -> List[Dict[str, Any]]:
+    async def _handle_tool_selection(self, arguments: dict) -> List[TextContent]:
         """Handle tool selection recommendations."""
         try:
+            # Import TextContent here to ensure lazy loading
+            from mcp.types import TextContent
+            
             request_description = arguments.get("request_description", "")
             available_context = arguments.get("available_context", {})
             precision_requirements = arguments.get("precision_requirements", {})
@@ -433,8 +436,10 @@ If numerical calculations become necessary:
 
 *Choose tools based on precision requirements: computational engines for exact results, strategic tools for reasoning and coordination.*"""
             
-            return [TextContent(text=response)]
+            return [TextContent(type="text", text=response)]
             
         except Exception as e:
+            # Import TextContent here to ensure lazy loading
+            from mcp.types import TextContent
             logger.error(f"❌ Tool selection analysis failed: {str(e)}")
-            return [TextContent(text=f"❌ **Tool Selection Failed**\n\nError: {str(e)}")] 
+            return [TextContent(type="text", text=f"❌ **Tool Selection Failed**\n\nError: {str(e)}")] 

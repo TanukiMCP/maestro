@@ -31,6 +31,7 @@ server = Server("maestro-mcp", version="2.0.0")
 # Lazy-loaded instances of your existing tools
 _maestro_tools_instance = None
 _computational_tools_instance = None
+_enhanced_tool_handlers_instance = None
 
 def get_maestro_tools_instance():
     global _maestro_tools_instance
@@ -48,16 +49,24 @@ def get_computational_tools_instance():
         _computational_tools_instance = ComputationalTools()
     return _computational_tools_instance
 
+def get_enhanced_tool_handlers_instance():
+    global _enhanced_tool_handlers_instance
+    if _enhanced_tool_handlers_instance is None:
+        logger.info("Loading EnhancedToolHandlers instance")
+        from maestro.enhanced_tools import EnhancedToolHandlers
+        _enhanced_tool_handlers_instance = EnhancedToolHandlers()
+    return _enhanced_tool_handlers_instance
+
 @server.list_tools()
 async def handle_list_tools() -> List[types.Tool]:
-    """Handle tools/list requests - return your existing sophisticated tools"""
+    """Handle tools/list requests - return ALL your existing sophisticated tools"""
     logger.info("Handling list_tools request")
     
     # Get tools from your existing computational tools
     comp_tools = get_computational_tools_instance()
     mcp_tools = comp_tools.get_mcp_tools()
     
-    # Add your orchestration and other tools
+    # Add ALL your orchestration and enhanced tools (matching your main.py exactly)
     orchestration_tools = [
         types.Tool(
             name="maestro_orchestrate",
@@ -138,6 +147,178 @@ async def handle_list_tools() -> List[types.Tool]:
             }
         ),
         types.Tool(
+            name="maestro_search",
+            description="🔎 Enhanced search capabilities across multiple sources",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of results",
+                        "default": 10
+                    },
+                    "search_engine": {
+                        "type": "string",
+                        "enum": ["duckduckgo", "google", "bing"],
+                        "description": "Search engine to use",
+                        "default": "duckduckgo"
+                    },
+                    "temporal_filter": {
+                        "type": "string",
+                        "enum": ["any", "recent", "week", "month", "year"],
+                        "description": "Time filter for results",
+                        "default": "any"
+                    },
+                    "result_format": {
+                        "type": "string",
+                        "enum": ["structured", "summary", "detailed"],
+                        "description": "Format of results",
+                        "default": "structured"
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        types.Tool(
+            name="maestro_scrape",
+            description="📑 Web scraping functionality with content extraction",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL to scrape"
+                    },
+                    "output_format": {
+                        "type": "string",
+                        "enum": ["markdown", "text", "html", "json"],
+                        "description": "Output format",
+                        "default": "markdown"
+                    },
+                    "selectors": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "CSS selectors for specific elements"
+                    },
+                    "wait_for": {
+                        "type": "string",
+                        "description": "Element to wait for before scraping"
+                    },
+                    "extract_links": {
+                        "type": "boolean",
+                        "description": "Extract links from the page",
+                        "default": False
+                    },
+                    "extract_images": {
+                        "type": "boolean",
+                        "description": "Extract images from the page",
+                        "default": False
+                    }
+                },
+                "required": ["url"]
+            }
+        ),
+        types.Tool(
+            name="maestro_execute",
+            description="⚙️ Command execution with security controls",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "Command to execute"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Timeout in seconds",
+                        "default": 30
+                    },
+                    "environment": {
+                        "type": "object",
+                        "description": "Environment variables",
+                        "additionalProperties": True
+                    },
+                    "working_directory": {
+                        "type": "string",
+                        "description": "Working directory for execution"
+                    },
+                    "capture_output": {
+                        "type": "boolean",
+                        "description": "Capture command output",
+                        "default": True
+                    }
+                },
+                "required": ["command"]
+            }
+        ),
+        types.Tool(
+            name="maestro_error_handler",
+            description="🚨 Advanced error handling and recovery",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "error_message": {
+                        "type": "string",
+                        "description": "Error message to analyze"
+                    },
+                    "error_type": {
+                        "type": "string",
+                        "enum": ["general", "computational", "network", "file_system", "permission"],
+                        "description": "Type of error",
+                        "default": "general"
+                    },
+                    "context": {
+                        "type": "object",
+                        "description": "Error context information",
+                        "additionalProperties": True
+                    },
+                    "recovery_strategy": {
+                        "type": "string",
+                        "enum": ["automatic", "guided", "manual"],
+                        "description": "Recovery strategy preference",
+                        "default": "guided"
+                    }
+                },
+                "required": ["error_message"]
+            }
+        ),
+        types.Tool(
+            name="maestro_temporal_context",
+            description="🕐 Temporal context analysis for time-sensitive information",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Query for temporal analysis"
+                    },
+                    "time_range": {
+                        "type": "string",
+                        "enum": ["recent", "week", "month", "quarter", "year", "historical"],
+                        "description": "Time range for analysis",
+                        "default": "recent"
+                    },
+                    "domain": {
+                        "type": "string",
+                        "enum": ["general", "technology", "science", "business", "politics", "culture"],
+                        "description": "Domain context",
+                        "default": "general"
+                    },
+                    "analysis_depth": {
+                        "type": "string",
+                        "enum": ["surface", "moderate", "deep"],
+                        "description": "Depth of temporal analysis",
+                        "default": "moderate"
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        types.Tool(
             name="get_available_engines",
             description="📋 Get list of available computational engines and their capabilities",
             inputSchema={
@@ -154,7 +335,7 @@ async def handle_list_tools() -> List[types.Tool]:
     
     # Combine all tools
     all_tools = mcp_tools + orchestration_tools
-    logger.info(f"Returning {len(all_tools)} tools")
+    logger.info(f"Returning {len(all_tools)} sophisticated tools")
     return all_tools
 
 @server.call_tool()
@@ -175,6 +356,16 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[
             return await _handle_maestro_iae_discovery(arguments)
         elif name == "maestro_tool_selection":
             return await _handle_maestro_tool_selection(arguments)
+        elif name == "maestro_search":
+            return await _handle_maestro_search(arguments)
+        elif name == "maestro_scrape":
+            return await _handle_maestro_scrape(arguments)
+        elif name == "maestro_execute":
+            return await _handle_maestro_execute(arguments)
+        elif name == "maestro_error_handler":
+            return await _handle_maestro_error_handler(arguments)
+        elif name == "maestro_temporal_context":
+            return await _handle_maestro_temporal_context(arguments)
         elif name == "get_available_engines":
             return await _handle_get_available_engines(arguments)
         else:
@@ -188,6 +379,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[
                 text=f"Error executing {name}: {str(e)}"
             )
         ]
+
+# Tool implementation functions (using your existing sophisticated implementations)
 
 async def _handle_maestro_iae(arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle maestro_iae using your existing ComputationalTools"""
@@ -248,6 +441,11 @@ async def _handle_maestro_orchestrate(arguments: Dict[str, Any]) -> List[types.T
                         "final_synthesis_required": True,
                         "moa_aggregation_strategy": "llm_synthesis"
                     }
+                
+                @property
+                def text(self):
+                    return f"Synthesized analysis for: {task_description}. The task has been analyzed and appropriate computational engines have been identified for execution."
+            
             return MockResponse()
     
     # Use your existing orchestration implementation
@@ -270,43 +468,82 @@ async def _handle_maestro_iae_discovery(arguments: Dict[str, Any]) -> List[types
     """Handle IAE discovery using your existing tools"""
     maestro_tools = get_maestro_tools_instance()
     
-    task_type = arguments.get("task_type", "general")
-    domain_context = arguments.get("domain_context", "")
-    complexity_requirements = arguments.get("complexity_requirements", {})
+    # Use your existing _handle_iae_discovery method
+    result = await maestro_tools._handle_iae_discovery(arguments)
     
-    result = await maestro_tools.discover_integrated_analysis_engines(
-        task_type=task_type,
-        domain_context=domain_context,
-        complexity_requirements=complexity_requirements
-    )
-    
-    return [
-        types.TextContent(
-            type="text",
-            text=result
-        )
-    ]
+    # Convert the result to TextContent format
+    if isinstance(result, list) and len(result) > 0:
+        return result  # Already in TextContent format
+    else:
+        return [
+            types.TextContent(
+                type="text",
+                text=str(result)
+            )
+        ]
 
 async def _handle_maestro_tool_selection(arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle tool selection using your existing tools"""
     maestro_tools = get_maestro_tools_instance()
     
-    request_description = arguments.get("request_description", "")
-    available_context = arguments.get("available_context", {})
-    precision_requirements = arguments.get("precision_requirements", {})
+    # Use your existing _handle_tool_selection method
+    result = await maestro_tools._handle_tool_selection(arguments)
     
-    result = await maestro_tools.select_tools(
-        request_description=request_description,
-        available_context=available_context,
-        precision_requirements=precision_requirements
-    )
+    # Convert the result to TextContent format
+    if isinstance(result, list) and len(result) > 0:
+        return result  # Already in TextContent format
+    else:
+        return [
+            types.TextContent(
+                type="text",
+                text=str(result)
+            )
+        ]
+
+async def _handle_maestro_search(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle maestro_search using your existing EnhancedToolHandlers"""
+    enhanced_tools = get_enhanced_tool_handlers_instance()
     
-    return [
-        types.TextContent(
-            type="text",
-            text=result
-        )
-    ]
+    # Use your existing search implementation
+    result = await enhanced_tools.handle_maestro_search(arguments)
+    
+    return result
+
+async def _handle_maestro_scrape(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle maestro_scrape using your existing EnhancedToolHandlers"""
+    enhanced_tools = get_enhanced_tool_handlers_instance()
+    
+    # Use your existing scrape implementation
+    result = await enhanced_tools.handle_maestro_scrape(arguments)
+    
+    return result
+
+async def _handle_maestro_execute(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle maestro_execute using your existing EnhancedToolHandlers"""
+    enhanced_tools = get_enhanced_tool_handlers_instance()
+    
+    # Use your existing execute implementation
+    result = await enhanced_tools.handle_maestro_execute(arguments)
+    
+    return result
+
+async def _handle_maestro_error_handler(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle maestro_error_handler using your existing EnhancedToolHandlers"""
+    enhanced_tools = get_enhanced_tool_handlers_instance()
+    
+    # Use your existing error handler implementation
+    result = await enhanced_tools.handle_maestro_error_handler(arguments)
+    
+    return result
+
+async def _handle_maestro_temporal_context(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle maestro_temporal_context using your existing EnhancedToolHandlers"""
+    enhanced_tools = get_enhanced_tool_handlers_instance()
+    
+    # Use your existing temporal context implementation
+    result = await enhanced_tools.handle_maestro_temporal_context(arguments)
+    
+    return result
 
 async def _handle_get_available_engines(arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle getting available engines"""
@@ -340,7 +577,7 @@ async def _handle_get_available_engines(arguments: Dict[str, Any]) -> List[types
 
 async def main():
     """Main server function"""
-    logger.info("🚀 Starting Maestro MCP Server (stdio) with existing sophisticated tools")
+    logger.info("🚀 Starting Maestro MCP Server (stdio) with ALL existing sophisticated tools")
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(

@@ -1,17 +1,13 @@
+runtime: "container"
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
 startCommand:
-  type: stdio
-  command:
-    - python
-    - mcp_stdio_server.py
-  env:
-    - name: PYTHONUNBUFFERED
-      value: "1"
-    - name: MCP_DEFERRED_INIT
-      value: "true"
-    - name: ENABLE_LAZY_LOADING
-      value: "true"
-    - name: SMITHERY_COMPATIBLE
-      value: "true"
+  type: "http"
+  configSchema:
+    type: "object"
+    properties: {}
+  exampleConfig: {}
 
 toolScanning:
   timeout: 30

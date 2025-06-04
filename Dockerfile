@@ -1,6 +1,6 @@
-# Maestro MCP Server - stdio Transport
-# Optimized for Smithery and remote deployment with lazy loading
-# Forced rebuild: 2024-05-28-1
+# Maestro MCP Server - HTTP Transport for Smithery
+# Ultra-lightweight for fast tool scanning
+# Forced rebuild: 2024-05-28-2
 
 # Build stage for compiling and preparing dependencies
 FROM python:3.11-slim AS builder
@@ -32,9 +32,7 @@ FROM python:3.11-slim
 # Set environment variables for runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    # Add environment variable for Smithery lazy loading
-    ENABLE_LAZY_LOADING=1 \
-    SMITHERY_COMPATIBLE=1
+    PORT=8000
 
 # Set work directory
 WORKDIR /app
@@ -53,8 +51,11 @@ RUN useradd --create-home --shell /bin/bash maestro
 RUN chown -R maestro:maestro /app
 USER maestro
 
-# Command to run the stdio server
-CMD ["python", "mcp_stdio_server.py"]
+# Expose the port
+EXPOSE 8000
+
+# Command to run the HTTP server
+CMD ["python", "src/main.py"]
 
 # Labels for better discoverability
 LABEL org.opencontainers.image.title="Maestro MCP Server" \
@@ -62,7 +63,7 @@ LABEL org.opencontainers.image.title="Maestro MCP Server" \
       org.opencontainers.image.vendor="TanukiMCP" \
       org.opencontainers.image.version="1.0.0" \
       com.smithery.compatible="true" \
-      com.smithery.lazyloading="enabled"
+      com.smithery.http_transport="enabled"
 
 # Alternative commands (can be overridden):
 # For development: docker run -p 8000:8000 maestro-mcp python deploy.py dev --host 0.0.0.0

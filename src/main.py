@@ -175,12 +175,35 @@ async def handle_mcp_post(request: Request):
         body = await request.json()
         method = body.get("method")
         params = body.get("params", {})
+        request_id = body.get("id")
         
-        if method == "tools/list":
+        if method == "initialize":
+            logger.info("Handling initialize request")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {},
+                        "resources": {},
+                        "prompts": {}
+                    },
+                    "serverInfo": {
+                        "name": "Maestro MCP Server",
+                        "version": "1.0.0"
+                    }
+                }
+            }
+        elif method == "initialized":
+            logger.info("Handling initialized notification")
+            # This is a notification, no response needed
+            return JSONResponse(content=None, status_code=204)
+        elif method == "tools/list":
             logger.info("Handling tools/list request")
             return {
                 "jsonrpc": "2.0",
-                "id": body.get("id"),
+                "id": request_id,
                 "result": {"tools": STATIC_TOOLS}
             }
         elif method == "tools/call":
@@ -194,12 +217,12 @@ async def handle_mcp_post(request: Request):
             
             return {
                 "jsonrpc": "2.0", 
-                "id": body.get("id"),
+                "id": request_id,
                 "result": {"content": [{"type": "text", "text": result}]}
             }
         else:
             return JSONResponse(
-                content={"jsonrpc": "2.0", "id": body.get("id"), "error": {"code": -32601, "message": f"Method not found: {method}"}},
+                content={"jsonrpc": "2.0", "id": request_id, "error": {"code": -32601, "message": f"Method not found: {method}"}},
                 status_code=400
             )
     except Exception as e:

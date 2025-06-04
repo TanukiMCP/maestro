@@ -139,6 +139,17 @@ class SmitheryMCPTransport:
         
         current[parts[-1]] = value
     
+    def _get_tool_description(self, tool_name: str) -> str:
+        """Get description for planned tools"""
+        descriptions = {
+            "maestro_search": "Enhanced web search with LLM-powered analysis and filtering",
+            "maestro_scrape": "Intelligent web scraping with content extraction and structured data processing", 
+            "maestro_execute": "Secure code and workflow execution with validation",
+            "maestro_temporal_context": "Time-aware reasoning and context analysis",
+            "maestro_error_handler": "Intelligent error analysis and recovery suggestions"
+        }
+        return descriptions.get(tool_name, "Advanced AI capability")
+    
     async def _handle_tool_discovery(self, config: Dict[str, Any], request_id: Optional[str] = None) -> JSONResponse:
         """Handle tool discovery (list_tools) - must be fast for Smithery"""
         try:
@@ -211,6 +222,126 @@ class SmitheryMCPTransport:
                 }
             }, status_code=500)
     
+    async def _execute_tool_directly(self, tool_name: str, arguments: dict):
+        """Execute tools directly using the same logic as the MCP server"""
+        try:
+            from mcp.types import TextContent, CallToolResult
+            
+            if tool_name.startswith("maestro_") and tool_name != "maestro_iae":
+                # Handle MaestroTools
+                from src.maestro_tools import MaestroTools
+                from mcp.server.fastmcp import Context
+                tools = MaestroTools()
+                
+                # Create a minimal context for the tools
+                ctx = Context()
+                
+                if tool_name == "maestro_orchestrate":
+                    result_text = await tools.orchestrate_task(
+                        ctx=ctx,
+                        task_description=arguments.get("task_description", ""),
+                        context=arguments.get("context", {}),
+                        complexity_level=arguments.get("complexity_level", "moderate"),
+                        quality_threshold=arguments.get("quality_threshold", 0.8),
+                        resource_level=arguments.get("resource_level", "moderate"),
+                        reasoning_focus=arguments.get("reasoning_focus", "auto"),
+                        validation_rigor=arguments.get("validation_rigor", "standard"),
+                        max_iterations=arguments.get("max_iterations", 3),
+                        domain_specialization=arguments.get("domain_specialization", ""),
+                        enable_collaboration_fallback=arguments.get("enable_collaboration_fallback", True)
+                    )
+                    return CallToolResult(content=[TextContent(type="text", text=result_text)])
+                
+                elif tool_name == "maestro_collaboration_response":
+                    result_text = await tools.handle_collaboration_response(
+                        collaboration_id=arguments.get("collaboration_id", ""),
+                        responses=arguments.get("responses", {}),
+                        additional_context=arguments.get("additional_guidance", {}),
+                        user_preferences={},
+                        approval_status=arguments.get("approval_status", "approved"),
+                        confidence_level=1.0
+                    )
+                    return CallToolResult(content=[TextContent(type="text", text=result_text)])
+                
+                elif tool_name == "maestro_iae_discovery":
+                    result = await tools._handle_iae_discovery(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_tool_selection":
+                    result = await tools._handle_tool_selection(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_search":
+                    result = await tools._handle_maestro_search(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_scrape":
+                    result = await tools._handle_maestro_scrape(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_execute":
+                    result = await tools._handle_maestro_execute(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_temporal_context":
+                    result = await tools._handle_maestro_temporal_context(arguments)
+                    return CallToolResult(content=result)
+                
+                elif tool_name == "maestro_error_handler":
+                    result = await tools._handle_maestro_error_handler(arguments)
+                    return CallToolResult(content=result)
+                
+                else:
+                    return CallToolResult(
+                        content=[TextContent(
+                            type="text", 
+                            text=f"Error: Unknown maestro tool '{tool_name}'"
+                        )]
+                    )
+            
+            elif tool_name == "maestro_iae":
+                # Handle ComputationalTools  
+                from src.computational_tools import ComputationalTools
+                tools = ComputationalTools()
+                
+                result = await tools.handle_tool_call(tool_name, arguments)
+                
+                if isinstance(result, list):
+                    return CallToolResult(content=result)
+                else:
+                    return CallToolResult(content=[TextContent(type="text", text=str(result))])
+            
+            elif tool_name == "get_available_engines":
+                # Handle engine discovery
+                from src.computational_tools import ComputationalTools
+                tools = ComputationalTools()
+                
+                # get_available_engines doesn't take parameters
+                engines = tools.get_available_engines()
+                
+                import json
+                return CallToolResult(
+                    content=[TextContent(type="text", text=json.dumps(engines, indent=2))]
+                )
+            
+            else:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text", 
+                        text=f"Error: Unknown tool '{tool_name}'"
+                    )]
+                )
+        
+        except Exception as e:
+            logger.error(f"Error executing tool {tool_name}: {e}")
+            from mcp.types import TextContent, CallToolResult
+            return CallToolResult(
+                content=[TextContent(
+                    type="text", 
+                    text=f"Error executing {tool_name}: {str(e)}"
+                )]
+            )
+    
     async def _handle_tool_execution(self, data: Dict[str, Any], config: Dict[str, Any]) -> JSONResponse:
         """Handle tool execution requests"""
         try:
@@ -233,33 +364,47 @@ class SmitheryMCPTransport:
                 tool_name = params.get("name")
                 arguments = params.get("arguments", {})
                 
-                # Call the tool using our MCP server (lazy loaded)
-                mcp_server = self.get_mcp_server()
-                result = await mcp_server.call_tool(tool_name, arguments)
+                # Execute the tool directly using our tool handlers
+                result = await self._execute_tool_directly(tool_name, arguments)
                 
-                # Convert CallToolResult to JSON format
-                content_data = []
-                for content_item in result.content:
-                    if hasattr(content_item, 'text'):
-                        content_data.append({
-                            "type": "text",
-                            "text": content_item.text
-                        })
-                    elif hasattr(content_item, 'data'):
-                        content_data.append({
-                            "type": "image",
-                            "data": content_item.data,
-                            "mimeType": getattr(content_item, 'mimeType', 'image/png')
-                        })
-                
-                return JSONResponse({
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "content": content_data,
-                        "isError": False
-                    }
-                })
+                # Convert result to JSON format
+                if hasattr(result, 'content'):
+                    # Handle CallToolResult objects
+                    content_data = []
+                    for content_item in result.content:
+                        if hasattr(content_item, 'text'):
+                            content_data.append({
+                                "type": "text",
+                                "text": content_item.text
+                            })
+                        elif hasattr(content_item, 'data'):
+                            content_data.append({
+                                "type": "image",
+                                "data": content_item.data,
+                                "mimeType": getattr(content_item, 'mimeType', 'image/png')
+                            })
+                    
+                    return JSONResponse({
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "result": {
+                            "content": content_data,
+                            "isError": False
+                        }
+                    })
+                else:
+                    # Handle direct string results
+                    return JSONResponse({
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "result": {
+                            "content": [{
+                                "type": "text",
+                                "text": str(result)
+                            }],
+                            "isError": False
+                        }
+                    })
             
             elif method == "tools/list":
                 # Same as GET /mcp for tool discovery

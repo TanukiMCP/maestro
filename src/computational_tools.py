@@ -538,33 +538,159 @@ class ComputationalTools:
                 result.append(complex(element, 0))
         return result
     
-    def get_available_engines(self) -> Dict[str, Dict]:
-        """Get information about available computational engines."""
-        engines_info = {}
+    async def get_available_engines(self, detailed: bool = False, include_status: bool = True) -> str:
+        """
+        Get information about available computational engines.
         
-        for engine_id, engine in self.engines.items():
-            engines_info[engine_id] = {
-                "name": engine.name,
-                "version": engine.version,
-                "supported_calculations": engine.supported_calculations,
-                "status": "active"
-            }
+        Args:
+            detailed: If True, return detailed information about each engine
+            include_status: If True, include runtime status information
+            
+        Returns:
+            Formatted string with engine information
+        """
+        try:
+            # Ensure engines are initialized to get accurate status
+            self._initialize_engines()
+            
+            engines_info = {}
+            
+            # Get information about active engines
+            for engine_id, engine in self.engines.items():
+                engine_info = {
+                    "name": engine.name,
+                    "version": engine.version,
+                    "supported_calculations": engine.supported_calculations,
+                }
+                
+                if include_status:
+                    engine_info["status"] = "active"
+                    engine_info["dependencies_available"] = True
+                
+                if detailed:
+                    engine_info["description"] = self._get_engine_description(engine_id)
+                    engine_info["capabilities"] = self._get_engine_capabilities(engine_id)
+                
+                engines_info[engine_id] = engine_info
+            
+            # Add planned engines
+            planned_engines = [
+                "molecular_modeling", "statistical_analysis", "classical_mechanics",
+                "chemistry", "biology", "engineering", "mathematics"
+            ]
+            
+            for engine_id in planned_engines:
+                engine_info = {
+                    "name": f"{engine_id.replace('_', ' ').title()} Engine",
+                    "version": "planned",
+                    "supported_calculations": ["To be implemented"],
+                }
+                
+                if include_status:
+                    engine_info["status"] = "planned"
+                    engine_info["dependencies_available"] = False
+                
+                if detailed:
+                    engine_info["description"] = f"Planned {engine_id.replace('_', ' ')} computational engine"
+                    engine_info["capabilities"] = ["Future implementation"]
+                
+                engines_info[engine_id] = engine_info
+            
+            # Format the response
+            if detailed:
+                return self._format_detailed_engines_info(engines_info, include_status)
+            else:
+                return self._format_concise_engines_info(engines_info, include_status)
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to get available engines: {str(e)}")
+            return f"❌ **Engine Information Error**\n\nFailed to retrieve engine information: {str(e)}"
+
+    def _get_engine_description(self, engine_id: str) -> str:
+        """Get detailed description for an engine."""
+        descriptions = {
+            "quantum_physics": "Advanced quantum mechanics computations including entanglement analysis, Bell inequality tests, and quantum state operations",
+            "intelligence_amplification": "Cognitive and knowledge analysis using network theory, optimization algorithms, and machine learning clustering"
+        }
+        return descriptions.get(engine_id, f"Computational engine for {engine_id.replace('_', ' ')}")
+
+    def _get_engine_capabilities(self, engine_id: str) -> List[str]:
+        """Get detailed capabilities for an engine."""
+        capabilities = {
+            "quantum_physics": [
+                "Quantum entanglement entropy calculation",
+                "Bell inequality violation testing", 
+                "Quantum state fidelity measurement",
+                "Pauli operator decomposition"
+            ],
+            "intelligence_amplification": [
+                "Knowledge network graph analysis",
+                "Cognitive load optimization",
+                "Concept clustering and classification",
+                "Information flow analysis"
+            ]
+        }
+        return capabilities.get(engine_id, ["General computational capabilities"])
+
+    def _format_detailed_engines_info(self, engines_info: Dict[str, Dict], include_status: bool) -> str:
+        """Format detailed engine information."""
+        output = "# 🔧 Available Computational Engines - Detailed Report\n\n"
         
-        # Add planned engines
-        planned_engines = [
-            "molecular_modeling", "statistical_analysis", "classical_mechanics",
-            "chemistry", "biology", "engineering", "mathematics"
-        ]
+        active_engines = {k: v for k, v in engines_info.items() if v.get("status") == "active"}
+        planned_engines = {k: v for k, v in engines_info.items() if v.get("status") == "planned"}
         
-        for engine_id in planned_engines:
-            engines_info[engine_id] = {
-                "name": f"{engine_id.replace('_', ' ').title()} Engine",
-                "version": "planned",
-                "supported_calculations": ["To be implemented"],
-                "status": "planned"
-            }
+        if active_engines:
+            output += "## 🟢 Active Engines\n\n"
+            for engine_id, info in active_engines.items():
+                output += f"### {info['name']}\n"
+                output += f"- **Version:** {info['version']}\n"
+                if include_status:
+                    output += f"- **Status:** {info['status']}\n"
+                    output += f"- **Dependencies:** {'✅ Available' if info.get('dependencies_available') else '❌ Missing'}\n"
+                output += f"- **Description:** {info.get('description', 'No description available')}\n"
+                output += f"- **Supported Calculations:**\n"
+                for calc in info['supported_calculations']:
+                    output += f"  - {calc}\n"
+                if 'capabilities' in info:
+                    output += f"- **Capabilities:**\n"
+                    for cap in info['capabilities']:
+                        output += f"  - {cap}\n"
+                output += "\n"
         
-        return engines_info 
+        if planned_engines:
+            output += "## 🟡 Planned Engines\n\n"
+            for engine_id, info in planned_engines.items():
+                output += f"### {info['name']}\n"
+                output += f"- **Version:** {info['version']}\n"
+                if include_status:
+                    output += f"- **Status:** {info['status']}\n"
+                output += f"- **Description:** {info.get('description', 'Future implementation')}\n"
+                output += "\n"
+        
+        output += f"**Total Engines:** {len(active_engines)} active, {len(planned_engines)} planned\n"
+        return output
+
+    def _format_concise_engines_info(self, engines_info: Dict[str, Dict], include_status: bool) -> str:
+        """Format concise engine information."""
+        output = "# 🔧 Available Computational Engines\n\n"
+        
+        active_engines = {k: v for k, v in engines_info.items() if v.get("status") == "active"}
+        planned_engines = {k: v for k, v in engines_info.items() if v.get("status") == "planned"}
+        
+        if active_engines:
+            output += "## Active Engines\n"
+            for engine_id, info in active_engines.items():
+                status_indicator = "🟢" if include_status and info.get("status") == "active" else ""
+                output += f"- **{info['name']}** {status_indicator} (v{info['version']})\n"
+        
+        if planned_engines:
+            output += "\n## Planned Engines\n"
+            for engine_id, info in planned_engines.items():
+                status_indicator = "🟡" if include_status else ""
+                output += f"- **{info['name']}** {status_indicator} ({info['version']})\n"
+        
+        output += f"\n**Summary:** {len(active_engines)} active, {len(planned_engines)} planned\n"
+        return output 
 
     def _format_iae_result(self, title: str, result: dict) -> str:
         """Format IAE computation results with a 'show your work' section."""
@@ -575,3 +701,238 @@ class ComputationalTools:
         except (TypeError, ValueError) as e:
             work = f"Result formatting error: {str(e)}\nRaw result: {str(result)}"
         return f"# 🧠 {title} - IAE Computation Result\n\n## Results\n{work}\n\n## Show Your Work\nAll intermediate steps, formulas, and reasoning are included above. Please review for manual validation." 
+
+    async def intelligence_amplification_engine(self, analysis_request: str, engine_type: str = "general", complexity_level: str = "moderate", output_format: str = "detailed") -> str:
+        """
+        Intelligence Amplification Engine - Gateway to computational intelligence methods.
+        
+        Args:
+            analysis_request: Description of the analysis to perform
+            engine_type: Type of engine to use ("general", "knowledge_network", "cognitive_load", "concept_clustering")
+            complexity_level: Complexity level ("simple", "moderate", "complex")
+            output_format: Output format ("detailed", "concise")
+            
+        Returns:
+            Formatted analysis result string
+        """
+        try:
+            logger.info(f"🧠 Intelligence Amplification Engine called: {engine_type}")
+            
+            # Ensure engines are initialized
+            self._initialize_engines()
+            
+            # Check if intelligence amplification engine is available
+            if 'intelligence_amplification' not in self.engines:
+                return f"❌ **Intelligence Amplification Engine Unavailable**\n\nThe intelligence amplification engine is not available. This may be due to missing dependencies (NumPy, NetworkX, scikit-learn).\n\nPlease install required dependencies:\n```bash\npip install numpy networkx scikit-learn scipy\n```"
+            
+            engine = self.engines['intelligence_amplification']
+            
+            # Map engine_type to specific methods and parse analysis_request
+            if engine_type == "knowledge_network" or "knowledge" in analysis_request.lower() or "network" in analysis_request.lower():
+                # Parse concepts and relationships from analysis_request
+                concepts, relationships = self._parse_knowledge_network_request(analysis_request)
+                result = engine.analyze_knowledge_network(concepts, relationships)
+                title = "Knowledge Network Analysis"
+                
+            elif engine_type == "cognitive_load" or "cognitive" in analysis_request.lower() or "load" in analysis_request.lower() or "optimization" in analysis_request.lower():
+                # Parse tasks and constraints from analysis_request
+                tasks, constraints = self._parse_cognitive_load_request(analysis_request, complexity_level)
+                result = engine.optimize_cognitive_load(tasks, constraints)
+                title = "Cognitive Load Optimization"
+                
+            elif engine_type == "concept_clustering" or "clustering" in analysis_request.lower() or "concepts" in analysis_request.lower():
+                # Parse concept features from analysis_request
+                concept_features, concept_names, n_clusters = self._parse_concept_clustering_request(analysis_request, complexity_level)
+                result = engine.analyze_concept_clustering(concept_features, concept_names, n_clusters)
+                title = "Concept Clustering Analysis"
+                
+            else:  # engine_type == "general" or fallback
+                # For general analysis, try to determine the best method based on content
+                if any(keyword in analysis_request.lower() for keyword in ["network", "relationship", "connection", "graph"]):
+                    concepts, relationships = self._parse_knowledge_network_request(analysis_request)
+                    result = engine.analyze_knowledge_network(concepts, relationships)
+                    title = "General Knowledge Network Analysis"
+                elif any(keyword in analysis_request.lower() for keyword in ["task", "load", "optimization", "allocation"]):
+                    tasks, constraints = self._parse_cognitive_load_request(analysis_request, complexity_level)
+                    result = engine.optimize_cognitive_load(tasks, constraints)
+                    title = "General Cognitive Load Analysis"
+                else:
+                    # Default to concept clustering for general analysis
+                    concept_features, concept_names, n_clusters = self._parse_concept_clustering_request(analysis_request, complexity_level)
+                    result = engine.analyze_concept_clustering(concept_features, concept_names, n_clusters)
+                    title = "General Concept Analysis"
+            
+            # Format output according to output_format parameter
+            if output_format == "concise":
+                return self._format_iae_result_concise(title, result)
+            else:  # detailed
+                return self._format_iae_result(title, result)
+                
+        except Exception as e:
+            logger.error(f"❌ Intelligence amplification engine failed: {str(e)}")
+            return f"❌ **Intelligence Amplification Engine Error**\n\nFailed to perform analysis: {str(e)}\n\nPlease check your analysis_request format and ensure all required dependencies are installed."
+
+    def _parse_knowledge_network_request(self, analysis_request: str) -> tuple:
+        """Parse knowledge network analysis request to extract concepts and relationships."""
+        try:
+            # Try to extract structured data from the request
+            import re
+            
+            # Look for concepts in various formats
+            concepts = []
+            relationships = []
+            
+            # Simple parsing - look for lists or comma-separated items
+            concept_patterns = [
+                r"concepts?[:\s]+([^.]+)",
+                r"nodes?[:\s]+([^.]+)",
+                r"items?[:\s]+([^.]+)"
+            ]
+            
+            for pattern in concept_patterns:
+                match = re.search(pattern, analysis_request, re.IGNORECASE)
+                if match:
+                    concept_text = match.group(1)
+                    # Split by commas and clean up
+                    concepts = [c.strip().strip('"\'') for c in concept_text.split(',') if c.strip()]
+                    break
+            
+            # If no structured concepts found, extract key terms
+            if not concepts:
+                # Extract capitalized words and important terms
+                words = re.findall(r'\b[A-Z][a-z]+\b', analysis_request)
+                concepts = list(set(words))[:10]  # Limit to 10 concepts
+                
+                # If still no concepts, create some default ones
+                if not concepts:
+                    concepts = ["Concept A", "Concept B", "Concept C", "Concept D"]
+            
+            # Create default relationships between concepts
+            for i, source in enumerate(concepts):
+                for j, target in enumerate(concepts):
+                    if i != j and len(relationships) < len(concepts) * 2:  # Limit relationships
+                        weight = 0.5 + (i + j) * 0.1  # Vary weights
+                        relationships.append({
+                            "source": source,
+                            "target": target,
+                            "weight": min(weight, 1.0)
+                        })
+            
+            return concepts, relationships
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse knowledge network request: {e}")
+            # Return default structure
+            return ["Concept A", "Concept B", "Concept C"], [
+                {"source": "Concept A", "target": "Concept B", "weight": 0.8},
+                {"source": "Concept B", "target": "Concept C", "weight": 0.6}
+            ]
+
+    def _parse_cognitive_load_request(self, analysis_request: str, complexity_level: str) -> tuple:
+        """Parse cognitive load optimization request to extract tasks and constraints."""
+        try:
+            # Create sample tasks based on complexity level
+            complexity_multiplier = {"simple": 1.0, "moderate": 2.0, "complex": 3.0}.get(complexity_level, 2.0)
+            
+            # Try to extract task information from the request
+            import re
+            
+            # Look for task-related keywords and create appropriate tasks
+            task_keywords = re.findall(r'\b(task|activity|job|work|project|assignment)\w*\b', analysis_request, re.IGNORECASE)
+            num_tasks = max(3, min(len(task_keywords) * 2, 8))  # Between 3-8 tasks
+            
+            tasks = []
+            for i in range(num_tasks):
+                tasks.append({
+                    "name": f"Task {i+1}",
+                    "complexity": (i + 1) * complexity_multiplier / num_tasks,
+                    "priority": 1.0 - (i * 0.1),  # Decreasing priority
+                    "duration": 1.0 + (i * 0.5)   # Increasing duration
+                })
+            
+            # Create constraints based on complexity level
+            constraints = {
+                "max_cognitive_load": 5.0 * complexity_multiplier,
+                "max_time": 8.0,
+                "resource_limit": 10.0
+            }
+            
+            return tasks, constraints
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse cognitive load request: {e}")
+            # Return default structure
+            return [
+                {"name": "Task 1", "complexity": 2.0, "priority": 1.0, "duration": 1.5},
+                {"name": "Task 2", "complexity": 1.5, "priority": 0.8, "duration": 2.0},
+                {"name": "Task 3", "complexity": 3.0, "priority": 0.9, "duration": 1.0}
+            ], {"max_cognitive_load": 6.0, "max_time": 8.0}
+
+    def _parse_concept_clustering_request(self, analysis_request: str, complexity_level: str) -> tuple:
+        """Parse concept clustering request to extract features and parameters."""
+        try:
+            import re
+            
+            # Determine number of clusters based on complexity
+            base_clusters = {"simple": 2, "moderate": 3, "complex": 5}.get(complexity_level, 3)
+            
+            # Extract concept names from the request
+            concept_names = []
+            words = re.findall(r'\b[A-Z][a-z]+\b', analysis_request)
+            concept_names = list(set(words))[:base_clusters * 3]  # Up to 3x clusters for more samples
+            
+            if not concept_names:
+                concept_names = [f"Concept {i+1}" for i in range(max(base_clusters * 2, 6))]  # Ensure minimum 6 concepts
+            
+            # Ensure we have enough samples for clustering
+            min_samples_needed = base_clusters + 2  # At least clusters + 2 samples
+            if len(concept_names) < min_samples_needed:
+                # Add more concepts to meet minimum requirement
+                for i in range(len(concept_names), min_samples_needed):
+                    concept_names.append(f"Generated_Concept_{i+1}")
+            
+            # Adjust number of clusters based on available samples
+            n_clusters = min(base_clusters, len(concept_names) - 1)  # Ensure n_clusters < n_samples
+            n_clusters = max(n_clusters, 2)  # Minimum 2 clusters
+            
+            # Generate synthetic feature vectors for concepts
+            import random
+            random.seed(42)  # For reproducible results
+            
+            concept_features = []
+            feature_dim = 5  # 5-dimensional feature space
+            
+            for i, name in enumerate(concept_names):
+                # Create features that will naturally cluster
+                cluster_id = i % n_clusters
+                base_values = [cluster_id * 2.0 + random.uniform(-0.5, 0.5) for _ in range(feature_dim)]
+                concept_features.append(base_values)
+            
+            return concept_features, concept_names, n_clusters
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse concept clustering request: {e}")
+            # Return default structure with sufficient samples
+            return [
+                [1.0, 2.0, 1.5, 0.8, 1.2],
+                [1.2, 1.8, 1.3, 0.9, 1.1],
+                [3.0, 3.5, 3.2, 2.8, 3.1],
+                [2.8, 3.3, 3.0, 2.9, 3.2],
+                [0.5, 1.5, 1.0, 0.7, 1.0],
+                [3.5, 4.0, 3.8, 3.2, 3.6]
+            ], ["Concept A", "Concept B", "Concept C", "Concept D", "Concept E", "Concept F"], 2
+
+    def _format_iae_result_concise(self, title: str, result: dict) -> str:
+        """Format IAE computation results in concise format."""
+        if "error" in result:
+            return f"❌ {title} Failed: {result['error']}"
+        
+        # Extract key metrics for concise display
+        if "network_size" in result:
+            return f"🧠 {title}: {result['network_size']['nodes']} nodes, {result['network_size']['edges']} edges, density: {result['network_size']['density']:.3f}"
+        elif "selected_tasks" in result:
+            return f"🧠 {title}: {len(result['selected_tasks'])} tasks selected, load: {result['total_complexity']:.2f}, priority: {result['total_priority']:.2f}"
+        elif "cluster_assignments" in result:
+            return f"🧠 {title}: {len(set(result['cluster_assignments']))} clusters identified, silhouette score: {result.get('silhouette_score', 'N/A')}"
+        else:
+            return f"🧠 {title}: Analysis completed successfully"

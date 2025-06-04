@@ -67,8 +67,9 @@ async def maestro_orchestrate(
     specialized agent coordination, and adaptive workflow management.
     """
     tools = get_tool_handlers()
-    return await tools.orchestrate_task(
-        ctx=None, task_description=task_description, context=context or {},
+    # Create a simple orchestration without LLM dependencies
+    return await tools.orchestrate_task_simple(
+        task_description=task_description, context=context or {},
         complexity_level=complexity_level, quality_threshold=quality_threshold,
         resource_level=resource_level, reasoning_focus=reasoning_focus,
         validation_rigor=validation_rigor, max_iterations=max_iterations,
@@ -124,11 +125,15 @@ async def maestro_iae_discovery(
     based on domain expertise and capability matching.
     """
     tools = get_tool_handlers()
-    return await tools._handle_iae_discovery({
+    result = await tools._handle_iae_discovery({
         "discovery_type": discovery_type,
         "target_domain": target_domain,
         "depth_level": depth_level
     })
+    # Extract text from TextContent if it's a list
+    if isinstance(result, list) and len(result) > 0:
+        return result[0].text
+    return str(result)
 
 @mcp.tool()
 async def maestro_tool_selection(
@@ -144,12 +149,16 @@ async def maestro_tool_selection(
     for maximum efficiency and quality outcomes.
     """
     tools = get_tool_handlers()
-    return await tools._handle_tool_selection({
-        "task_context": task_context,
+    result = await tools._handle_tool_selection({
+        "request_description": task_context,  # Fix parameter name mismatch
         "available_tools": available_tools or [],
         "selection_criteria": selection_criteria,
         "confidence_threshold": confidence_threshold
     })
+    # Extract text from TextContent if it's a list
+    if isinstance(result, list) and len(result) > 0:
+        return result[0].text
+    return str(result)
 
 @mcp.tool()
 async def maestro_collaboration_response(

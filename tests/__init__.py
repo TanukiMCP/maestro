@@ -1,8 +1,14 @@
 """
-MAESTRO Protocol Test Suite
+TanukiMCP Maestro Test Suite
+Comprehensive testing for production-ready MCP server tools
 
-Comprehensive tests for the Meta-Agent Ensemble for Systematic Task 
-Reasoning and Orchestration (MAESTRO) Protocol.
+Tests both Smithery.ai compatibility and real-world agentic IDE usage
 """
 
-__version__ = "1.0.0" 
+import os
+import sys
+
+# Add project root and src to path for testing
+project_root = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, 'src')) 

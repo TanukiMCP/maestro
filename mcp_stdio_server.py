@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 Maestro MCP Server - stdio transport implementation
 Ultra-lightweight with static tool definitions for fast Smithery scanning
@@ -355,9 +359,22 @@ def get_enhanced_tool_handlers_instance():
         # Add src to path only when actually needed
         if os.path.join(os.path.dirname(__file__), 'src') not in sys.path:
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+        
+        # Force reload of modules to get latest changes
+        import importlib
+        if 'maestro.enhanced_tools' in sys.modules:
+            importlib.reload(sys.modules['maestro.enhanced_tools'])
+        if 'maestro.llm_web_tools' in sys.modules:
+            importlib.reload(sys.modules['maestro.llm_web_tools'])
+            
         from maestro.enhanced_tools import EnhancedToolHandlers
         _enhanced_tool_handlers_instance = EnhancedToolHandlers()
     return _enhanced_tool_handlers_instance
+
+def reset_enhanced_tool_handlers_instance():
+    """Reset the enhanced tool handlers instance to force reload"""
+    global _enhanced_tool_handlers_instance
+    _enhanced_tool_handlers_instance = None
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[types.TextContent]:
@@ -515,15 +532,10 @@ async def _handle_maestro_search(arguments: Dict[str, Any]) -> List[types.TextCo
     try:
         enhanced_tools = get_enhanced_tool_handlers_instance()
         
-        query = arguments.get("query", "")
-        max_results = arguments.get("max_results", 10)
-        search_engine = arguments.get("search_engine", "duckduckgo")
-        temporal_filter = arguments.get("temporal_filter", "any")
-        result_format = arguments.get("result_format", "structured")
+        # Call the handler directly instead of the bridge method
+        result = await enhanced_tools.handle_maestro_search(arguments)
         
-        result = await enhanced_tools.search(query, max_results, search_engine, temporal_filter, result_format)
-        
-        return [types.TextContent(type="text", text=result)]
+        return result
     except Exception as e:
         logger.error(f"Error in maestro_search: {e}")
         return [types.TextContent(type="text", text=f"Error in search: {str(e)}")]
@@ -533,15 +545,10 @@ async def _handle_maestro_scrape(arguments: Dict[str, Any]) -> List[types.TextCo
     try:
         enhanced_tools = get_enhanced_tool_handlers_instance()
         
-        url = arguments.get("url", "")
-        output_format = arguments.get("output_format", "markdown") 
-        selectors = arguments.get("selectors", [])
-        wait_time = arguments.get("wait_time", 3)
-        extract_links = arguments.get("extract_links", False)
+        # Call the handler directly instead of the bridge method
+        result = await enhanced_tools.handle_maestro_scrape(arguments)
         
-        result = await enhanced_tools.scrape(url, output_format, selectors, wait_time, extract_links)
-        
-        return [types.TextContent(type="text", text=result)]
+        return result
     except Exception as e:
         logger.error(f"Error in maestro_scrape: {e}")
         return [types.TextContent(type="text", text=f"Error in scraping: {str(e)}")]

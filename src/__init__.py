@@ -1,3 +1,7 @@
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration
 
@@ -9,7 +13,7 @@ Core Principle: Intelligence Amplification > Model Scale
 
 __version__ = "1.0.0"
 __author__ = "tanukimcp"
-__license__ = "MIT"
+__license__ = "Non-Commercial License - Commercial use requires TanukiMCP approval"
 
 # Remove direct imports to implement lazy loading
 # Instead, provide functions to get these components when needed

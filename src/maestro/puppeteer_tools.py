@@ -1,3 +1,7 @@
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 Built-in Puppeteer Tools for MAESTRO Protocol
 
@@ -384,14 +388,25 @@ class MAESTROPuppeteerTools:
                 "success": False,
                 "error": f"Execution timeout after {timeout} seconds",
                 "return_code": -1,
-                "execution_time": timeout
+                "execution_time": timeout,
+                "metadata": {
+                    "language": language,
+                    "code_length": len(code),
+                    "timeout": timeout,
+                    "error_type": "timeout"
+                }
             }
         except Exception as e:
             logger.error(f"❌ MAESTRO execute failed: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
-                "return_code": -1
+                "return_code": -1,
+                "metadata": {
+                    "language": language,
+                    "code_length": len(code),
+                    "error_type": "execution_error"
+                }
             }
     
     def _build_search_url(self, query: str, search_engine: str, temporal_filter: Optional[str]) -> str:

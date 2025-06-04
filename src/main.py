@@ -2,6 +2,10 @@
 """
 Maestro MCP Server - HTTP transport for Smithery deployment
 Ultra-lightweight tool definitions for fast scanning
+
+Copyright (c) 2025 TanukiMCP Orchestra
+Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+Contact tanukimcp@gmail.com for commercial licensing inquiries
 """
 
 import asyncio
@@ -14,6 +18,7 @@ from typing import Any, Dict, List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import mcp.types as types
+from .license_compliance import check_license_compliance
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -963,7 +968,15 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
 # Health check endpoint
 @app.get("/")
 async def root():
-    return {"name": "Maestro MCP Server", "status": "online", "tools_count": len(STATIC_TOOLS)}
+    # Perform license compliance check
+    compliant = check_license_compliance()
+    return {
+        "name": "Maestro MCP Server", 
+        "status": "online", 
+        "tools_count": len(STATIC_TOOLS),
+        "license": "Non-Commercial License",
+        "compliance_status": "compliant" if compliant else "violation_detected"
+    }
 
 @app.get("/health")
 async def health():

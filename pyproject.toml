@@ -7,12 +7,12 @@ name = "tanukimcp-maestro"
 version = "1.0.0"
 description = "MAESTRO Protocol: Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration - Transform any LLM into superintelligent AI"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Non-Commercial License - Commercial use requires approval from TanukiMCP"}
 authors = [
-    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+    {name = "tanukimcp", email = "tanukimcp@gmail.com"}
 ]
 maintainers = [
-    {name = "tanukimcp", email = "contact@tanukimcp.com"}
+    {name = "tanukimcp", email = "tanukimcp@gmail.com"}
 ]
 keywords = [
     "mcp",
@@ -28,7 +28,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

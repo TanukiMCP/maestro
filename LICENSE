@@ -1,16 +1,83 @@
-MIT License
+MAESTRO Protocol Non-Commercial License
 
-Copyright (c) 2025 TanukiMCP Orchestra - MAESTRO Protocol
+Copyright (c) 2025 TanukiMCP Orchestra
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+GRANT OF LICENSE
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Subject to the terms and conditions of this License, TanukiMCP Orchestra ("Licensor") 
+hereby grants you a non-exclusive, non-transferable, revocable license to use, 
+copy, modify, and distribute the MAESTRO Protocol software and associated 
+documentation files (the "Software"), subject to the following conditions:
+
+NON-COMMERCIAL USE ONLY
+
+1. NON-COMMERCIAL RESTRICTION: You may use, copy, modify, and distribute the 
+   Software for NON-COMMERCIAL purposes only. Commercial use of any kind is 
+   strictly prohibited without explicit written permission from TanukiMCP.
+
+2. DEFINITION OF COMMERCIAL USE: "Commercial use" includes, but is not limited to:
+   - Using the Software in any business operation or commercial enterprise
+   - Offering services based on the Software for compensation
+   - Distributing the Software as part of a commercial product or service
+   - Using the Software to generate revenue, directly or indirectly
+   - Incorporating the Software into any commercial offering
+   - Using the Software in any organizational or corporate environment
+   - Any use that could reasonably be expected to generate financial benefit
+   - Training AI models using this Software's output or methodology
+   - Creating derivative works for commercial purposes
+   - Reverse engineering for competitive advantage
+   - Using in any for-profit corporation, LLC, or business entity
+
+3. COMMERCIAL LICENSE REQUIRED: To use the Software for any commercial purpose, 
+   you must obtain a separate commercial license from TanukiMCP. Contact 
+   tanukimcp@gmail.com to inquire about commercial licensing terms.
+
+PERMITTED NON-COMMERCIAL USES
+
+You may use the Software for:
+- Personal projects and learning
+- Academic research and education
+- Open source projects (non-commercial)
+- Individual experimentation and development
+- Non-profit organizations (with explicit non-commercial use)
+
+CONDITIONS
+
+4. ATTRIBUTION: You must retain all copyright notices, this license notice, 
+   and provide attribution to TanukiMCP Orchestra in any distribution or 
+   derivative work.
+
+5. NO SUBLICENSING: You may not sublicense the Software or grant others 
+   commercial rights to use the Software.
+
+6. MODIFICATIONS: You may modify the Software for non-commercial use, but 
+   any commercial use of modifications requires separate commercial licensing.
+
+7. DISTRIBUTION: You may distribute the Software and modifications under 
+   this same license for non-commercial use only.
+
+8. ANTI-CIRCUMVENTION: You may not remove, obscure, or modify any license 
+   notices, copyright notices, or licensing enforcement mechanisms.
+
+9. DERIVATIVE WORKS: Any derivative works must be released under this same 
+   license and cannot be used commercially without separate licensing.
+
+10. CORPORATE RESTRICTIONS: For-profit corporations with >10 employees or 
+     >$1M annual revenue require commercial licensing regardless of use case.
+
+11. COPYLEFT REQUIREMENT: Any software that incorporates, links to, or 
+    derives functionality from this Software must also be licensed under 
+    these same terms.
+
+12. SOURCE CODE AVAILABILITY: If you distribute any derivative work or 
+    modification, you must make the complete source code freely available 
+    under this same license.
+
+13. NETWORK USE COPYLEFT: If this Software is used to provide network 
+    services (including SaaS, APIs, or web services), the complete source 
+    code of the service must be made available under this license.
+
+DISCLAIMER
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -18,4 +85,41 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. 
+SOFTWARE.
+
+TERMINATION
+
+This license is automatically terminated if you violate any of its terms. 
+Upon termination, you must cease all use of the Software and destroy all 
+copies in your possession.
+
+MONITORING AND ENFORCEMENT
+
+14. USAGE MONITORING: This Software may include monitoring capabilities to 
+    detect commercial use and license compliance.
+
+15. VIOLATION REPORTING: Users are encouraged to report suspected license 
+    violations to tanukimcp@gmail.com.
+
+16. AUTOMATIC ENFORCEMENT: The Software may include technical measures to 
+    prevent unauthorized commercial use.
+
+17. BOUNTY PROGRAM: TanukiMCP may offer rewards for reporting verified 
+    commercial license violations.
+
+CONTACT INFORMATION
+
+For commercial licensing inquiries:
+- Email: tanukimcp@gmail.com
+- Website: https://tanukimcp.com/licensing
+- Subject Line: "MAESTRO Protocol Commercial License Request"
+
+For questions about this license:
+- Email: tanukimcp@gmail.com
+
+---
+
+Copyright (c) 2025 TanukiMCP Orchestra
+All rights reserved.
+
+MAESTRO Protocol is a trademark of TanukiMCP Orchestra. 

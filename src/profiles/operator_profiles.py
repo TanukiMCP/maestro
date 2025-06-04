@@ -1,3 +1,7 @@
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 Operator Profiles for MAESTRO Protocol
 Defines specialized AI operator personas optimized for different task types and complexity levels.

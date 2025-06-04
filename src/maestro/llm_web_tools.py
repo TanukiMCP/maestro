@@ -1,3 +1,7 @@
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 LLM-Driven Web Tools for MAESTRO Protocol
 
@@ -16,6 +20,7 @@ import re
 import time
 import urllib.parse
 import urllib.request
+import gzip
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, asdict
@@ -171,16 +176,22 @@ class LLMWebTools:
         try:
             # Enhance query with LLM intelligence
             enhanced_query = await self._enhance_search_query(query, context)
+            logger.info(f"🔍 Enhanced query: '{enhanced_query}'")
             
             # Perform parallel searches across engines
             search_tasks = []
             for engine in engines:
                 if engine in self.search_engines:
+                    logger.info(f"🔍 Adding search task for engine: {engine}")
                     task = self._search_single_engine(enhanced_query, engine, max_results)
                     search_tasks.append(task)
+                else:
+                    logger.warning(f"🔍 Unknown search engine: {engine}")
             
+            logger.info(f"🔍 Executing {len(search_tasks)} search tasks")
             # Execute searches in parallel
             engine_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+            logger.info(f"🔍 Got {len(engine_results)} engine results")
             
             # Combine and deduplicate results
             all_results = []
@@ -455,27 +466,36 @@ class LLMWebTools:
     
     async def _search_single_engine(self, query: str, engine: str, max_results: int) -> List[WebSearchResult]:
         """Search a single engine and return structured results"""
+        logger.info(f"🔍 Searching engine {engine} for query: '{query}'")
         engine_config = self.search_engines.get(engine, {})
         if not engine_config:
+            logger.error(f"🔍 No config found for engine: {engine}")
             return []
         
         try:
             # Build search URL
             search_url = f"{engine_config['url']}?{engine_config['query_param']}={urllib.parse.quote(query)}"
+            logger.info(f"🔍 Search URL: {search_url}")
             
             # Download search results page
             page_content = await self._download_page_content(search_url)
+            logger.info(f"🔍 Downloaded {len(page_content)} characters from {engine}")
             
             # Parse results based on engine
             if engine == 'duckduckgo':
-                return await self._parse_duckduckgo_results(page_content, query, max_results)
+                results = await self._parse_duckduckgo_results(page_content, query, max_results)
             elif engine == 'bing':
-                return await self._parse_bing_results(page_content, query, max_results)
+                results = await self._parse_bing_results(page_content, query, max_results)
             else:
-                return await self._parse_generic_results(page_content, query, max_results)
+                results = await self._parse_generic_results(page_content, query, max_results)
+            
+            logger.info(f"🔍 Parsed {len(results)} results from {engine}")
+            return results
                 
         except Exception as e:
             logger.error(f"Search engine {engine} failed: {e}")
+            import traceback
+            logger.error(f"Search engine {engine} traceback: {traceback.format_exc()}")
             return []
     
     async def _download_page_content(self, url: str) -> str:
@@ -497,6 +517,12 @@ class LLMWebTools:
             with urllib.request.urlopen(request, timeout=30, context=self.ssl_context) as response:
                 content = response.read()
                 
+                # Handle gzip compression
+                content_encoding = response.headers.get('Content-Encoding', '')
+                if 'gzip' in content_encoding.lower():
+                    import gzip
+                    content = gzip.decompress(content)
+                
                 # Handle encoding
                 encoding = response.headers.get_content_charset() or 'utf-8'
                 return content.decode(encoding, errors='ignore')
@@ -511,7 +537,7 @@ class LLMWebTools:
         
         # DuckDuckGo HTML structure parsing
         result_pattern = r'<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>(.*?)</a>'
-        snippet_pattern = r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>'
+        snippet_pattern = r'<a[^>]*class="result__snippet"[^>]*href="[^"]*"[^>]*>(.*?)</a>'
         
         result_matches = re.findall(result_pattern, content, re.DOTALL | re.IGNORECASE)
         snippet_matches = re.findall(snippet_pattern, content, re.DOTALL | re.IGNORECASE)
@@ -519,9 +545,14 @@ class LLMWebTools:
         for i, (url, title) in enumerate(result_matches[:max_results]):
             snippet = snippet_matches[i] if i < len(snippet_matches) else ""
             
-            # Clean HTML tags
+            # Clean HTML tags and decode HTML entities
             title = re.sub(r'<[^>]*>', '', title).strip()
             snippet = re.sub(r'<[^>]*>', '', snippet).strip()
+            
+            # Decode HTML entities
+            import html
+            title = html.unescape(title)
+            snippet = html.unescape(snippet)
             
             # Extract domain
             domain = urllib.parse.urlparse(url).netloc

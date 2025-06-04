@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 Maestro Enhanced MCP Server
 Intelligence Amplification Engine with Full Computational Orchestration

@@ -1,3 +1,7 @@
+# Copyright (c) 2025 TanukiMCP Orchestra
+# Licensed under Non-Commercial License - Commercial use requires approval from TanukiMCP
+# Contact tanukimcp@gmail.com for commercial licensing inquiries
+
 """
 Enhanced Tool Handlers for MAESTRO Protocol
 
@@ -35,12 +39,19 @@ class EnhancedToolHandlers:
     def __init__(self):
         self.error_handler = AdaptiveErrorHandler()
         self.llm_web_tools = LLMWebTools()
+        self.puppeteer_tools = None  # Will be initialized when needed
         self._initialized = False
     
     async def _ensure_initialized(self):
         """Ensure tools are initialized"""
         if not self._initialized:
             logger.info("🔄 Initializing enhanced tool handlers...")
+            
+            # Initialize puppeteer tools for maestro_execute
+            if self.puppeteer_tools is None:
+                from .puppeteer_tools import MAESTROPuppeteerTools
+                self.puppeteer_tools = MAESTROPuppeteerTools()
+            
             self._initialized = True
             logger.info("✅ Enhanced tool handlers ready")
     
@@ -70,15 +81,19 @@ class EnhancedToolHandlers:
             # Map search_engine to engines list format
             engines = [search_engine] if search_engine else ['duckduckgo']
             
+            logger.info(f"🔍 Search parameters: engines={engines}, max_results={max_results}, temporal_filter={temporal_filter}")
+            
             result = await self.llm_web_tools.llm_driven_search(
                 query=query,
                 max_results=max_results,
                 engines=engines,
                 temporal_filter=temporal_filter,
                 result_format=result_format,
-                llm_analysis=True,
+                llm_analysis=False,  # Disable LLM analysis since context is None
                 context=None  # Context will be added when available
             )
+            
+            logger.info(f"🔍 Search result success: {result.get('success', False)}, total_results: {result.get('total_results', 0)}")
             
             if result.get("success", False):
                 # Format successful search results
@@ -133,9 +148,11 @@ class EnhancedToolHandlers:
             
         except Exception as e:
             logger.error(f"❌ MAESTRO search error: {str(e)}")
+            import traceback
+            logger.error(f"❌ MAESTRO search traceback: {traceback.format_exc()}")
             return [types.TextContent(
                 type="text",
-                text=f"❌ **MAESTRO Search Error**\n\nError: {str(e)}\n\nPlease check your query and try again."
+                text=f"❌ **MAESTRO Search Error**\n\nError: {str(e)}\n\nTraceback: {traceback.format_exc()}\n\nPlease check your query and try again."
             )]
     
     async def handle_maestro_scrape(self, arguments: dict) -> list[types.TextContent]:

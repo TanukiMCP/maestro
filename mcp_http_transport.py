@@ -59,17 +59,45 @@ class SmitheryMCPTransport:
             config = self._parse_config_from_query(str(request.url))
             
             if request.method == "GET":
-                # Tool discovery request
-                return await self._handle_tool_discovery(config)
+                # Tool discovery request - treat as tools/list with default id
+                return await self._handle_tool_discovery(config, "tools-list-get")
             
             elif request.method == "POST":
                 # Tool execution request
                 body = await request.body()
                 if body:
-                    data = json.loads(body.decode())
-                    return await self._handle_tool_execution(data, config)
+                    try:
+                        data = json.loads(body.decode())
+                        # Validate basic JSON-RPC structure
+                        if not isinstance(data, dict):
+                            return JSONResponse({
+                                "jsonrpc": "2.0",
+                                "id": None,
+                                "error": {
+                                    "code": -32600,
+                                    "message": "Invalid Request - must be a JSON object"
+                                }
+                            }, status_code=400)
+                        
+                        return await self._handle_tool_execution(data, config)
+                    except json.JSONDecodeError as e:
+                        return JSONResponse({
+                            "jsonrpc": "2.0", 
+                            "id": None,
+                            "error": {
+                                "code": -32700,
+                                "message": f"Parse error: {str(e)}"
+                            }
+                        }, status_code=400)
                 else:
-                    return JSONResponse({"error": "No request body"}, status_code=400)
+                    return JSONResponse({
+                        "jsonrpc": "2.0",
+                        "id": None, 
+                        "error": {
+                            "code": -32600,
+                            "message": "Invalid Request - no request body"
+                        }
+                    }, status_code=400)
             
             elif request.method == "DELETE":
                 # Cleanup request
@@ -111,29 +139,41 @@ class SmitheryMCPTransport:
         
         current[parts[-1]] = value
     
-    async def _handle_tool_discovery(self, config: Dict[str, Any]) -> JSONResponse:
+    async def _handle_tool_discovery(self, config: Dict[str, Any], request_id: Optional[str] = None) -> JSONResponse:
         """Handle tool discovery (list_tools) - must be fast for Smithery"""
         try:
             # Use pure dictionary definitions (zero imports, instant loading)
             from static_tools_dict import STATIC_TOOLS_DICT
             
             # Tools are already in dict format - no conversion needed
-            return JSONResponse({
+            response = {
                 "jsonrpc": "2.0",
                 "result": {
                     "tools": STATIC_TOOLS_DICT
                 }
-            })
+            }
+            
+            # Add id if provided (required for JSON-RPC)
+            if request_id is not None:
+                response["id"] = request_id
+            
+            return JSONResponse(response)
             
         except Exception as e:
             logger.error(f"Error in tool discovery: {e}")
-            return JSONResponse({
+            error_response = {
                 "jsonrpc": "2.0",
                 "error": {
                     "code": -32603,
                     "message": f"Internal error: {str(e)}"
                 }
-            }, status_code=500)
+            }
+            
+            # Add id if provided (required for JSON-RPC)
+            if request_id is not None:
+                error_response["id"] = request_id
+                
+            return JSONResponse(error_response, status_code=500)
     
     async def _handle_initialize(self, params: Dict[str, Any], request_id: Optional[str]) -> JSONResponse:
         """Handle MCP initialize method"""
@@ -178,6 +218,17 @@ class SmitheryMCPTransport:
             params = data.get("params", {})
             request_id = data.get("id")
             
+            # Validate required JSON-RPC fields
+            if method is None:
+                return JSONResponse({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32600,
+                        "message": "Invalid Request - missing 'method' field"
+                    }
+                }, status_code=400)
+            
             if method == "tools/call":
                 tool_name = params.get("name")
                 arguments = params.get("arguments", {})
@@ -212,19 +263,16 @@ class SmitheryMCPTransport:
             
             elif method == "tools/list":
                 # Same as GET /mcp for tool discovery
-                return await self._handle_tool_discovery(config)
+                return await self._handle_tool_discovery(config, request_id)
             
             elif method == "initialize":
                 # Handle MCP initialization
                 return await self._handle_initialize(params, request_id)
             
             elif method == "notifications/initialized":
-                # Handle initialization notification (no response needed)
-                return JSONResponse({
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {}
-                })
+                # Handle initialization notification (notifications don't have responses)
+                # Return 204 No Content for notifications
+                return Response(status_code=204)
             
             elif method == "ping":
                 # Handle ping requests

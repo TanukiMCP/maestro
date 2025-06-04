@@ -33,7 +33,7 @@ def _lazy_import(module_name, class_name):
         return _loaded_engines[class_name]
     
     try:
-        module = importlib.import_module(f".{module_name}", package="engines")
+        module = importlib.import_module(f".{module_name}", package=__name__)
         cls = getattr(module, class_name)
         _loaded_engines[class_name] = cls
         return cls
@@ -66,6 +66,9 @@ def get_apa_citation_engine():
 def get_intelligence_amplifier():
     return _lazy_import("intelligence_amplifier", "IntelligenceAmplificationEngine")
 
+def get_quantum_physics_engine():
+    return _lazy_import("quantum_physics_engine", "QuantumPhysicsEngine")
+
 # Define the IntelligenceAmplifier as a property for backward compatibility
 class LazyEngineLoader:
     @property
@@ -86,5 +89,6 @@ __all__ = [
     'get_grammar_engine',
     'get_apa_citation_engine',
     'get_intelligence_amplifier',
+    'get_quantum_physics_engine',
     'IntelligenceAmplifier'
 ] 

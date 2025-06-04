@@ -22,7 +22,7 @@ from .adaptive_error_handler import (
     ErrorContext,
     ReconsiderationResult
 )
-from .puppeteer_tools import MAESTROPuppeteerTools
+from .llm_web_tools import LLMWebTools
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class EnhancedToolHandlers:
     
     def __init__(self):
         self.error_handler = AdaptiveErrorHandler()
-        self.puppeteer_tools = MAESTROPuppeteerTools()
+        self.llm_web_tools = LLMWebTools()
         self._initialized = False
     
     async def _ensure_initialized(self):
@@ -64,25 +64,29 @@ class EnhancedToolHandlers:
             logger.info(f"🔍 Executing MAESTRO search: '{query}'")
             
             # Execute search with temporal filtering
-            if temporal_filter != "any":
-                temporal_filter = temporal_filter
-            else:
+            if temporal_filter == "any":
                 temporal_filter = None
             
-            result = await self.puppeteer_tools.maestro_search(
+            # Map search_engine to engines list format
+            engines = [search_engine] if search_engine else ['duckduckgo']
+            
+            result = await self.llm_web_tools.llm_driven_search(
                 query=query,
                 max_results=max_results,
-                search_engine=search_engine,
+                engines=engines,
                 temporal_filter=temporal_filter,
-                result_format=result_format
+                result_format=result_format,
+                llm_analysis=True,
+                context=None  # Context will be added when available
             )
             
             if result.get("success", False):
                 # Format successful search results
-                response = f"# 🔍 MAESTRO Search Results\n\n"
+                response = f"# 🔍 LLM-Enhanced MAESTRO Search Results\n\n"
                 response += f"**Query:** {query}\n"
-                response += f"**Search Engine:** {search_engine}\n"
-                response += f"**Results:** {result['results_count']} found\n"
+                response += f"**Enhanced Query:** {result.get('enhanced_query', query)}\n"
+                response += f"**Search Engines:** {', '.join(engines)}\n"
+                response += f"**Results:** {result['total_results']} found\n"
                 
                 if temporal_filter:
                     response += f"**Time Filter:** {temporal_filter}\n"
@@ -92,15 +96,22 @@ class EnhancedToolHandlers:
                 for i, search_result in enumerate(result['results'], 1):
                     response += f"### {i}. {search_result['title']}\n"
                     response += f"**URL:** {search_result['url']}\n"
+                    response += f"**Domain:** {search_result['domain']}\n"
                     response += f"**Snippet:** {search_result['snippet']}\n"
-                    response += f"**Relevance:** {search_result['relevance_score']:.2f}\n\n"
+                    response += f"**Relevance:** {search_result['relevance_score']:.2f}\n"
+                    
+                    if search_result.get('llm_analysis'):
+                        response += f"**LLM Analysis:** {search_result['llm_analysis']}\n"
+                    
+                    response += "\n"
                 
                 response += f"\n**Search completed at:** {result['timestamp']}\n"
                 
                 # Add metadata
                 response += f"\n## Metadata\n"
-                response += f"- Search URL: {result['metadata']['search_url']}\n"
+                response += f"- LLM Enhanced: {result['metadata']['llm_enhanced']}\n"
                 response += f"- Result format: {result_format}\n"
+                response += f"- Engines status: {result['metadata']['engines_status']}\n"
                 
             else:
                 # Handle search failure with fallback guidance
@@ -147,41 +158,60 @@ class EnhancedToolHandlers:
             
             logger.info(f"🕷️ Executing MAESTRO scrape: {url}")
             
-            result = await self.puppeteer_tools.maestro_scrape(
+            result = await self.llm_web_tools.llm_driven_scrape(
                 url=url,
                 output_format=output_format,
-                selectors=selectors,
-                wait_for=wait_for,
-                extract_links=extract_links,
-                extract_images=extract_images
+                target_content=None,  # Could be enhanced with selector-based targeting
+                extract_structured=True,
+                take_screenshot=True,
+                interact_before_scrape=None,
+                context=None  # Context will be added when available
             )
             
             if result.get("success", False):
-                response = f"# 🕷️ MAESTRO Scrape Results\n\n"
+                scrape_result = result['result']
+                response = f"# 🕷️ LLM-Enhanced MAESTRO Scrape Results\n\n"
                 response += f"**URL:** {url}\n"
+                response += f"**Title:** {scrape_result['title']}\n"
                 response += f"**Format:** {output_format}\n"
-                response += f"**Content Length:** {result['metadata']['content_length']} characters\n"
+                response += f"**Content Length:** {scrape_result['metadata']['content_length']} characters\n"
                 response += f"**Scraped at:** {result['timestamp']}\n\n"
                 
+                if scrape_result.get('llm_summary'):
+                    response += f"## LLM Summary:\n{scrape_result['llm_summary']}\n\n"
+                
                 response += f"## Content:\n\n"
-                response += result['content']
+                response += scrape_result['content']
                 
-                # Add additional data if extracted
-                if extract_links and 'links' in result['metadata']['additional_data']:
-                    links = result['metadata']['additional_data']['links']
-                    response += f"\n\n## Links ({len(links)} found):\n\n"
-                    for link in links[:10]:  # Limit to first 10 links
-                        response += f"- [{link['text']}]({link['href']})\n"
-                    if len(links) > 10:
-                        response += f"... and {len(links) - 10} more links\n"
+                # Add additional data
+                metadata = scrape_result['metadata']
+                if 'additional_data' in metadata:
+                    additional_data = metadata['additional_data']
+                    
+                    if 'links' in additional_data:
+                        links = additional_data['links']
+                        response += f"\n\n## Links ({len(links)} found):\n\n"
+                        for link in links[:10]:  # Limit to first 10 links
+                            response += f"- [{link.get('text', 'No text')}]({link.get('href', '#')})\n"
+                        if len(links) > 10:
+                            response += f"... and {len(links) - 10} more links\n"
+                    
+                    if 'images' in additional_data:
+                        images = additional_data['images']
+                        response += f"\n\n## Images ({len(images)} found):\n\n"
+                        for img in images[:5]:  # Limit to first 5 images
+                            response += f"- {img.get('alt', 'No alt text')} ({img.get('src', '#')})\n"
+                        if len(images) > 5:
+                            response += f"... and {len(images) - 5} more images\n"
+                    
+                    if 'structured_data' in additional_data:
+                        structured = additional_data['structured_data']
+                        if structured:
+                            response += f"\n\n## Structured Data:\n\n```json\n{json.dumps(structured, indent=2)}\n```\n"
                 
-                if extract_images and 'images' in result['metadata']['additional_data']:
-                    images = result['metadata']['additional_data']['images']
-                    response += f"\n\n## Images ({len(images)} found):\n\n"
-                    for img in images[:5]:  # Limit to first 5 images
-                        response += f"- {img['alt']} ({img['src']})\n"
-                    if len(images) > 5:
-                        response += f"... and {len(images) - 5} more images\n"
+                # Add screenshot if available
+                if 'screenshot' in metadata:
+                    response += f"\n\n## Screenshot Description:\n{metadata['screenshot'][:200]}...\n"
                 
             else:
                 response = f"# ❌ MAESTRO Scrape Failed\n\n"
@@ -496,7 +526,66 @@ class EnhancedToolHandlers:
                 text=f"❌ **MAESTRO Temporal Context Error**\n\nError: {str(e)}\n\nPlease check your input and try again."
             )]
     
+    # Bridge methods for compatibility with existing interface
+    async def search(self, query: str, max_results: int = 10, search_engine: str = "duckduckgo", 
+                    temporal_filter: str = "any", result_format: str = "structured") -> str:
+        """Bridge method for search functionality"""
+        result = await self.handle_maestro_search({
+            'query': query,
+            'max_results': max_results,
+            'search_engine': search_engine,
+            'temporal_filter': temporal_filter,
+            'result_format': result_format
+        })
+        return result[0].text if result else "Search failed"
+    
+    async def scrape(self, url: str, output_format: str = "markdown", selectors: list = None,
+                    wait_time: int = 3, extract_links: bool = False) -> str:
+        """Bridge method for scrape functionality"""
+        result = await self.handle_maestro_scrape({
+            'url': url,
+            'output_format': output_format,
+            'selectors': selectors or [],
+            'wait_for': None,
+            'extract_links': extract_links,
+            'extract_images': False
+        })
+        return result[0].text if result else "Scrape failed"
+    
+    async def execute(self, command: str, execution_context: dict = None, 
+                     timeout_seconds: int = 30, safe_mode: bool = True) -> str:
+        """Bridge method for execute functionality"""
+        result = await self.handle_maestro_execute({
+            'command': command,
+            'execution_context': execution_context or {},
+            'timeout_seconds': timeout_seconds,
+            'safe_mode': safe_mode
+        })
+        return result[0].text if result else "Execute failed"
+    
+    async def error_handler(self, error_message: str, error_context: dict = None,
+                           recovery_suggestions: bool = True) -> str:
+        """Bridge method for error handler functionality"""
+        result = await self.handle_maestro_error_handler({
+            'error_message': error_message,
+            'error_context': error_context or {},
+            'recovery_suggestions': recovery_suggestions
+        })
+        return result[0].text if result else "Error handling failed"
+    
+    async def temporal_context(self, temporal_query: str, time_range: dict = None,
+                              temporal_precision: str = "day") -> str:
+        """Bridge method for temporal context functionality"""
+        result = await self.handle_maestro_temporal_context({
+            'temporal_query': temporal_query,
+            'time_range': time_range or {},
+            'temporal_precision': temporal_precision
+        })
+        return result[0].text if result else "Temporal context failed"
+
     async def cleanup(self):
         """Cleanup resources"""
-        if hasattr(self.puppeteer_tools, 'cleanup'):
-            await self.puppeteer_tools.cleanup() 
+        logger.info("🧹 Cleaning up enhanced tool handlers...")
+        # LLM web tools don't need cleanup like puppeteer
+        self._initialized = False
+        logger.info("✅ Enhanced tool handlers cleaned up") 

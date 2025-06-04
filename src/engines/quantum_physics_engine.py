@@ -69,6 +69,9 @@ class QuantumPhysicsEngine:
             # Calculate von Neumann entropy
             entropy = -np.sum(eigenvals * np.log2(eigenvals))
             
+            # Ensure entropy is real
+            entropy = float(entropy.real) if hasattr(entropy, 'real') else float(entropy)
+            
             # Determine entanglement classification
             if entropy < 0.1:
                 classification = "Separable (minimal entanglement)"
@@ -79,12 +82,16 @@ class QuantumPhysicsEngine:
             else:
                 classification = "Maximally entangled"
             
+            # Calculate max entropy safely
+            max_entropy = float(np.log2(len(eigenvals))) if len(eigenvals) > 0 else 0.0
+            entanglement_fraction = entropy / max_entropy if max_entropy > 0 else 0.0
+            
             result = {
-                "von_neumann_entropy": float(entropy),
-                "entropy_bits": float(entropy),
+                "von_neumann_entropy": entropy,
+                "entropy_bits": entropy,
                 "eigenvalues": [float(val.real) for val in eigenvals],
-                "max_entropy": float(np.log2(len(eigenvals))),
-                "entanglement_fraction": float(entropy / np.log2(len(eigenvals))),
+                "max_entropy": max_entropy,
+                "entanglement_fraction": entanglement_fraction,
                 "classification": classification,
                 "subsystem_dimension": d,
                 "computation_method": "Partial trace + eigenvalue decomposition"

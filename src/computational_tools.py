@@ -81,21 +81,45 @@ class ComputationalTools:
             logger.warning("⚠️ Computational engines not available (NumPy missing based on check)")
             return
         
-        # Add quantum physics engine if available - use the lazy import pattern
+        # Add quantum physics engine
         try:
-            # Import inside the method to avoid loading at module initialization time
-            # Use the proper lazy loading patterns from engines/__init__.py
+            logger.info("🔄 Loading Quantum Physics Engine...")
+            from .engines import get_quantum_physics_engine
+            
+            QuantumPhysicsEngine = get_quantum_physics_engine()
+            if QuantumPhysicsEngine:
+                logger.info("🔄 Instantiating quantum engine...")
+                quantum_engine = QuantumPhysicsEngine()
+                self.engines['quantum_physics'] = quantum_engine
+                logger.info("✅ Quantum Physics Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Quantum Physics Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Quantum Physics Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Quantum Physics Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add intelligence amplification engine
+        try:
+            logger.info("🔄 Loading Intelligence Amplification Engine...")
             from .engines import get_intelligence_amplifier
             
-            # Get the engine class through the lazy loader
             IntelligenceAmplificationEngine = get_intelligence_amplifier()
             if IntelligenceAmplificationEngine:
-                self.engines['quantum_physics'] = IntelligenceAmplificationEngine()
-                logger.info("✅ Quantum physics engine loaded")
+                logger.info("🔄 Instantiating IA engine...")
+                intelligence_engine = IntelligenceAmplificationEngine()
+                self.engines['intelligence_amplification'] = intelligence_engine
+                logger.info("✅ Intelligence Amplification Engine loaded successfully")
             else:
-                logger.warning("Failed to load quantum physics engine: Class not available")
+                logger.warning("Failed to load Intelligence Amplification Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Intelligence Amplification Engine: {e}")
         except Exception as e:
-            logger.warning(f"Failed to initialize quantum physics engine: {e}")
+            logger.warning(f"Failed to initialize Intelligence Amplification Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
             
         # Future engines will be added here with the same lazy loading pattern
         
@@ -120,7 +144,7 @@ class ComputationalTools:
                         "engine_domain": {
                             "type": "string",
                             "description": "Computational domain",
-                            "enum": ["quantum_physics", "molecular_modeling", "statistical_analysis", 
+                            "enum": ["quantum_physics", "intelligence_amplification", "molecular_modeling", "statistical_analysis", 
                                    "classical_mechanics", "relativity", "chemistry", "biology"],
                             "default": "quantum_physics"
                         },
@@ -129,7 +153,8 @@ class ComputationalTools:
                             "description": "Type of calculation to perform",
                             "enum": ["entanglement_entropy", "bell_violation", "quantum_fidelity", 
                                    "pauli_decomposition", "molecular_properties", "statistical_test",
-                                   "regression_analysis", "sequence_alignment"],
+                                   "regression_analysis", "sequence_alignment", "knowledge_network_analysis",
+                                   "cognitive_load_optimization", "concept_clustering"],
                         },
                         "parameters": {
                             "type": "object",
@@ -209,6 +234,61 @@ class ComputationalTools:
                                             }
                                         }
                                     }
+                                },
+                                "concepts": {
+                                    "type": "array",
+                                    "description": "List of concepts for knowledge network analysis",
+                                    "items": {"type": "string"}
+                                },
+                                "relationships": {
+                                    "type": "array",
+                                    "description": "List of relationships between concepts",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "source": {"type": "string"},
+                                            "target": {"type": "string"},
+                                            "weight": {"type": "number", "default": 1.0}
+                                        }
+                                    }
+                                },
+                                "tasks": {
+                                    "type": "array",
+                                    "description": "List of tasks for cognitive load optimization",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "complexity": {"type": "number", "default": 1.0},
+                                            "priority": {"type": "number", "default": 1.0},
+                                            "duration": {"type": "number", "default": 1.0}
+                                        }
+                                    }
+                                },
+                                "constraints": {
+                                    "type": "object",
+                                    "description": "Constraints for cognitive load optimization",
+                                    "properties": {
+                                        "max_cognitive_load": {"type": "number", "default": 10.0},
+                                        "max_time": {"type": "number", "default": 8.0}
+                                    }
+                                },
+                                "concept_features": {
+                                    "type": "array",
+                                    "description": "Feature vectors for concept clustering",
+                                    "items": {
+                                        "type": "array",
+                                        "items": {"type": "number"}
+                                    }
+                                },
+                                "concept_names": {
+                                    "type": "array",
+                                    "description": "Names of concepts for clustering",
+                                    "items": {"type": "string"}
+                                },
+                                "n_clusters": {
+                                    "type": "integer",
+                                    "description": "Number of clusters for concept clustering",
+                                    "default": 3
                                 }
                             },
                             "additionalProperties": True
@@ -245,7 +325,7 @@ class ComputationalTools:
                 if engine_domain == "quantum_physics":
                     return await self._handle_quantum_computation(computation_type, parameters)
                 elif engine_domain == "intelligence_amplification":
-                    engine = self.engines.get("quantum_physics")
+                    engine = self.engines.get("intelligence_amplification")
                     if not engine:
                         return [types.TextContent(type="text", text="# ❌ Intelligence Amplification Engine not available.")]
                     # Dispatch to the correct method
@@ -267,7 +347,7 @@ class ComputationalTools:
                         return [types.TextContent(type="text", text=self._format_iae_result("Concept Clustering", result))]
                     # Add more IAE computation types as needed
                     else:
-                        return [types.TextContent(type="text", text=f"# ❌ Unknown IAE Computation\n\n'{computation_type}' is not supported.")]
+                        return [types.TextContent(type="text", text=f"# ❌ Unknown IAE Computation\n\n'{computation_type}' is not supported.\n\nSupported types: knowledge_network_analysis, cognitive_load_optimization, concept_clustering")]
                 else:
                     # Fallback: Use maestro_evaluate to generate and show a temporary computational engine
                     from mcp.types import TextContent
@@ -433,9 +513,18 @@ class ComputationalTools:
             result.append(complex_row)
         return result
     
-    def _parse_complex_vector(self, vector_data: List[Dict]) -> List[complex]:
+    def _parse_complex_vector(self, vector_data: List) -> List[complex]:
         """Parse complex vector from MCP input format."""
         result = []
+        
+        # Handle both 1D and 2D formats (flatten if needed)
+        if isinstance(vector_data[0], list):
+            # 2D format - flatten to 1D
+            flat_data = []
+            for row in vector_data:
+                flat_data.extend(row)
+            vector_data = flat_data
+        
         for element in vector_data:
             if isinstance(element, dict):
                 real_part = element.get('real', 0)
@@ -477,5 +566,8 @@ class ComputationalTools:
         """Format IAE computation results with a 'show your work' section."""
         if "error" in result:
             return f"❌ **{title} Failed**\n\nError: {result['error']}"
-        work = json.dumps(result, indent=2)
+        try:
+            work = json.dumps(result, indent=2, default=str)
+        except (TypeError, ValueError) as e:
+            work = f"Result formatting error: {str(e)}\nRaw result: {str(result)}"
         return f"# 🧠 {title} - IAE Computation Result\n\n## Results\n{work}\n\n## Show Your Work\nAll intermediate steps, formulas, and reasoning are included above. Please review for manual validation." 

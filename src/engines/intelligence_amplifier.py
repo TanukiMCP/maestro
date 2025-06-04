@@ -216,8 +216,8 @@ class IntelligenceAmplificationEngine:
                     "efficiency_score": float(efficiency_score)
                 },
                 "constraint_satisfaction": {
-                    "load_constraint_satisfied": total_complexity <= max_load,
-                    "time_constraint_satisfied": total_duration <= max_time,
+                    "load_constraint_satisfied": bool(total_complexity <= max_load),
+                    "time_constraint_satisfied": bool(total_duration <= max_time),
                     "load_utilization": float(total_complexity / max_load),
                     "time_utilization": float(total_duration / max_time)
                 },
@@ -225,6 +225,7 @@ class IntelligenceAmplificationEngine:
             }
             
             logger.info(f"✅ Cognitive load optimization complete: {len(selected_tasks)} tasks selected")
+            return result
                 
         except Exception as e:
             logger.error(f"❌ Cognitive load optimization failed: {str(e)}")

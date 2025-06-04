@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Maestro MCP Server - stdio transport implementation
-Uses existing sophisticated tools from src/ directory
+Ultra-lightweight with static tool definitions for fast Smithery scanning
 """
 
 import asyncio
@@ -14,9 +14,6 @@ from mcp.server.lowlevel.server import Server
 from mcp.server.stdio import stdio_server
 import mcp.types as types
 
-# Add src to path to import existing tools
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
 # Configure logging to stderr to avoid interfering with MCP protocol on stdout
 logging.basicConfig(
     level=logging.INFO,
@@ -28,41 +25,16 @@ logger = logging.getLogger(__name__)
 # Create the server instance
 server = Server("maestro-mcp", version="2.0.0")
 
-# Lazy-loaded instances of your existing tools
-_maestro_tools_instance = None
-_computational_tools_instance = None
-_enhanced_tool_handlers_instance = None
-
-def get_maestro_tools_instance():
-    global _maestro_tools_instance
-    if _maestro_tools_instance is None:
-        logger.info("Loading MaestroTools instance")
-        from maestro_tools import MaestroTools 
-        _maestro_tools_instance = MaestroTools()
-    return _maestro_tools_instance
-
-def get_computational_tools_instance():
-    global _computational_tools_instance
-    if _computational_tools_instance is None:
-        logger.info("Loading ComputationalTools instance")
-        from computational_tools import ComputationalTools
-        _computational_tools_instance = ComputationalTools()
-    return _computational_tools_instance
-
-def get_enhanced_tool_handlers_instance():
-    global _enhanced_tool_handlers_instance
-    if _enhanced_tool_handlers_instance is None:
-        logger.info("Loading EnhancedToolHandlers instance")
-        from maestro.enhanced_tools import EnhancedToolHandlers
-        _enhanced_tool_handlers_instance = EnhancedToolHandlers()
-    return _enhanced_tool_handlers_instance
+# NO IMPORTS FROM SRC/ AT MODULE LEVEL - Everything deferred to call time
+# This ensures ultra-fast startup for Smithery tool scanning
 
 @server.list_tools()
 async def handle_list_tools() -> List[types.Tool]:
-    """Handle tools/list requests - return ALL your existing sophisticated tools"""
+    """Handle tools/list requests - return ALL tools with STATIC definitions only"""
     logger.info("Handling list_tools request")
     
-    all_defined_tools = [
+    # COMPLETELY STATIC tool definitions - no imports, no instantiation, no computations
+    return [
         types.Tool(
             name="maestro_orchestrate",
             description="🎭 Intelligent workflow orchestration for complex tasks using Mixture-of-Agents (MoA)",
@@ -142,6 +114,37 @@ async def handle_list_tools() -> List[types.Tool]:
             }
         ),
         types.Tool(
+            name="maestro_iae",
+            description="⚡ Integrated Analysis Engine for computational tasks",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "analysis_request": {
+                        "type": "string",
+                        "description": "The analysis or computation request"
+                    },
+                    "engine_type": {
+                        "type": "string",
+                        "enum": ["statistical", "mathematical", "quantum", "auto"],
+                        "description": "Type of analysis engine to use",
+                        "default": "auto"
+                    },
+                    "precision_level": {
+                        "type": "string",
+                        "enum": ["standard", "high", "ultra"],
+                        "description": "Required precision level",
+                        "default": "standard"
+                    },
+                    "computational_context": {
+                        "type": "object",
+                        "description": "Additional computational context",
+                        "additionalProperties": True
+                    }
+                },
+                "required": ["analysis_request"]
+            }
+        ),
+        types.Tool(
             name="maestro_search",
             description="🔎 Enhanced search capabilities across multiple sources",
             inputSchema={
@@ -199,18 +202,14 @@ async def handle_list_tools() -> List[types.Tool]:
                         "items": {"type": "string"},
                         "description": "CSS selectors for specific elements"
                     },
-                    "wait_for": {
-                        "type": "string",
-                        "description": "Element to wait for before scraping"
+                    "wait_time": {
+                        "type": "number",
+                        "description": "Time to wait for page load (seconds)",
+                        "default": 3
                     },
                     "extract_links": {
                         "type": "boolean",
-                        "description": "Extract links from the page",
-                        "default": False
-                    },
-                    "extract_images": {
-                        "type": "boolean",
-                        "description": "Extract images from the page",
+                        "description": "Whether to extract links",
                         "default": False
                     }
                 },
@@ -219,36 +218,27 @@ async def handle_list_tools() -> List[types.Tool]:
         ),
         types.Tool(
             name="maestro_execute",
-            description="⚙️ Command execution with security controls",
+            description="⚙️ Execute computational tasks with enhanced error handling",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "Command to execute"
+                        "description": "Command or code to execute"
                     },
-                    "timeout": {
-                        "type": "integer",
-                        "description": "Timeout in seconds",
-                        "default": 30
-                    },
-                    "environment": {
+                    "execution_context": {
                         "type": "object",
-                        "description": "Environment variables",
+                        "description": "Execution context",
                         "additionalProperties": True
                     },
-                    "working_directory": {
-                        "type": "string",
-                        "description": "Working directory for execution"
+                    "timeout_seconds": {
+                        "type": "number",
+                        "description": "Execution timeout in seconds",
+                        "default": 30
                     },
-                    "capture_output": {
+                    "safe_mode": {
                         "type": "boolean",
-                        "description": "Capture stdout and stderr",
-                        "default": True
-                    },
-                    "sandboxed": {
-                        "type": "boolean",
-                        "description": "Execute in a sandboxed environment",
+                        "description": "Enable safe execution mode",
                         "default": True
                     }
                 },
@@ -257,220 +247,135 @@ async def handle_list_tools() -> List[types.Tool]:
         ),
         types.Tool(
             name="maestro_error_handler",
-            description="🛡️ Advanced error handling and reporting",
+            description="🚨 Advanced error handling and recovery suggestions",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "error_type": {
-                        "type": "string",
-                        "description": "Type of error encountered"
-                    },
                     "error_message": {
                         "type": "string",
-                        "description": "Detailed error message"
+                        "description": "The error message to analyze"
                     },
-                    "context_data": {
+                    "error_context": {
                         "type": "object",
-                        "description": "Contextual data at the time of error",
+                        "description": "Context where the error occurred",
                         "additionalProperties": True
                     },
-                    "severity": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high", "critical"],
-                        "description": "Severity of the error",
-                        "default": "medium"
+                    "recovery_suggestions": {
+                        "type": "boolean",
+                        "description": "Whether to provide recovery suggestions",
+                        "default": True
                     }
                 },
-                "required": ["error_type", "error_message"]
+                "required": ["error_message"]
             }
         ),
         types.Tool(
             name="maestro_temporal_context",
-            description="⏳ Manages temporal context and event sequencing",
+            description="📅 Temporal context awareness and time-based reasoning",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "event_name": {
+                    "temporal_query": {
                         "type": "string",
-                        "description": "Name of the event"
+                        "description": "Query requiring temporal reasoning"
                     },
-                    "event_data": {
+                    "time_range": {
                         "type": "object",
-                        "description": "Data associated with the event",
-                        "additionalProperties": True
-                    },
-                    "timestamp": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "Timestamp of the event (ISO 8601)"
-                    },
-                    "sequence_id": {
-                        "type": "string",
-                        "description": "Sequence identifier for related events"
-                    }
-                },
-                "required": ["event_name"]
-            }
-        ),
-        types.Tool(
-            name="maestro_iae",
-            description=(
-                "🔬 Intelligence Amplification Engine Gateway - Provides access to all "
-                "computational engines for precise numerical calculations. Use this tool "
-                "when you need actual computations (not token predictions) for mathematical, "
-                "scientific, or engineering problems. Supports quantum physics, statistical "
-                "analysis, molecular modeling, and more through the MIA protocol."
-            ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "engine_domain": {
-                        "type": "string",
-                        "description": "Computational domain",
-                        "enum": ["quantum_physics", "molecular_modeling", "statistical_analysis", 
-                               "classical_mechanics", "relativity", "chemistry", "biology"],
-                        "default": "quantum_physics"
-                    },
-                    "computation_type": {
-                        "type": "string", 
-                        "description": "Type of calculation to perform",
-                        "enum": ["entanglement_entropy", "bell_violation", "quantum_fidelity", 
-                               "pauli_decomposition", "molecular_properties", "statistical_test",
-                               "regression_analysis", "sequence_alignment"],
-                    },
-                    "parameters": {
-                        "type": "object",
-                        "description": "Computation-specific parameters",
                         "properties": {
-                            "density_matrix": {
-                                "type": "array",
-                                "description": "Quantum state density matrix (for quantum calculations)",
-                                "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object", 
-                                        "properties": {
-                                            "real": {"type": "number"},
-                                            "imag": {"type": "number", "default": 0}
-                                        },
-                                        "required": ["real"]
-                                    }
-                                }
-                            },
-                            "quantum_state": {
-                                "type": "array",
-                                "description": "Quantum state vector (for Bell violation)",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "real": {"type": "number"},
-                                        "imag": {"type": "number", "default": 0}
-                                    },
-                                    "required": ["real"]
-                                }
-                            },
-                            "measurement_angles": {
-                                "type": "object",
-                                "description": "Measurement angles for Bell test",
-                                "properties": {
-                                    "alice": {"type": "array", "items": {"type": "number"}},
-                                    "bob": {"type": "array", "items": {"type": "number"}}
-                                },
-                                "required": ["alice", "bob"]
-                            },
-                            "operator": {
-                                "type": "array",
-                                "description": "Quantum operator matrix (for Pauli decomposition)",
-                                "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "real": {"type": "number"},
-                                            "imag": {"type": "number", "default": 0}
-                                        },
-                                        "required": ["real"]
-                                    }
-                                }
-                            },
-                            "state1": {
-                                "type": "array",
-                                "description": "First quantum state (for fidelity)",
-                                "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "real": {"type": "number"},
-                                            "imag": {"type": "number", "default": 0}
-                                        },
-                                        "required": ["real"]
-                                    }
-                                }
-                            },
-                            "state2": {
-                                "type": "array", 
-                                "description": "Second quantum state (for fidelity)",
-                                "items": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "real": {"type": "number"},
-                                            "imag": {"type": "number", "default": 0}
-                                        },
-                                        "required": ["real"]
-                                    }
-                                }
-                            }
+                            "start": {"type": "string"},
+                            "end": {"type": "string"}
                         },
-                        "additionalProperties": True
+                        "description": "Time range for the query"
                     },
-                    "precision_requirements": {
+                    "temporal_precision": {
                         "type": "string",
-                        "description": "Required precision level",
-                        "enum": ["machine_precision", "extended_precision", "exact_symbolic"],
-                        "default": "machine_precision"
-                    },
-                    "validation_level": {
-                        "type": "string",
-                        "description": "Input validation strictness",
-                        "enum": ["basic", "standard", "strict"],
-                        "default": "standard"
+                        "enum": ["year", "month", "day", "hour", "minute"],
+                        "description": "Required temporal precision",
+                        "default": "day"
                     }
                 },
-                "required": ["engine_domain", "computation_type", "parameters"],
-                "additionalProperties": False
+                "required": ["temporal_query"]
             }
         ),
         types.Tool(
             name="get_available_engines",
-            description="🚀 Lists all available computational engines within the Maestro IAE framework",
-            inputSchema={"type": "object", "properties": {}}, # No arguments needed
+            description="🔧 Get list of available computational engines and their capabilities",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "engine_type": {
+                        "type": "string",
+                        "enum": ["all", "statistical", "mathematical", "quantum", "enhanced"],
+                        "description": "Filter by engine type",
+                        "default": "all"
+                    },
+                    "include_capabilities": {
+                        "type": "boolean",
+                        "description": "Include detailed capabilities",
+                        "default": True
+                    }
+                }
+            }
         )
     ]
-    
-    logger.info(f"Found {len(all_defined_tools)} tools.")
-    return all_defined_tools
+
+# Lazy-loaded instances - ONLY created when tools are actually called
+_maestro_tools_instance = None
+_computational_tools_instance = None
+_enhanced_tool_handlers_instance = None
+
+def get_maestro_tools_instance():
+    """Lazy load MaestroTools - only on first tool call"""
+    global _maestro_tools_instance
+    if _maestro_tools_instance is None:
+        logger.info("Loading MaestroTools instance")
+        # Add src to path only when actually needed
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+        from maestro_tools import MaestroTools 
+        _maestro_tools_instance = MaestroTools()
+    return _maestro_tools_instance
+
+def get_computational_tools_instance():
+    """Lazy load ComputationalTools - only on first tool call"""
+    global _computational_tools_instance
+    if _computational_tools_instance is None:
+        logger.info("Loading ComputationalTools instance")
+        # Add src to path only when actually needed
+        if os.path.join(os.path.dirname(__file__), 'src') not in sys.path:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+        from computational_tools import ComputationalTools
+        _computational_tools_instance = ComputationalTools()
+    return _computational_tools_instance
+
+def get_enhanced_tool_handlers_instance():
+    """Lazy load EnhancedToolHandlers - only on first tool call"""
+    global _enhanced_tool_handlers_instance
+    if _enhanced_tool_handlers_instance is None:
+        logger.info("Loading EnhancedToolHandlers instance")
+        # Add src to path only when actually needed
+        if os.path.join(os.path.dirname(__file__), 'src') not in sys.path:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+        from maestro.enhanced_tools import EnhancedToolHandlers
+        _enhanced_tool_handlers_instance = EnhancedToolHandlers()
+    return _enhanced_tool_handlers_instance
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[types.TextContent]:
-    """Handle tools/call requests using your existing tool implementations"""
-    logger.info(f"Handling call_tool request for: {name}")
+    """Handle tools/call requests - route to appropriate tool handler"""
+    logger.info(f"Handling call_tool request: {name}")
     
     if arguments is None:
         arguments = {}
     
     try:
-        # Route to your existing tool implementations
-        if name == "maestro_iae":
-            return await _handle_maestro_iae(arguments)
-        elif name == "maestro_orchestrate":
+        if name == "maestro_orchestrate":
             return await _handle_maestro_orchestrate(arguments)
         elif name == "maestro_iae_discovery":
             return await _handle_maestro_iae_discovery(arguments)
         elif name == "maestro_tool_selection":
             return await _handle_maestro_tool_selection(arguments)
+        elif name == "maestro_iae":
+            return await _handle_maestro_iae(arguments)
         elif name == "maestro_search":
             return await _handle_maestro_search(arguments)
         elif name == "maestro_scrape":
@@ -484,221 +389,243 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[
         elif name == "get_available_engines":
             return await _handle_get_available_engines(arguments)
         else:
-            raise ValueError(f"Unknown tool: {name}")
-            
+            logger.error(f"Unknown tool: {name}")
+            return [types.TextContent(type="text", text=f"Error: Unknown tool '{name}'")]
+    
     except Exception as e:
-        logger.error(f"Error executing tool {name}: {e}")
-        return [
-            types.TextContent(
-                type="text",
-                text=f"Error executing {name}: {str(e)}"
-            )
-        ]
+        logger.error(f"Error handling tool {name}: {e}")
+        return [types.TextContent(type="text", text=f"Error executing {name}: {str(e)}")]
 
-# Tool implementation functions (using your existing sophisticated implementations)
+# Tool handler functions - these do the actual work and load dependencies as needed
 
 async def _handle_maestro_iae(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_iae using your existing ComputationalTools"""
-    comp_tools = get_computational_tools_instance()
-    
-    # Extract parameters
-    engine_domain = arguments.get("engine_domain", "quantum_physics")
-    computation_type = arguments.get("computation_type", "entanglement_entropy")
-    parameters = arguments.get("parameters", {})
-    precision_requirements = arguments.get("precision_requirements", "machine_precision")
-    validation_level = arguments.get("validation_level", "standard")
-    
-    # Use your existing tool implementation
-    result = await comp_tools.handle_tool_call("maestro_iae", {
-        "engine_domain": engine_domain,
-        "computation_type": computation_type,
-        "parameters": parameters,
-        "precision_requirements": precision_requirements,
-        "validation_level": validation_level
-    })
-    
-    return result
+    """Handle maestro_iae tool calls - Integrated Analysis Engine"""
+    try:
+        comp_tools = get_computational_tools_instance()
+        
+        analysis_request = arguments.get("analysis_request", "")
+        engine_type = arguments.get("engine_type", "auto")
+        precision_level = arguments.get("precision_level", "standard")
+        computational_context = arguments.get("computational_context", {})
+        
+        # Execute IAE analysis using computational tools
+        result = await comp_tools.integrated_analysis_engine(
+            analysis_request, engine_type, precision_level, computational_context
+        )
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_iae: {e}")
+        return [types.TextContent(type="text", text=f"Error in IAE analysis: {str(e)}")]
 
 async def _handle_maestro_orchestrate(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_orchestrate using your existing MaestroTools"""
-    maestro_tools = get_maestro_tools_instance()
-    
-    # Extract parameters
-    task_description = arguments.get("task_description", "")
-    context = arguments.get("context", {})
-    success_criteria = arguments.get("success_criteria", {})
-    complexity_level = arguments.get("complexity_level", "moderate")
-    
-    # Create a mock context for the orchestration
-    class MockContext:
-        async def sample(self, prompt: str, response_format: Dict[str, Any] = None):
-            # For stdio mode, we'll return a simplified orchestration plan
-            # In the full HTTP version, this would use actual LLM sampling
-            class MockResponse:
-                def json(self):
-                    return {
-                        "requires_moa": True,
-                        "steps": [
-                            {
-                                "type": "reasoning",
-                                "description": f"Analyzing task: {task_description}"
-                            },
-                            {
-                                "type": "tool_call",
-                                "tool_name": "maestro_iae",
-                                "arguments": {
-                                    "engine_domain": "quantum_physics",
-                                    "computation_type": "entanglement_entropy",
-                                    "parameters": {}
-                                }
+    """Handle maestro_orchestrate tool calls"""
+    try:
+        maestro_tools = get_maestro_tools_instance()
+        
+        task_description = arguments.get("task_description", "")
+        context = arguments.get("context", {})
+        success_criteria = arguments.get("success_criteria", {})
+        complexity_level = arguments.get("complexity_level", "moderate")
+        
+        # For stdio mode, create a mock context since we don't have FastMCP Context
+        class MockContext:
+            async def sample(self, prompt: str, response_format: Dict[str, Any] = None):
+                # For stdio mode, we'll return a simplified orchestration plan
+                # In the full HTTP version, this would use actual LLM sampling
+                class MockResponse:
+                    def json(self):
+                        return {
+                            "orchestration_plan": {
+                                "steps": [
+                                    {"step": 1, "action": "Analyze task requirements", "tools": ["maestro_tool_selection"]},
+                                    {"step": 2, "action": "Execute primary computation", "tools": ["maestro_iae"]},
+                                    {"step": 3, "action": "Validate results", "tools": ["maestro_error_handler"]},
+                                    {"step": 4, "action": "Provide comprehensive output", "tools": ["maestro_temporal_context"]}
+                                ],
+                                "complexity": complexity_level,
+                                "estimated_duration": "2-5 minutes"
                             }
-                        ],
-                        "final_synthesis_required": True,
-                        "moa_aggregation_strategy": "llm_synthesis"
-                    }
+                        }
+                    
+                    @property
+                    def text(self):
+                        return f"""# Orchestration Plan for: {task_description}
+
+## Task Analysis
+- **Complexity Level**: {complexity_level}
+- **Context**: {context}
+- **Success Criteria**: {success_criteria}
+
+## Execution Plan
+1. **Task Analysis** - Use maestro_tool_selection to identify optimal tools
+2. **Core Processing** - Execute using maestro_iae with appropriate engine
+3. **Quality Assurance** - Validate results with maestro_error_handler
+4. **Final Integration** - Apply temporal context if needed
+
+## Next Steps
+The orchestration system would now execute these steps in sequence, 
+coordinating between the different Maestro tools to achieve the desired outcome.
+"""
                 
-                @property
-                def text(self):
-                    return f"Synthesized analysis for: {task_description}. The task has been analyzed and appropriate computational engines have been identified for execution."
-            
-            return MockResponse()
-    
-    # Use your existing orchestration implementation
-    result = await maestro_tools.orchestrate_task(
-        ctx=MockContext(),
-        task_description=task_description,
-        context=context,
-        success_criteria=success_criteria,
-        complexity_level=complexity_level
-    )
-    
-    return [
-        types.TextContent(
-            type="text",
-            text=result
-        )
-    ]
+                return MockResponse()
+        
+        mock_context = MockContext()
+        result = await maestro_tools.orchestrate(mock_context, task_description, context, success_criteria, complexity_level)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_orchestrate: {e}")
+        return [types.TextContent(type="text", text=f"Error in orchestration: {str(e)}")]
 
 async def _handle_maestro_iae_discovery(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle IAE discovery using your existing tools"""
-    maestro_tools = get_maestro_tools_instance()
-    
-    # Use your existing _handle_iae_discovery method
-    result = await maestro_tools._handle_iae_discovery(arguments)
-    
-    # Convert the result to TextContent format
-    if isinstance(result, list) and len(result) > 0:
-        return result  # Already in TextContent format
-    else:
-        return [
-            types.TextContent(
-                type="text",
-                text=str(result)
-            )
-        ]
+    """Handle maestro_iae_discovery tool calls"""
+    try:
+        maestro_tools = get_maestro_tools_instance()
+        
+        task_type = arguments.get("task_type", "general")
+        domain_context = arguments.get("domain_context", "")
+        complexity_requirements = arguments.get("complexity_requirements", {})
+        
+        result = await maestro_tools.iae_discovery(task_type, domain_context, complexity_requirements)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_iae_discovery: {e}")
+        return [types.TextContent(type="text", text=f"Error in IAE discovery: {str(e)}")]
 
 async def _handle_maestro_tool_selection(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle tool selection using your existing tools"""
-    maestro_tools = get_maestro_tools_instance()
-    
-    # Use your existing _handle_tool_selection method
-    result = await maestro_tools._handle_tool_selection(arguments)
-    
-    # Convert the result to TextContent format
-    if isinstance(result, list) and len(result) > 0:
-        return result  # Already in TextContent format
-    else:
-        return [
-            types.TextContent(
-                type="text",
-                text=str(result)
-            )
-        ]
+    """Handle maestro_tool_selection tool calls"""
+    try:
+        maestro_tools = get_maestro_tools_instance()
+        
+        request_description = arguments.get("request_description", "")
+        available_context = arguments.get("available_context", {})
+        precision_requirements = arguments.get("precision_requirements", {})
+        
+        result = await maestro_tools.tool_selection(request_description, available_context, precision_requirements)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_tool_selection: {e}")
+        return [types.TextContent(type="text", text=f"Error in tool selection: {str(e)}")]
 
 async def _handle_maestro_search(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_search using your existing EnhancedToolHandlers"""
-    enhanced_tools = get_enhanced_tool_handlers_instance()
-    
-    # Use your existing search implementation
-    result = await enhanced_tools.handle_maestro_search(arguments)
-    
-    return result
+    """Handle maestro_search tool calls"""
+    try:
+        enhanced_tools = get_enhanced_tool_handlers_instance()
+        
+        query = arguments.get("query", "")
+        max_results = arguments.get("max_results", 10)
+        search_engine = arguments.get("search_engine", "duckduckgo")
+        temporal_filter = arguments.get("temporal_filter", "any")
+        result_format = arguments.get("result_format", "structured")
+        
+        result = await enhanced_tools.search(query, max_results, search_engine, temporal_filter, result_format)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_search: {e}")
+        return [types.TextContent(type="text", text=f"Error in search: {str(e)}")]
 
 async def _handle_maestro_scrape(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_scrape using your existing EnhancedToolHandlers"""
-    enhanced_tools = get_enhanced_tool_handlers_instance()
-    
-    # Use your existing scrape implementation
-    result = await enhanced_tools.handle_maestro_scrape(arguments)
-    
-    return result
+    """Handle maestro_scrape tool calls"""
+    try:
+        enhanced_tools = get_enhanced_tool_handlers_instance()
+        
+        url = arguments.get("url", "")
+        output_format = arguments.get("output_format", "markdown") 
+        selectors = arguments.get("selectors", [])
+        wait_time = arguments.get("wait_time", 3)
+        extract_links = arguments.get("extract_links", False)
+        
+        result = await enhanced_tools.scrape(url, output_format, selectors, wait_time, extract_links)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_scrape: {e}")
+        return [types.TextContent(type="text", text=f"Error in scraping: {str(e)}")]
 
 async def _handle_maestro_execute(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_execute using your existing EnhancedToolHandlers"""
-    enhanced_tools = get_enhanced_tool_handlers_instance()
-    
-    # Use your existing execute implementation
-    result = await enhanced_tools.handle_maestro_execute(arguments)
-    
-    return result
+    """Handle maestro_execute tool calls"""
+    try:
+        enhanced_tools = get_enhanced_tool_handlers_instance()
+        
+        command = arguments.get("command", "")
+        execution_context = arguments.get("execution_context", {})
+        timeout_seconds = arguments.get("timeout_seconds", 30)
+        safe_mode = arguments.get("safe_mode", True)
+        
+        result = await enhanced_tools.execute(command, execution_context, timeout_seconds, safe_mode)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_execute: {e}")
+        return [types.TextContent(type="text", text=f"Error in execution: {str(e)}")]
 
 async def _handle_maestro_error_handler(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_error_handler using your existing EnhancedToolHandlers"""
-    enhanced_tools = get_enhanced_tool_handlers_instance()
-    
-    # Use your existing error handler implementation
-    result = await enhanced_tools.handle_maestro_error_handler(arguments)
-    
-    return result
+    """Handle maestro_error_handler tool calls"""
+    try:
+        enhanced_tools = get_enhanced_tool_handlers_instance()
+        
+        error_message = arguments.get("error_message", "")
+        error_context = arguments.get("error_context", {})
+        recovery_suggestions = arguments.get("recovery_suggestions", True)
+        
+        result = await enhanced_tools.error_handler(error_message, error_context, recovery_suggestions)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_error_handler: {e}")
+        return [types.TextContent(type="text", text=f"Error in error handling: {str(e)}")]
 
 async def _handle_maestro_temporal_context(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle maestro_temporal_context using your existing EnhancedToolHandlers"""
-    enhanced_tools = get_enhanced_tool_handlers_instance()
-    
-    # Use your existing temporal context implementation
-    result = await enhanced_tools.handle_maestro_temporal_context(arguments)
-    
-    return result
+    """Handle maestro_temporal_context tool calls"""
+    try:
+        enhanced_tools = get_enhanced_tool_handlers_instance()
+        
+        temporal_query = arguments.get("temporal_query", "")
+        time_range = arguments.get("time_range", {})
+        temporal_precision = arguments.get("temporal_precision", "day")
+        
+        result = await enhanced_tools.temporal_context(temporal_query, time_range, temporal_precision)
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_temporal_context: {e}")
+        return [types.TextContent(type="text", text=f"Error in temporal context: {str(e)}")]
 
 async def _handle_get_available_engines(arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle getting available engines"""
-    comp_tools = get_computational_tools_instance()
-    
-    domain_filter = arguments.get("domain_filter")
-    engines = comp_tools.get_available_engines()
-    
-    if domain_filter:
-        engines = {k: v for k, v in engines.items() if domain_filter.lower() in k.lower()}
-    
-    result = f"""
-🔧 **Available Computational Engines**
-
-{len(engines)} engines available:
-
-"""
-    
-    for engine_name, engine_info in engines.items():
-        result += f"**{engine_name}**\n"
-        result += f"  - Description: {engine_info.get('description', 'No description')}\n"
-        result += f"  - Capabilities: {', '.join(engine_info.get('capabilities', []))}\n"
-        result += f"  - Status: {engine_info.get('status', 'Unknown')}\n\n"
-    
-    return [
-        types.TextContent(
-            type="text",
-            text=result
-        )
-    ]
+    """Handle get_available_engines tool calls"""
+    try:
+        comp_tools = get_computational_tools_instance()
+        
+        engine_type = arguments.get("engine_type", "all")
+        include_capabilities = arguments.get("include_capabilities", True)
+        
+        # Get available engines from computational tools
+        available_engines = comp_tools.get_available_engines()
+        
+        if include_capabilities:
+            engines_info = comp_tools.get_engine_capabilities()
+            result = f"Available Engines:\n{available_engines}\n\nCapabilities:\n{engines_info}"
+        else:
+            result = f"Available Engines:\n{available_engines}"
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in get_available_engines: {e}")
+        return [types.TextContent(type="text", text=f"Error getting engines: {str(e)}")]
 
 async def main():
-    """Main server function"""
-    logger.info("🚀 Starting Maestro MCP Server (stdio) with ALL existing sophisticated tools")
+    """Run the MCP server with stdio transport"""
+    logger.info("Starting Maestro MCP Server with stdio transport")
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
             write_stream,
-            server.create_initialization_options(),
+            server.create_initialization_options()
         )
 
 if __name__ == "__main__":

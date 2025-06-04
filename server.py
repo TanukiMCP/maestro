@@ -13,6 +13,9 @@ from typing import Dict, Any, Optional, List
 # Import FastMCP for proper MCP protocol implementation
 from mcp.server.fastmcp import FastMCP
 
+# Import static tool definitions for instant discovery
+from static_tools_dict import STATIC_TOOLS_DICT
+
 # Production logging configuration
 log_level = logging.INFO if os.getenv("DEBUG_MODE", "false").lower() == "true" else logging.WARNING
 logging.basicConfig(
@@ -22,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server for instant tool registration
-mcp = FastMCP("TanukiMCP Maestro")
+mcp = FastMCP("TanukiMCP Maestro", tools=STATIC_TOOLS_DICT)
 
 # Lazy loading for tool implementations (only when tools are called)
 _tool_handlers = None

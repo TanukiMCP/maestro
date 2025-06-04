@@ -40,26 +40,10 @@ class ComputationalTools:
         self.engines = {}
         self._numpy = None
         self._engines_initialized = False
-        self._numpy_available = None # For the check
+        # self._numpy_available = None # Removed for direct import check
         
         logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
     
-    def _check_numpy_availability(self):
-        """Check if numpy is available without importing it."""
-        if self._numpy_available is None:
-            try:
-                # Import importlib only when needed
-                import importlib.util
-                if importlib.util.find_spec('numpy'):
-                    self._numpy_available = True
-                else:
-                    self._numpy_available = False
-                    logger.warning("NumPy spec not found - computational engines may be limited")
-            except ImportError:
-                self._numpy_available = False
-                logger.warning("NumPy not available during check - computational engines disabled")
-        return self._numpy_available
-
     def _ensure_numpy(self):
         """Lazy import numpy only when actually needed."""
         if self._numpy is None:
@@ -80,10 +64,12 @@ class ComputationalTools:
         
         self._engines_initialized = True
         
-        # Ensure numpy is available before initializing engines
-        if not self._check_numpy_availability():
-            logger.warning("⚠️ Computational engines not available (NumPy missing based on check)")
-            return
+        # Attempt to load NumPy. Engines requiring it will fail to load if not present.
+        try:
+            self._ensure_numpy() # This will set self._numpy or raise ImportError
+        except ImportError:
+            logger.warning("⚠️ NumPy not available. Computational engines requiring NumPy may not load or function correctly.")
+            # self._numpy remains None, engines must handle this or fail gracefully
         
         # Add quantum physics engine
         try:

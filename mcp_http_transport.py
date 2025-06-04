@@ -24,8 +24,16 @@ from starlette.routing import Route, Mount
 from starlette.middleware.cors import CORSMiddleware
 import uvicorn
 
-# Import our official MCP server
-from mcp_official_server import app as mcp_app
+# Lazy load the official MCP server only when needed
+_mcp_app = None
+
+def get_mcp_app():
+    """Lazy load the MCP server only when tool execution is needed"""
+    global _mcp_app
+    if _mcp_app is None:
+        from mcp_official_server import app as mcp_app
+        _mcp_app = mcp_app
+    return _mcp_app
 
 # Logging setup
 logging.basicConfig(level=logging.WARNING)
@@ -35,7 +43,14 @@ class SmitheryMCPTransport:
     """HTTP transport that wraps the official MCP server for Smithery compatibility"""
     
     def __init__(self):
-        self.mcp_server = mcp_app
+        # Don't load the MCP server at init - defer until needed
+        self._mcp_server = None
+    
+    def get_mcp_server(self):
+        """Lazy load the MCP server only when needed for tool execution"""
+        if self._mcp_server is None:
+            self._mcp_server = get_mcp_app()
+        return self._mcp_server
         
     async def handle_mcp_request(self, request: Request) -> Response:
         """Handle requests to /mcp endpoint"""
@@ -99,22 +114,14 @@ class SmitheryMCPTransport:
     async def _handle_tool_discovery(self, config: Dict[str, Any]) -> JSONResponse:
         """Handle tool discovery (list_tools) - must be fast for Smithery"""
         try:
-            # Use the static tool definitions from our MCP server
-            from mcp_official_server import STATIC_TOOLS
+            # Use pure dictionary definitions (zero imports, instant loading)
+            from static_tools_dict import STATIC_TOOLS_DICT
             
-            # Convert Tool objects to dict format for JSON response
-            tools_data = []
-            for tool in STATIC_TOOLS:
-                tools_data.append({
-                    "name": tool.name,
-                    "description": tool.description,
-                    "inputSchema": tool.inputSchema
-                })
-            
+            # Tools are already in dict format - no conversion needed
             return JSONResponse({
                 "jsonrpc": "2.0",
                 "result": {
-                    "tools": tools_data
+                    "tools": STATIC_TOOLS_DICT
                 }
             })
             
@@ -139,8 +146,9 @@ class SmitheryMCPTransport:
                 tool_name = params.get("name")
                 arguments = params.get("arguments", {})
                 
-                # Call the tool using our MCP server
-                result = await self.mcp_server.call_tool(tool_name, arguments)
+                # Call the tool using our MCP server (lazy loaded)
+                mcp_server = self.get_mcp_server()
+                result = await mcp_server.call_tool(tool_name, arguments)
                 
                 # Convert CallToolResult to JSON format
                 content_data = []
@@ -211,7 +219,7 @@ async def root(request: Request) -> JSONResponse:
             "/health": "Health check",
             "/": "Service information"
         },
-        "tools": len(transport.mcp_server._tools) if hasattr(transport.mcp_server, '_tools') else 11
+        "tools": 11  # Static count - no need to load server for this
     })
 
 # Create Starlette application

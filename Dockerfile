@@ -45,6 +45,8 @@ COPY src/ ./src/
 COPY mcp_official_server.py .
 COPY mcp_http_transport.py .
 COPY mcp_stdio_server.py .
+COPY static_tools.py .
+COPY static_tools_dict.py .
 COPY README.md .
 COPY LICENSE .
 

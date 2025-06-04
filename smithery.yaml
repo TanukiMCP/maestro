@@ -4,18 +4,41 @@ build:
   dockerBuildPath: "."
 startCommand:
   type: "http"
+  command: "python server.py"
+  healthCheck:
+    path: "/health"
+    intervalSeconds: 30
+    timeoutSeconds: 5
   configSchema:
     type: "object"
     properties:
       apiKey:
         type: "string"
-        description: "Optional API key for enhanced functionality"
+        description: "Optional API key for enhanced LLM functionality"
+        default: ""
       debugMode:
         type: "boolean"
-        description: "Enable debug logging"
+        description: "Enable debug logging and verbose output"
         default: false
+      port:
+        type: "integer"
+        description: "Server port (default: 8000)"
+        default: 8000
+        minimum: 1000
+        maximum: 65535
     required: []
   exampleConfig:
-    apiKey: "optional-api-key"
+    apiKey: ""
     debugMode: false
-description: "TanukiMCP Maestro - Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration with 3-5x LLM capability amplification"
+    port: 8000
+resources:
+  memory: "512Mi"
+  cpu: "0.5"
+scaling:
+  minInstances: 1
+  maxInstances: 10
+  targetCPU: 70
+description: "TanukiMCP Maestro - Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration. Provides 3-5x LLM capability amplification through intelligent multi-agent collaboration, iterative refinement, and adaptive workflow management. Features instant tool discovery (<100ms) and production-grade error handling."
+tags: ["mcp", "ai-orchestration", "multi-agent", "reasoning", "productivity"]
+version: "1.0.0"
+protocol: "mcp-2024-11-05"

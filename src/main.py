@@ -199,12 +199,40 @@ async def handle_mcp_post(request: Request):
             logger.info("Handling initialized notification")
             # This is a notification, no response needed
             return JSONResponse(content=None, status_code=204)
+        elif method == "ping":
+            logger.info("Handling ping request")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {}
+            }
         elif method == "tools/list":
             logger.info("Handling tools/list request")
             return {
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {"tools": STATIC_TOOLS}
+            }
+        elif method == "prompts/list":
+            logger.info("Handling prompts/list request")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"prompts": []}
+            }
+        elif method == "resources/list":
+            logger.info("Handling resources/list request")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"resources": []}
+            }
+        elif method == "resourceTemplates/list":
+            logger.info("Handling resourceTemplates/list request")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"templates": []}
             }
         elif method == "tools/call":
             tool_name = params.get("name")

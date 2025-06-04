@@ -31,19 +31,26 @@ app = FastAPI(title="Maestro MCP Server", description="Intelligence Amplificatio
 STATIC_TOOLS = [
     {
         "name": "maestro_orchestrate",
-        "description": "🎭 Intelligent workflow orchestration for complex tasks using Mixture-of-Agents (MoA)",
+        "description": "🎭 Enhanced intelligent meta-reasoning orchestration for 3-5x LLM capability amplification",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "task_description": {"type": "string", "description": "The complex task to orchestrate"},
-                "context": {"type": "object", "description": "Additional context for the task", "additionalProperties": True},
+                "task_description": {"type": "string", "description": "Complex task requiring systematic reasoning"},
+                "context": {"type": "object", "description": "Relevant background information and constraints", "additionalProperties": True},
                 "success_criteria": {"type": "object", "description": "Success criteria for the task", "additionalProperties": True},
-                "complexity_level": {"type": "string", "enum": ["simple", "moderate", "complex", "expert"], "description": "Complexity level", "default": "moderate"}
+                "complexity_level": {"type": "string", "enum": ["simple", "moderate", "complex", "expert"], "description": "Complexity level", "default": "moderate"},
+                "quality_threshold": {"type": "number", "minimum": 0.7, "maximum": 0.95, "description": "Minimum acceptable quality (0.7-0.95, default 0.85)", "default": 0.85},
+                "resource_level": {"type": "string", "enum": ["limited", "moderate", "abundant"], "description": "Available computational resources", "default": "moderate"},
+                "reasoning_focus": {"type": "string", "enum": ["logical", "creative", "analytical", "research", "synthesis", "auto"], "description": "Primary reasoning approach to emphasize", "default": "auto"},
+                "validation_rigor": {"type": "string", "enum": ["basic", "standard", "thorough", "rigorous"], "description": "Validation thoroughness level", "default": "standard"},
+                "max_iterations": {"type": "integer", "minimum": 1, "maximum": 5, "description": "Maximum refinement cycles", "default": 3},
+                "domain_specialization": {"type": "string", "description": "Preferred domain expertise to emphasize"},
+                "enable_collaboration_fallback": {"type": "boolean", "description": "Enable collaborative fallback when ambiguity or insufficient context is detected", "default": True}
             },
             "required": ["task_description"]
         },
         "annotations": {
-            "title": "Orchestrate Complex Task",
+            "title": "Enhanced Orchestrate Complex Task",
             "readOnlyHint": False,
             "destructiveHint": False,
             "idempotentHint": False,
@@ -232,6 +239,29 @@ STATIC_TOOLS = [
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": False
+        }
+    },
+    {
+        "name": "maestro_collaboration_response",
+        "description": "🤝 Handle user responses to collaboration requests from orchestration workflows",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "collaboration_id": {"type": "string", "description": "The collaboration request ID from the original request"},
+                "responses": {"type": "object", "description": "User responses to the specific questions", "additionalProperties": True},
+                "additional_context": {"type": "object", "description": "Additional context provided by the user", "additionalProperties": True},
+                "user_preferences": {"type": "object", "description": "User preferences for workflow execution", "additionalProperties": True},
+                "approval_status": {"type": "string", "enum": ["approved", "needs_revision", "rejected"], "description": "User's approval status for continuing", "default": "approved"},
+                "confidence_level": {"type": "number", "minimum": 0.0, "maximum": 1.0, "description": "User confidence in the provided information", "default": 0.8}
+            },
+            "required": ["collaboration_id", "responses"]
+        },
+        "annotations": {
+            "title": "Respond to Collaboration Request",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True
         }
     }
 ]

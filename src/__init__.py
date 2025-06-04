@@ -41,4 +41,6 @@ __all__ = [
     "__version__",
     "__author__",
     "__license__"
-] 
+]
+
+# This file makes src a Python package 

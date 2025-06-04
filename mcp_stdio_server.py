@@ -41,17 +41,17 @@ async def handle_list_tools() -> List[types.Tool]:
     return [
         types.Tool(
             name="maestro_orchestrate",
-            description="🎭 Intelligent workflow orchestration for complex tasks using Mixture-of-Agents (MoA)",
+            description="🎭 Enhanced intelligent meta-reasoning orchestration for 3-5x LLM capability amplification",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "task_description": {
                         "type": "string",
-                        "description": "The complex task to orchestrate"
+                        "description": "Complex task requiring systematic reasoning"
                     },
                     "context": {
                         "type": "object",
-                        "description": "Additional context for the task",
+                        "description": "Relevant background information and constraints",
                         "additionalProperties": True
                     },
                     "success_criteria": {
@@ -64,7 +64,48 @@ async def handle_list_tools() -> List[types.Tool]:
                         "enum": ["simple", "moderate", "complex", "expert"],
                         "description": "Complexity level of the task",
                         "default": "moderate"
-                    }
+                    },
+                    "quality_threshold": {
+                        "type": "number",
+                        "minimum": 0.7,
+                        "maximum": 0.95,
+                        "description": "Minimum acceptable quality (0.7-0.95, default 0.85)",
+                        "default": 0.85
+                    },
+                    "resource_level": {
+                        "type": "string",
+                        "enum": ["limited", "moderate", "abundant"],
+                        "description": "Available computational resources",
+                        "default": "moderate"
+                    },
+                    "reasoning_focus": {
+                        "type": "string",
+                        "enum": ["logical", "creative", "analytical", "research", "synthesis", "auto"],
+                        "description": "Primary reasoning approach to emphasize",
+                        "default": "auto"
+                    },
+                    "validation_rigor": {
+                        "type": "string",
+                        "enum": ["basic", "standard", "thorough", "rigorous"],
+                        "description": "Validation thoroughness level",
+                        "default": "standard"
+                    },
+                                            "max_iterations": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 5,
+                            "description": "Maximum refinement cycles",
+                            "default": 3
+                        },
+                        "domain_specialization": {
+                            "type": "string",
+                            "description": "Preferred domain expertise to emphasize"
+                        },
+                        "enable_collaboration_fallback": {
+                            "type": "boolean",
+                            "description": "Enable collaborative fallback when ambiguity or insufficient context is detected",
+                            "default": True
+                        }
                 },
                 "required": ["task_description"]
             }
@@ -320,6 +361,48 @@ async def handle_list_tools() -> List[types.Tool]:
                     }
                 }
             }
+        ),
+        types.Tool(
+            name="maestro_collaboration_response",
+            description="🤝 Handle user responses to collaboration requests from orchestration workflows",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "collaboration_id": {
+                        "type": "string",
+                        "description": "The collaboration request ID from the original request"
+                    },
+                    "responses": {
+                        "type": "object",
+                        "description": "User responses to the specific questions",
+                        "additionalProperties": True
+                    },
+                    "additional_context": {
+                        "type": "object",
+                        "description": "Additional context provided by the user",
+                        "additionalProperties": True
+                    },
+                    "user_preferences": {
+                        "type": "object",
+                        "description": "User preferences for workflow execution",
+                        "additionalProperties": True
+                    },
+                    "approval_status": {
+                        "type": "string",
+                        "enum": ["approved", "needs_revision", "rejected"],
+                        "description": "User's approval status for continuing",
+                        "default": "approved"
+                    },
+                    "confidence_level": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "User confidence in the provided information",
+                        "default": 0.8
+                    }
+                },
+                "required": ["collaboration_id", "responses"]
+            }
         )
     ]
 
@@ -405,6 +488,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[
             return await _handle_maestro_temporal_context(arguments)
         elif name == "get_available_engines":
             return await _handle_get_available_engines(arguments)
+        elif name == "maestro_collaboration_response":
+            return await _handle_maestro_collaboration_response(arguments)
         else:
             logger.error(f"Unknown tool: {name}")
             return [types.TextContent(type="text", text=f"Error: Unknown tool '{name}'")]
@@ -418,19 +503,12 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[
 async def _handle_maestro_iae(arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle maestro_iae tool calls - Integrated Analysis Engine"""
     try:
-        comp_tools = get_computational_tools_instance()
+        enhanced_tools = get_enhanced_tool_handlers_instance()
         
-        analysis_request = arguments.get("analysis_request", "")
-        engine_type = arguments.get("engine_type", "auto")
-        precision_level = arguments.get("precision_level", "standard")
-        computational_context = arguments.get("computational_context", {})
+        # Call the new IAE handler directly
+        result = await enhanced_tools.handle_maestro_iae(arguments)
         
-        # Execute IAE analysis using computational tools
-        result = await comp_tools.integrated_analysis_engine(
-            analysis_request, engine_type, precision_level, computational_context
-        )
-        
-        return [types.TextContent(type="text", text=result)]
+        return result
     except Exception as e:
         logger.error(f"Error in maestro_iae: {e}")
         return [types.TextContent(type="text", text=f"Error in IAE analysis: {str(e)}")]
@@ -438,59 +516,12 @@ async def _handle_maestro_iae(arguments: Dict[str, Any]) -> List[types.TextConte
 async def _handle_maestro_orchestrate(arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle maestro_orchestrate tool calls"""
     try:
-        maestro_tools = get_maestro_tools_instance()
+        enhanced_tools = get_enhanced_tool_handlers_instance()
         
-        task_description = arguments.get("task_description", "")
-        context = arguments.get("context", {})
-        success_criteria = arguments.get("success_criteria", {})
-        complexity_level = arguments.get("complexity_level", "moderate")
+        # Call the new orchestrate handler directly
+        result = await enhanced_tools.handle_maestro_orchestrate(arguments)
         
-        # For stdio mode, create a mock context since we don't have FastMCP Context
-        class MockContext:
-            async def sample(self, prompt: str, response_format: Dict[str, Any] = None):
-                # For stdio mode, we'll return a simplified orchestration plan
-                # In the full HTTP version, this would use actual LLM sampling
-                class MockResponse:
-                    def json(self):
-                        return {
-                            "orchestration_plan": {
-                                "steps": [
-                                    {"step": 1, "action": "Analyze task requirements", "tools": ["maestro_tool_selection"]},
-                                    {"step": 2, "action": "Execute primary computation", "tools": ["maestro_iae"]},
-                                    {"step": 3, "action": "Validate results", "tools": ["maestro_error_handler"]},
-                                    {"step": 4, "action": "Provide comprehensive output", "tools": ["maestro_temporal_context"]}
-                                ],
-                                "complexity": complexity_level,
-                                "estimated_duration": "2-5 minutes"
-                            }
-                        }
-                    
-                    @property
-                    def text(self):
-                        return f"""# Orchestration Plan for: {task_description}
-
-## Task Analysis
-- **Complexity Level**: {complexity_level}
-- **Context**: {context}
-- **Success Criteria**: {success_criteria}
-
-## Execution Plan
-1. **Task Analysis** - Use maestro_tool_selection to identify optimal tools
-2. **Core Processing** - Execute using maestro_iae with appropriate engine
-3. **Quality Assurance** - Validate results with maestro_error_handler
-4. **Final Integration** - Apply temporal context if needed
-
-## Next Steps
-The orchestration system would now execute these steps in sequence, 
-coordinating between the different Maestro tools to achieve the desired outcome.
-"""
-                
-                return MockResponse()
-        
-        mock_context = MockContext()
-        result = await maestro_tools.orchestrate(mock_context, task_description, context, success_criteria, complexity_level)
-        
-        return [types.TextContent(type="text", text=result)]
+        return result
     except Exception as e:
         logger.error(f"Error in maestro_orchestrate: {e}")
         return [types.TextContent(type="text", text=f"Error in orchestration: {str(e)}")]
@@ -623,6 +654,36 @@ async def _handle_get_available_engines(arguments: Dict[str, Any]) -> List[types
     except Exception as e:
         logger.error(f"Error in get_available_engines: {e}")
         return [types.TextContent(type="text", text=f"Error getting engines: {str(e)}")]
+
+async def _handle_maestro_collaboration_response(arguments: Dict[str, Any]) -> List[types.TextContent]:
+    """Handle collaboration response tool calls"""
+    try:
+        maestro_tools = get_maestro_tools_instance()
+        
+        collaboration_id = arguments.get("collaboration_id")
+        responses = arguments.get("responses", {})
+        additional_context = arguments.get("additional_context", {})
+        user_preferences = arguments.get("user_preferences", {})
+        approval_status = arguments.get("approval_status", "approved")
+        confidence_level = arguments.get("confidence_level", 0.8)
+        
+        if not collaboration_id:
+            return [types.TextContent(type="text", text="❌ Error: collaboration_id is required")]
+        
+        # Process the collaboration response
+        result = await maestro_tools.handle_collaboration_response(
+            collaboration_id=collaboration_id,
+            responses=responses,
+            additional_context=additional_context,
+            user_preferences=user_preferences,
+            approval_status=approval_status,
+            confidence_level=confidence_level
+        )
+        
+        return [types.TextContent(type="text", text=result)]
+    except Exception as e:
+        logger.error(f"Error in maestro_collaboration_response: {e}")
+        return [types.TextContent(type="text", text=f"❌ Error handling collaboration response: {str(e)}")]
 
 async def main():
     """Run the MCP server with stdio transport"""

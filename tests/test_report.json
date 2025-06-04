@@ -1,0 +1,341 @@
+{
+  "summary": {
+    "total_tests": 47,
+    "passed": 38,
+    "failed": 9,
+    "success_rate": 80.85106382978722,
+    "execution_time": 2.5632832050323486,
+    "timestamp": "2025-06-04T04:40:59.573195"
+  },
+  "results": [
+    {
+      "test_name": "Core imports",
+      "success": true,
+      "details": "All dataclasses and enums imported successfully",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.464204"
+    },
+    {
+      "test_name": "Enhanced tools import",
+      "success": true,
+      "details": "EnhancedToolHandlers imported successfully",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.476207"
+    },
+    {
+      "test_name": "Server imports",
+      "success": true,
+      "details": "Both MCP and HTTP servers imported successfully",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.600508"
+    },
+    {
+      "test_name": "MaestroTools initialization",
+      "success": true,
+      "details": "Initialized with 5 agent profiles",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.600508"
+    },
+    {
+      "test_name": "EnhancedToolHandlers initialization",
+      "success": true,
+      "details": "Handler initialization successful",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.607509"
+    },
+    {
+      "test_name": "Agent profile: research_analyst",
+      "success": true,
+      "details": "Tools: 3, Focus: Comprehensive fact-finding and source validation...",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Agent profile: domain_specialist",
+      "success": true,
+      "details": "Tools: 2, Focus: Specialized reasoning and computation...",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Agent profile: critical_evaluator",
+      "success": true,
+      "details": "Tools: 2, Focus: Result verification and weakness identification...",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Agent profile: synthesis_coordinator",
+      "success": true,
+      "details": "Tools: 2, Focus: Combining insights into coherent solutions...",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Agent profile: context_advisor",
+      "success": true,
+      "details": "Tools: 2, Focus: Ensuring contextual appropriateness and currency...",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Resource strategy: limited",
+      "success": false,
+      "details": "",
+      "error": "Missing required keys",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Resource strategy: moderate",
+      "success": false,
+      "details": "",
+      "error": "Missing required keys",
+      "timestamp": "2025-06-04T04:40:57.608510"
+    },
+    {
+      "test_name": "Resource strategy: abundant",
+      "success": false,
+      "details": "",
+      "error": "Missing required keys",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Validation template: accuracy_check",
+      "success": true,
+      "details": "Method: tool_based, threshold: 0.85",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Validation template: completeness_check",
+      "success": true,
+      "details": "Method: rule_based, threshold: 0.9",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Validation template: quality_assurance",
+      "success": true,
+      "details": "Method: llm_based, threshold: 0.85",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "MCP tools availability",
+      "success": true,
+      "details": "Expected 11 tools defined",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Tool schema: maestro_orchestrate",
+      "success": true,
+      "details": "All required parameters present: ['task_description', 'enable_collaboration_fallback']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Tool schema: maestro_collaboration_response",
+      "success": true,
+      "details": "All required parameters present: ['collaboration_id', 'responses', 'approval_status']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.609510"
+    },
+    {
+      "test_name": "Tool schema: maestro_iae",
+      "success": true,
+      "details": "All required parameters present: ['analysis_request', 'engine_type']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_search",
+      "success": true,
+      "details": "All required parameters present: ['query', 'search_engine']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_scrape",
+      "success": true,
+      "details": "All required parameters present: ['url', 'output_format']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_execute",
+      "success": true,
+      "details": "All required parameters present: ['command', 'safe_mode']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_error_handler",
+      "success": true,
+      "details": "All required parameters present: ['error_message']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_temporal_context",
+      "success": true,
+      "details": "All required parameters present: ['temporal_query']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_iae_discovery",
+      "success": true,
+      "details": "All required parameters present: ['task_type']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: maestro_tool_selection",
+      "success": true,
+      "details": "All required parameters present: ['request_description']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool schema: get_available_engines",
+      "success": true,
+      "details": "All required parameters present: ['engine_type']",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Tool availability",
+      "success": true,
+      "details": "All 11 tools available",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.610511"
+    },
+    {
+      "test_name": "Collaboration detection (clear task)",
+      "success": true,
+      "details": "No collaboration needed for clear task",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.627067"
+    },
+    {
+      "test_name": "Collaboration response handling",
+      "success": false,
+      "details": "",
+      "error": "Response processing failed",
+      "timestamp": "2025-06-04T04:40:57.628067"
+    },
+    {
+      "test_name": "Validation framework",
+      "success": false,
+      "details": "",
+      "error": "name 'ValidationCriteria' is not defined",
+      "timestamp": "2025-06-04T04:40:57.628067"
+    },
+    {
+      "test_name": "Basic orchestration",
+      "success": true,
+      "details": "Generated 798 characters of output",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:57.636069"
+    },
+    {
+      "test_name": "Search functionality",
+      "success": true,
+      "details": "Search returned results",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:58.605728"
+    },
+    {
+      "test_name": "IAE analysis",
+      "success": true,
+      "details": "Analysis completed",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:58.606726"
+    },
+    {
+      "test_name": "Core tool functionality",
+      "success": false,
+      "details": "",
+      "error": "'EnhancedToolHandlers' object has no attribute 'handle_maestro_tool_selection'",
+      "timestamp": "2025-06-04T04:40:58.606726"
+    },
+    {
+      "test_name": "Invalid arguments handling",
+      "success": false,
+      "details": "",
+      "error": "Should have raised an error",
+      "timestamp": "2025-06-04T04:40:58.606726"
+    },
+    {
+      "test_name": "Error handler tool",
+      "success": true,
+      "details": "Error analysis and suggestions provided",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:58.607727"
+    },
+    {
+      "test_name": "Graceful degradation",
+      "success": true,
+      "details": "Handled invalid engine gracefully",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:58.608728"
+    },
+    {
+      "test_name": "Performance and scalability",
+      "success": false,
+      "details": "",
+      "error": "name 'EnhancedToolHandlers' is not defined",
+      "timestamp": "2025-06-04T04:40:58.609728"
+    },
+    {
+      "test_name": "Complete workflow",
+      "success": false,
+      "details": "",
+      "error": "Incomplete result - research: False, summary: False, structure: True",
+      "timestamp": "2025-06-04T04:40:58.611728"
+    },
+    {
+      "test_name": "Tool integration",
+      "success": true,
+      "details": "Successfully chained search -> analysis",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.560811"
+    },
+    {
+      "test_name": "Tool configuration",
+      "success": true,
+      "details": "Found 11 tools",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.560811"
+    },
+    {
+      "test_name": "MCP server readiness",
+      "success": true,
+      "details": "MCP server module ready",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.560811"
+    },
+    {
+      "test_name": "License file",
+      "success": true,
+      "details": "License file present",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.560811"
+    },
+    {
+      "test_name": "Documentation",
+      "success": true,
+      "details": "Found 6 documentation files",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.561811"
+    },
+    {
+      "test_name": "Dependencies",
+      "success": true,
+      "details": "Core dependencies available",
+      "error": "",
+      "timestamp": "2025-06-04T04:40:59.569813"
+    }
+  ]
+}

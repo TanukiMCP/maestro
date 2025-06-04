@@ -57,8 +57,53 @@ class ExecutionPhase:
     
     def validate_completion(self, results: Dict[str, Any]) -> bool:
         """Validate if this phase is complete based on results."""
-        # Implementation would check results against completion criteria
-        return True  # Placeholder
+        if not results:
+            return False
+        
+        # Check if all steps in this phase are completed
+        phase_steps = [step.step_id for step in self.steps]
+        completed_steps = results.get("completed_steps", [])
+        
+        # All steps must be completed
+        if not all(step_id in completed_steps for step_id in phase_steps):
+            return False
+        
+        # Check success criteria
+        for criterion in self.success_criteria:
+            if not self._check_criterion(criterion, results):
+                return False
+        
+        # Check completion criteria
+        for criterion in self.completion_criteria:
+            if not self._check_criterion(criterion, results):
+                return False
+        
+        return True
+    
+    def _check_criterion(self, criterion: str, results: Dict[str, Any]) -> bool:
+        """Check if a specific criterion is met."""
+        criterion_lower = criterion.lower()
+        output = str(results.get("output", "")).lower()
+        
+        # Check for completion indicators
+        if "completed" in criterion_lower or "finished" in criterion_lower:
+            return any(word in output for word in ["completed", "finished", "done", "success"])
+        
+        # Check for quality indicators
+        if "quality" in criterion_lower:
+            quality_score = results.get("quality_score", 0.0)
+            return quality_score >= 0.8
+        
+        # Check for error absence
+        if "error" in criterion_lower and "no" in criterion_lower:
+            return not any(word in output for word in ["error", "failed", "exception"])
+        
+        # Check for validation
+        if "validated" in criterion_lower or "verified" in criterion_lower:
+            return any(word in output for word in ["validated", "verified", "confirmed"])
+        
+        # Default: check for positive indicators
+        return any(word in output for word in ["success", "complete", "valid", "correct"])
 
 
 class SequentialExecutionPlanner:

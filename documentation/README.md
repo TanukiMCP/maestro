@@ -116,12 +116,16 @@ MAESTRO is a revolutionary AI orchestration protocol that transforms any Languag
 
 | Tool | Purpose | Key Features |
 |------|---------|--------------|
-| `maestro_orchestrate` | Complex workflow orchestration | MoA, operator profiles, quality control |
-| `maestro_iae` | Computational analysis | Multi-engine support, auto-selection |
-| `maestro_search` | Enhanced web search | LLM analysis, temporal filtering |
+| `maestro_orchestrate` | Complex workflow orchestration | Dynamic planning, agent design, auto-execution |
+| `maestro_iae` | Computational analysis | Multi-engine support, auto-detection |
+| `maestro_search` | Enhanced web search | LLM analysis, temporal filtering, multiple engines |
 | `maestro_scrape` | Intelligent web scraping | Content extraction, structured data |
-| `maestro_execute` | Code execution | Multi-language, safe execution |
+| `maestro_execute` | Code/workflow execution | Secure execution, dual-mode (plans/code) |
 | `maestro_error_handler` | Adaptive error handling | Recovery suggestions, context analysis |
+| `maestro_temporal_context` | Time-aware reasoning | Temporal analysis, context currency |
+| `maestro_iae_discovery` | Engine discovery | Optimal computation selection |
+| `maestro_tool_selection` | Tool selection | Intelligent tool recommendation |
+| `get_available_engines` | Engine information | List engines and capabilities |
 
 ## 📊 Performance Metrics
 

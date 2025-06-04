@@ -42,4 +42,6 @@ __all__ = [
     "WorkflowNode",
     "VerificationResult",
     "QualityMetrics"
-] 
+]
+
+# This file makes src.maestro a Python package 

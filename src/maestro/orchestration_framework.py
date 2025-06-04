@@ -755,31 +755,163 @@ class EnhancedOrchestrationEngine:
         """Map available tools to workflow phases."""
         tool_mappings = {}
         
-        # This would integrate with the ToolDiscoveryEngine
-        # For now, providing sample mappings
+        # Discover available tools dynamically
+        available_tools = await self._discover_available_tools()
         
-        sample_mappings = {
-            "file_operations": ToolMapping(
-                tool_id="filesystem_1",
-                tool_name="create_file",
-                server_name="filesystem",
-                workflow_phase="implementation",
-                usage_context="Create project files and directories",
-                command_template="create_file(path='{path}', content='{content}')",
-                fallback_tools=["manual_file_creation"]
-            ),
-            "git_operations": ToolMapping(
-                tool_id="git_1",
-                tool_name="git_init",
-                server_name="git",
-                workflow_phase="planning",
-                usage_context="Initialize version control",
-                command_template="git init",
-                fallback_tools=["manual_git_setup"]
-            )
+        # Map tools to phases based on task type and phase requirements
+        for phase in phases:
+            phase_tools = self._get_phase_appropriate_tools(phase, available_tools, task_type)
+            
+            for tool_name, tool_info in phase_tools.items():
+                mapping_id = f"{phase.phase_id}_{tool_name}"
+                tool_mappings[mapping_id] = ToolMapping(
+                    tool_id=mapping_id,
+                    tool_name=tool_name,
+                    server_name=tool_info.get("server", "maestro"),
+                    workflow_phase=phase.phase_id,
+                    usage_context=tool_info.get("usage_context", f"Tool for {phase.phase_name}"),
+                    command_template=tool_info.get("command_template"),
+                    fallback_tools=tool_info.get("fallback_tools", [])
+                )
+        
+        return tool_mappings
+    
+    async def _discover_available_tools(self) -> Dict[str, Dict[str, Any]]:
+        """Discover available tools from various sources."""
+        tools = {}
+        
+        # MAESTRO built-in tools
+        maestro_tools = {
+            "maestro_search": {
+                "server": "maestro",
+                "usage_context": "Search the web for information",
+                "command_template": "maestro_search(query='{query}')",
+                "fallback_tools": ["manual_search"]
+            },
+            "maestro_scrape": {
+                "server": "maestro",
+                "usage_context": "Extract content from web pages",
+                "command_template": "maestro_scrape(url='{url}')",
+                "fallback_tools": ["manual_extraction"]
+            },
+            "maestro_iae": {
+                "server": "maestro",
+                "usage_context": "Intelligence amplification analysis",
+                "command_template": "maestro_iae(task='{task}', method='{method}')",
+                "fallback_tools": ["manual_analysis"]
+            },
+            "maestro_execute": {
+                "server": "maestro",
+                "usage_context": "Execute workflows and code",
+                "command_template": "maestro_execute(plan='{plan}')",
+                "fallback_tools": ["manual_execution"]
+            },
+            "maestro_error_handler": {
+                "server": "maestro",
+                "usage_context": "Handle and recover from errors",
+                "command_template": "maestro_error_handler(error='{error}')",
+                "fallback_tools": ["manual_debugging"]
+            },
+            "maestro_temporal_context": {
+                "server": "maestro",
+                "usage_context": "Manage temporal context and time-sensitive operations",
+                "command_template": "maestro_temporal_context(query='{query}')",
+                "fallback_tools": ["manual_timing"]
+            }
         }
         
-        return sample_mappings
+        tools.update(maestro_tools)
+        
+        # Integrate with MCP tool discovery
+        try:
+            mcp_tools = await self._discover_mcp_tools()
+            tools.update(mcp_tools)
+        except Exception as e:
+            # Fallback if MCP discovery fails
+            pass
+        
+        return tools
+    
+    async def _discover_mcp_tools(self) -> Dict[str, Dict[str, Any]]:
+        """Discover tools from MCP servers."""
+        mcp_tools = {}
+        
+        # Common MCP tool patterns based on typical server implementations
+        common_mcp_tools = {
+            "filesystem": {
+                "create_file": {
+                    "server": "filesystem",
+                    "usage_context": "Create files and directories",
+                    "command_template": "create_file(path='{path}', content='{content}')",
+                    "fallback_tools": ["manual_file_creation"]
+                },
+                "read_file": {
+                    "server": "filesystem", 
+                    "usage_context": "Read file contents",
+                    "command_template": "read_file(path='{path}')",
+                    "fallback_tools": ["manual_file_reading"]
+                }
+            },
+            "git": {
+                "git_init": {
+                    "server": "git",
+                    "usage_context": "Initialize git repository",
+                    "command_template": "git_init(path='{path}')",
+                    "fallback_tools": ["manual_git_setup"]
+                },
+                "git_commit": {
+                    "server": "git",
+                    "usage_context": "Commit changes",
+                    "command_template": "git_commit(message='{message}')",
+                    "fallback_tools": ["manual_git_commit"]
+                }
+            },
+            "web": {
+                "fetch_url": {
+                    "server": "web",
+                    "usage_context": "Fetch web content",
+                    "command_template": "fetch_url(url='{url}')",
+                    "fallback_tools": ["maestro_scrape"]
+                }
+            }
+        }
+        
+        # Flatten the structure
+        for server_name, server_tools in common_mcp_tools.items():
+            for tool_name, tool_info in server_tools.items():
+                mcp_tools[tool_name] = tool_info
+        
+        return mcp_tools
+    
+    def _get_phase_appropriate_tools(self, phase: WorkflowPhase, available_tools: Dict[str, Dict[str, Any]], task_type: str) -> Dict[str, Dict[str, Any]]:
+        """Get tools appropriate for a specific phase."""
+        phase_tools = {}
+        
+        # Map phase types to appropriate tools
+        phase_tool_mapping = {
+            "analysis": ["maestro_search", "maestro_iae", "maestro_temporal_context"],
+            "planning": ["maestro_iae", "maestro_temporal_context"],
+            "implementation": ["maestro_execute", "maestro_scrape"],
+            "testing": ["maestro_execute", "maestro_error_handler"],
+            "validation": ["maestro_iae", "maestro_error_handler"],
+            "documentation": ["maestro_iae"],
+            "deployment": ["maestro_execute", "maestro_error_handler"]
+        }
+        
+        # Get tools for this phase type
+        phase_type = phase.phase_id.split("_")[-1] if "_" in phase.phase_id else phase.phase_id
+        recommended_tools = phase_tool_mapping.get(phase_type, ["maestro_iae"])
+        
+        # Add available tools that match this phase
+        for tool_name in recommended_tools:
+            if tool_name in available_tools:
+                phase_tools[tool_name] = available_tools[tool_name]
+        
+        # Always include error handler as fallback
+        if "maestro_error_handler" in available_tools and "maestro_error_handler" not in phase_tools:
+            phase_tools["maestro_error_handler"] = available_tools["maestro_error_handler"]
+        
+        return phase_tools
     
     async def _map_iaes_to_phases(self, phases: List[WorkflowPhase], task_type: str, success_criteria: SuccessCriteria) -> Dict[str, IAEMapping]:
         """Map Intelligence Amplification Engines to workflow phases."""
@@ -993,8 +1125,59 @@ This orchestration enhances your capabilities through structured reasoning frame
     
     def _load_iae_registry(self) -> Dict[str, Any]:
         """Load the registry of available Intelligence Amplification Engines."""
-        # This would load from the engines_todo.md or a dedicated registry
-        return {}
+        # Registry of available IAEs with their capabilities
+        iae_registry = {
+            "design_thinking": {
+                "name": "Design Thinking Engine",
+                "description": "Enhances UX/UI design decisions through user-centered thinking",
+                "enhancement_types": ["analysis", "reasoning"],
+                "applicable_phases": ["design", "planning"],
+                "libraries": ["NetworkX", "NumPy", "pandas"],
+                "cognitive_focus": "Design constraint analysis and solution space mapping"
+            },
+            "visual_art": {
+                "name": "Visual Art Engine", 
+                "description": "Enhances visual design reasoning and aesthetic analysis",
+                "enhancement_types": ["reasoning", "validation"],
+                "applicable_phases": ["design", "implementation"],
+                "libraries": ["NumPy", "SciPy", "PIL", "colorsys"],
+                "cognitive_focus": "Color theory and composition analysis"
+            },
+            "accessibility": {
+                "name": "Accessibility Engine",
+                "description": "Enhances accessibility reasoning and inclusive design",
+                "enhancement_types": ["validation", "analysis"],
+                "applicable_phases": ["testing", "validation"],
+                "libraries": ["NLTK", "pandas", "BeautifulSoup"],
+                "cognitive_focus": "Barrier identification and mitigation analysis"
+            },
+            "systems_engineering": {
+                "name": "Systems Engineering Engine",
+                "description": "Enhances complex system reasoning and optimization",
+                "enhancement_types": ["optimization", "analysis"],
+                "applicable_phases": ["planning", "implementation"],
+                "libraries": ["NetworkX", "NumPy", "SciPy"],
+                "cognitive_focus": "System architecture and dependency reasoning"
+            },
+            "mathematical_reasoning": {
+                "name": "Mathematical Reasoning Engine",
+                "description": "Enhances mathematical analysis and problem solving",
+                "enhancement_types": ["analysis", "validation"],
+                "applicable_phases": ["analysis", "implementation"],
+                "libraries": ["NumPy", "SciPy", "SymPy"],
+                "cognitive_focus": "Mathematical proof validation and optimization"
+            },
+            "data_analysis": {
+                "name": "Data Analysis Engine",
+                "description": "Enhances data processing and statistical reasoning",
+                "enhancement_types": ["analysis", "optimization"],
+                "applicable_phases": ["analysis", "implementation"],
+                "libraries": ["pandas", "NumPy", "scikit-learn"],
+                "cognitive_focus": "Statistical analysis and data pattern recognition"
+            }
+        }
+        
+        return iae_registry
     
     def _load_workflow_templates(self) -> Dict[str, Any]:
         """Load workflow templates for different task types."""

@@ -1,6 +1,5 @@
-# MCP Framework
+# MCP Framework - Official SDK with FastMCP support
 mcp==1.9.2
-fastmcp==2.6.1
 
 # HTTP/SSE Transport (for Smithery compatibility)
 fastapi

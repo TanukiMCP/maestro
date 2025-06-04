@@ -1,71 +1,49 @@
 {
-  "name": "tanuki-maestro-mcp",
-  "version": "1.0.1",
-  "description": "Maestro MCP Server - Intelligent workflow orchestration for AI assistants with streamable HTTP transport",
-  "main": "src/main.py",
-  "bin": {
-    "tanuki-maestro-mcp": "bin/tanuki-maestro-mcp.js"
+  "name": "maestro-mcp-server",
+  "version": "2.0.0",
+  "description": "Maestro Intelligence Amplification Engine - Advanced MCP Server with Computational Orchestration",
+  "main": "mcp_stdio_server.py",
+  "scripts": {
+    "start": "python mcp_stdio_server.py",
+    "start:enhanced": "python maestro_enhanced.py",
+    "test": "python scripts/test_client_session.py",
+    "test:enhanced": "python scripts/test_enhanced_server.py",
+    "test:all": "python scripts/test_client_session.py && python scripts/test_enhanced_server.py"
   },
   "keywords": [
     "mcp",
-    "model-context-protocol",
-    "ai",
-    "llm",
-    "orchestration",
-    "workflow",
-    "smithery",
+    "mcp-server",
     "intelligence-amplification",
-    "automation"
+    "computational-orchestration",
+    "ai",
+    "reasoning",
+    "decision-support",
+    "collaborative-intelligence"
   ],
-  "author": "tanukimcp",
+  "author": "Maestro Intelligence Systems",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tanukimcp/maestro.git"
-  },
-  "bugs": {
-    "url": "https://github.com/tanukimcp/maestro/issues"
-  },
-  "homepage": "https://github.com/tanukimcp/maestro#readme",
-  "scripts": {
-    "start": "python src/main.py",
-    "dev": "python src/main.py",
-    "test": "python src/main.py stdio",
-    "validate": "python src/main.py stdio"
+    "url": "https://github.com/your-username/maestro-mcp-server.git"
   },
   "engines": {
-    "node": ">=18.0.0"
-  },
-  "smithery": {
-    "type": "remote",
-    "transport": "streamable-http",
-    "endpoint": "http://localhost:8000/mcp",
-    "tools": 7,
-    "description": "Intelligent workflow orchestration MCP server with 7 tools for task breakdown, computational problem solving, web search, content extraction, and code execution."
+    "python": ">=3.11"
   },
   "mcp": {
     "server": {
-      "name": "maestro",
-      "version": "1.0.0",
-      "transport": ["streamable-http"],
-      "tools": [
-        "maestro_orchestrate",
-        "maestro_iae", 
-        "amplify_capability",
-        "maestro_search",
-        "maestro_scrape", 
-        "maestro_execute",
-        "get_available_engines"
-      ]
+      "command": "python",
+      "args": ["maestro_enhanced.py"],
+      "transport": "stdio"
     }
   },
+  "dependencies": {
+    "mcp": "^1.9.2"
+  },
+  "devDependencies": {},
   "files": [
-    "bin/**/*",
-    "src/**/*.py",
+    "mcp_stdio_server.py",
+    "maestro_enhanced.py",
     "requirements.txt",
-    "pyproject.toml",
-    "README.md",
-    "LICENSE",
-    "MANIFEST.in"
+    "README.md"
   ]
 } 

@@ -183,7 +183,7 @@ async def handle_mcp_post(request: Request):
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2025-03-26",
                     "capabilities": {
                         "tools": {},
                         "resources": {},

@@ -62,12 +62,7 @@ async def handle_list_tools() -> List[types.Tool]:
     """Handle tools/list requests - return ALL your existing sophisticated tools"""
     logger.info("Handling list_tools request")
     
-    # Get tools from your existing computational tools
-    comp_tools = get_computational_tools_instance()
-    mcp_tools = comp_tools.get_mcp_tools()
-    
-    # Add ALL your orchestration and enhanced tools (matching your main.py exactly)
-    orchestration_tools = [
+    all_defined_tools = [
         types.Tool(
             name="maestro_orchestrate",
             description="🎭 Intelligent workflow orchestration for complex tasks using Mixture-of-Agents (MoA)",
@@ -248,7 +243,12 @@ async def handle_list_tools() -> List[types.Tool]:
                     },
                     "capture_output": {
                         "type": "boolean",
-                        "description": "Capture command output",
+                        "description": "Capture stdout and stderr",
+                        "default": True
+                    },
+                    "sandboxed": {
+                        "type": "boolean",
+                        "description": "Execute in a sandboxed environment",
                         "default": True
                     }
                 },
@@ -257,86 +257,201 @@ async def handle_list_tools() -> List[types.Tool]:
         ),
         types.Tool(
             name="maestro_error_handler",
-            description="🚨 Advanced error handling and recovery",
+            description="🛡️ Advanced error handling and reporting",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "error_message": {
-                        "type": "string",
-                        "description": "Error message to analyze"
-                    },
                     "error_type": {
                         "type": "string",
-                        "enum": ["general", "computational", "network", "file_system", "permission"],
-                        "description": "Type of error",
-                        "default": "general"
+                        "description": "Type of error encountered"
                     },
-                    "context": {
+                    "error_message": {
+                        "type": "string",
+                        "description": "Detailed error message"
+                    },
+                    "context_data": {
                         "type": "object",
-                        "description": "Error context information",
+                        "description": "Contextual data at the time of error",
                         "additionalProperties": True
                     },
-                    "recovery_strategy": {
+                    "severity": {
                         "type": "string",
-                        "enum": ["automatic", "guided", "manual"],
-                        "description": "Recovery strategy preference",
-                        "default": "guided"
+                        "enum": ["low", "medium", "high", "critical"],
+                        "description": "Severity of the error",
+                        "default": "medium"
                     }
                 },
-                "required": ["error_message"]
+                "required": ["error_type", "error_message"]
             }
         ),
         types.Tool(
             name="maestro_temporal_context",
-            description="🕐 Temporal context analysis for time-sensitive information",
+            description="⏳ Manages temporal context and event sequencing",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "query": {
+                    "event_name": {
                         "type": "string",
-                        "description": "Query for temporal analysis"
+                        "description": "Name of the event"
                     },
-                    "time_range": {
-                        "type": "string",
-                        "enum": ["recent", "week", "month", "quarter", "year", "historical"],
-                        "description": "Time range for analysis",
-                        "default": "recent"
+                    "event_data": {
+                        "type": "object",
+                        "description": "Data associated with the event",
+                        "additionalProperties": True
                     },
-                    "domain": {
+                    "timestamp": {
                         "type": "string",
-                        "enum": ["general", "technology", "science", "business", "politics", "culture"],
-                        "description": "Domain context",
-                        "default": "general"
+                        "format": "date-time",
+                        "description": "Timestamp of the event (ISO 8601)"
                     },
-                    "analysis_depth": {
+                    "sequence_id": {
                         "type": "string",
-                        "enum": ["surface", "moderate", "deep"],
-                        "description": "Depth of temporal analysis",
-                        "default": "moderate"
+                        "description": "Sequence identifier for related events"
                     }
                 },
-                "required": ["query"]
+                "required": ["event_name"]
+            }
+        ),
+        types.Tool(
+            name="maestro_iae",
+            description=(
+                "🔬 Intelligence Amplification Engine Gateway - Provides access to all "
+                "computational engines for precise numerical calculations. Use this tool "
+                "when you need actual computations (not token predictions) for mathematical, "
+                "scientific, or engineering problems. Supports quantum physics, statistical "
+                "analysis, molecular modeling, and more through the MIA protocol."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "engine_domain": {
+                        "type": "string",
+                        "description": "Computational domain",
+                        "enum": ["quantum_physics", "molecular_modeling", "statistical_analysis", 
+                               "classical_mechanics", "relativity", "chemistry", "biology"],
+                        "default": "quantum_physics"
+                    },
+                    "computation_type": {
+                        "type": "string", 
+                        "description": "Type of calculation to perform",
+                        "enum": ["entanglement_entropy", "bell_violation", "quantum_fidelity", 
+                               "pauli_decomposition", "molecular_properties", "statistical_test",
+                               "regression_analysis", "sequence_alignment"],
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Computation-specific parameters",
+                        "properties": {
+                            "density_matrix": {
+                                "type": "array",
+                                "description": "Quantum state density matrix (for quantum calculations)",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object", 
+                                        "properties": {
+                                            "real": {"type": "number"},
+                                            "imag": {"type": "number", "default": 0}
+                                        },
+                                        "required": ["real"]
+                                    }
+                                }
+                            },
+                            "quantum_state": {
+                                "type": "array",
+                                "description": "Quantum state vector (for Bell violation)",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "real": {"type": "number"},
+                                        "imag": {"type": "number", "default": 0}
+                                    },
+                                    "required": ["real"]
+                                }
+                            },
+                            "measurement_angles": {
+                                "type": "object",
+                                "description": "Measurement angles for Bell test",
+                                "properties": {
+                                    "alice": {"type": "array", "items": {"type": "number"}},
+                                    "bob": {"type": "array", "items": {"type": "number"}}
+                                },
+                                "required": ["alice", "bob"]
+                            },
+                            "operator": {
+                                "type": "array",
+                                "description": "Quantum operator matrix (for Pauli decomposition)",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "real": {"type": "number"},
+                                            "imag": {"type": "number", "default": 0}
+                                        },
+                                        "required": ["real"]
+                                    }
+                                }
+                            },
+                            "state1": {
+                                "type": "array",
+                                "description": "First quantum state (for fidelity)",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "real": {"type": "number"},
+                                            "imag": {"type": "number", "default": 0}
+                                        },
+                                        "required": ["real"]
+                                    }
+                                }
+                            },
+                            "state2": {
+                                "type": "array", 
+                                "description": "Second quantum state (for fidelity)",
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "real": {"type": "number"},
+                                            "imag": {"type": "number", "default": 0}
+                                        },
+                                        "required": ["real"]
+                                    }
+                                }
+                            }
+                        },
+                        "additionalProperties": True
+                    },
+                    "precision_requirements": {
+                        "type": "string",
+                        "description": "Required precision level",
+                        "enum": ["machine_precision", "extended_precision", "exact_symbolic"],
+                        "default": "machine_precision"
+                    },
+                    "validation_level": {
+                        "type": "string",
+                        "description": "Input validation strictness",
+                        "enum": ["basic", "standard", "strict"],
+                        "default": "standard"
+                    }
+                },
+                "required": ["engine_domain", "computation_type", "parameters"],
+                "additionalProperties": False
             }
         ),
         types.Tool(
             name="get_available_engines",
-            description="📋 Get list of available computational engines and their capabilities",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "domain_filter": {
-                        "type": "string",
-                        "description": "Filter engines by domain (optional)"
-                    }
-                }
-            }
+            description="🚀 Lists all available computational engines within the Maestro IAE framework",
+            inputSchema={"type": "object", "properties": {}}, # No arguments needed
         )
     ]
     
-    # Combine all tools
-    all_tools = mcp_tools + orchestration_tools
-    logger.info(f"Returning {len(all_tools)} sophisticated tools")
-    return all_tools
+    logger.info(f"Found {len(all_defined_tools)} tools.")
+    return all_defined_tools
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict[str, Any] | None) -> List[types.TextContent]:

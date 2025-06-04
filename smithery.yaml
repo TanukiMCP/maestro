@@ -14,44 +14,8 @@ startCommand:
         type: "boolean"
         description: "Enable debug logging"
         default: false
-      maxConcurrency:
-        type: "integer"
-        description: "Maximum concurrent operations"
-        default: 10
-        minimum: 1
-        maximum: 100
+    required: []
   exampleConfig:
     apiKey: "optional-api-key"
     debugMode: false
-    maxConcurrency: 10
-description: "TanukiMCP Maestro - Intelligence Amplification MCP Server with collaborative fallback system for enhanced LLM orchestration"
-tools:
-  - name: "maestro_orchestrate"
-    description: "Enhanced intelligent meta-reasoning orchestration for 3-5x LLM capability amplification"
-  - name: "maestro_collaboration_response"
-    description: "Handle user responses to collaboration requests"
-  - name: "maestro_iae_discovery"
-    description: "Integrated Analysis Engine discovery for optimal computation selection"
-  - name: "maestro_tool_selection"
-    description: "Intelligent tool selection based on task requirements"
-  - name: "maestro_iae"
-    description: "Integrated Analysis Engine for computational tasks"
-  - name: "get_available_engines"
-    description: "List available computational engines and capabilities"
-  - name: "maestro_search"
-    description: "Enhanced search capabilities across multiple sources"
-  - name: "maestro_scrape"
-    description: "Web scraping and content extraction"
-  - name: "maestro_execute"
-    description: "Secure code execution in isolated environment"
-  - name: "maestro_temporal_context"
-    description: "Time-aware context and temporal reasoning"
-  - name: "maestro_error_handler"
-    description: "Intelligent error analysis and recovery suggestions"
-
-toolScanning:
-  timeout: 30
-  retries: 3
-  lazyLoad: true
-  enabled: true
-  mcpVersion: "2025-03-26"
+description: "TanukiMCP Maestro - Meta-Agent Ensemble for Systematic Task Reasoning and Orchestration with 3-5x LLM capability amplification"

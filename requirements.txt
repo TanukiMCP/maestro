@@ -1,11 +1,9 @@
-# MCP Framework - Official SDK with FastMCP support
+# MCP Framework - Official Python SDK only (no FastMCP)
 mcp==1.9.2
 
-# HTTP/SSE Transport (for Smithery compatibility)
-fastapi
-starlette
+# Web server for HTTP transport (minimal)
 uvicorn
-python-multipart
+starlette
 
 # LangChain Orchestration  
 langchain

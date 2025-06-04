@@ -42,7 +42,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 
 # Copy source code
 COPY src/ ./src/
-COPY mcp_fastmcp_server.py .
+COPY mcp_official_server.py .
+COPY mcp_http_transport.py .
 COPY mcp_stdio_server.py .
 COPY README.md .
 COPY LICENSE .
@@ -55,8 +56,8 @@ USER maestro
 # Expose the port
 EXPOSE 8000
 
-# Command to run the FastMCP server
-CMD ["python", "mcp_fastmcp_server.py"]
+# Command to run the HTTP transport wrapper
+CMD ["python", "mcp_http_transport.py"]
 
 # Labels for better discoverability
 LABEL org.opencontainers.image.title="Maestro MCP Server" \

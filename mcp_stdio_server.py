@@ -14,13 +14,14 @@ import sys
 import os
 from typing import Any, Dict, List
 
+# Core MCP imports - minimal for fastest startup
 from mcp.server.lowlevel.server import Server
 from mcp.server.stdio import stdio_server
 import mcp.types as types
 
-# Configure logging to stderr to avoid interfering with MCP protocol on stdout
+# Configure minimal logging for production - Smithery requires instant tool scanning
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # Reduce verbosity for faster scanning
     format='%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
     handlers=[logging.StreamHandler(sys.stderr)]
 )
@@ -32,379 +33,394 @@ server = Server("maestro-mcp", version="2.0.0")
 # NO IMPORTS FROM SRC/ AT MODULE LEVEL - Everything deferred to call time
 # This ensures ultra-fast startup for Smithery tool scanning
 
+# STATIC TOOL DEFINITIONS - Pre-computed for instant scanning
+STATIC_TOOLS = [
+    types.Tool(
+        name="maestro_orchestrate",
+        description="🎭 Enhanced intelligent meta-reasoning orchestration for 3-5x LLM capability amplification",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task_description": {
+                    "type": "string",
+                    "description": "Complex task requiring systematic reasoning"
+                },
+                "context": {
+                    "type": "object",
+                    "description": "Relevant background information and constraints",
+                    "additionalProperties": True
+                },
+                "success_criteria": {
+                    "type": "object",
+                    "description": "Success criteria for the task",
+                    "additionalProperties": True
+                },
+                "complexity_level": {
+                    "type": "string",
+                    "enum": ["simple", "moderate", "complex", "expert"],
+                    "description": "Complexity level of the task",
+                    "default": "moderate"
+                },
+                "quality_threshold": {
+                    "type": "number",
+                    "minimum": 0.7,
+                    "maximum": 0.95,
+                    "description": "Minimum acceptable quality (0.7-0.95, default 0.85)",
+                    "default": 0.85
+                },
+                "resource_level": {
+                    "type": "string",
+                    "enum": ["limited", "moderate", "abundant"],
+                    "description": "Available computational resources",
+                    "default": "moderate"
+                },
+                "reasoning_focus": {
+                    "type": "string",
+                    "enum": ["logical", "creative", "analytical", "research", "synthesis", "auto"],
+                    "description": "Primary reasoning approach to emphasize",
+                    "default": "auto"
+                },
+                "validation_rigor": {
+                    "type": "string",
+                    "enum": ["basic", "standard", "thorough", "rigorous"],
+                    "description": "Validation thoroughness level",
+                    "default": "standard"
+                },
+                "max_iterations": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Maximum refinement cycles",
+                    "default": 3
+                },
+                "domain_specialization": {
+                    "type": "string",
+                    "description": "Preferred domain expertise to emphasize"
+                },
+                "enable_collaboration_fallback": {
+                    "type": "boolean",
+                    "description": "Enable collaborative fallback when ambiguity or insufficient context is detected",
+                    "default": True
+                }
+            },
+            "required": ["task_description"]
+        }
+    ),
+    types.Tool(
+        name="maestro_iae_discovery",
+        description="🔍 Integrated Analysis Engine discovery for optimal computation selection",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task_type": {
+                    "type": "string",
+                    "description": "Type of task for engine discovery",
+                    "default": "general"
+                },
+                "domain_context": {
+                    "type": "string",
+                    "description": "Domain context for the task"
+                },
+                "complexity_requirements": {
+                    "type": "object",
+                    "description": "Complexity requirements",
+                    "additionalProperties": True
+                }
+            },
+            "required": ["task_type"]
+        }
+    ),
+    types.Tool(
+        name="maestro_tool_selection",
+        description="🧰 Intelligent tool selection based on task requirements",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "request_description": {
+                    "type": "string",
+                    "description": "Description of the request for tool selection"
+                },
+                "available_context": {
+                    "type": "object",
+                    "description": "Available context",
+                    "additionalProperties": True
+                },
+                "precision_requirements": {
+                    "type": "object",
+                    "description": "Precision requirements",
+                    "additionalProperties": True
+                }
+            },
+            "required": ["request_description"]
+        }
+    ),
+    types.Tool(
+        name="maestro_iae",
+        description="⚡ Integrated Analysis Engine for computational tasks",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "analysis_request": {
+                    "type": "string",
+                    "description": "The analysis or computation request"
+                },
+                "engine_type": {
+                    "type": "string",
+                    "enum": ["statistical", "mathematical", "quantum", "auto"],
+                    "description": "Type of analysis engine to use",
+                    "default": "auto"
+                },
+                "precision_level": {
+                    "type": "string",
+                    "enum": ["standard", "high", "ultra"],
+                    "description": "Required precision level",
+                    "default": "standard"
+                },
+                "computational_context": {
+                    "type": "object",
+                    "description": "Additional computational context",
+                    "additionalProperties": True
+                }
+            },
+            "required": ["analysis_request"]
+        }
+    ),
+    types.Tool(
+        name="maestro_search",
+        description="🔎 Enhanced search capabilities across multiple sources",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query"
+                },
+                "max_results": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "description": "Maximum number of results",
+                    "default": 10
+                },
+                "search_engine": {
+                    "type": "string",
+                    "enum": ["duckduckgo", "google", "bing", "auto"],
+                    "description": "Search engine to use",
+                    "default": "duckduckgo"
+                },
+                "temporal_filter": {
+                    "type": "string",
+                    "enum": ["day", "week", "month", "year", "any"],
+                    "description": "Time filter for results",
+                    "default": "any"
+                },
+                "result_format": {
+                    "type": "string",
+                    "enum": ["structured", "markdown", "json"],
+                    "description": "Output format preference",
+                    "default": "structured"
+                }
+            },
+            "required": ["query"]
+        }
+    ),
+    types.Tool(
+        name="maestro_scrape",
+        description="🌐 Web scraping and content extraction",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "URL to scrape"
+                },
+                "output_format": {
+                    "type": "string",
+                    "enum": ["markdown", "html", "text", "json"],
+                    "description": "Output format",
+                    "default": "markdown"
+                },
+                "selectors": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "CSS selectors for specific content"
+                },
+                "wait_time": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30,
+                    "description": "Wait time in seconds",
+                    "default": 3
+                },
+                "extract_links": {
+                    "type": "boolean",
+                    "description": "Extract links from the page",
+                    "default": False
+                }
+            },
+            "required": ["url"]
+        }
+    ),
+    types.Tool(
+        name="maestro_execute",
+        description="⚙️ Secure code execution in isolated environment",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Code to execute"
+                },
+                "language": {
+                    "type": "string",
+                    "enum": ["python", "javascript", "bash", "shell"],
+                    "description": "Programming language",
+                    "default": "python"
+                },
+                "execution_context": {
+                    "type": "object",
+                    "description": "Execution environment variables",
+                    "additionalProperties": True
+                },
+                "timeout_seconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 300,
+                    "description": "Execution timeout",
+                    "default": 30
+                },
+                "safe_mode": {
+                    "type": "boolean",
+                    "description": "Enable safety restrictions",
+                    "default": True
+                }
+            },
+            "required": ["code"]
+        }
+    ),
+    types.Tool(
+        name="maestro_error_handler",
+        description="🔧 Intelligent error analysis and recovery suggestions",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string",
+                    "description": "Error message to analyze"
+                },
+                "error_context": {
+                    "type": "object",
+                    "description": "Additional error context",
+                    "additionalProperties": True
+                },
+                "recovery_suggestions": {
+                    "type": "boolean",
+                    "description": "Include recovery suggestions",
+                    "default": True
+                }
+            },
+            "required": ["error_message"]
+        }
+    ),
+    types.Tool(
+        name="maestro_temporal_context",
+        description="⏰ Time-aware context and temporal reasoning",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task_description": {
+                    "type": "string",
+                    "description": "Task requiring temporal context"
+                },
+                "temporal_query": {
+                    "type": "string",
+                    "description": "Temporal query or time reference"
+                },
+                "time_range": {
+                    "type": "object",
+                    "description": "Time range specifications",
+                    "additionalProperties": True
+                },
+                "temporal_precision": {
+                    "type": "string",
+                    "enum": ["minute", "hour", "day", "week", "month", "year"],
+                    "description": "Required temporal precision",
+                    "default": "day"
+                }
+            },
+            "required": ["task_description", "temporal_query"]
+        }
+    ),
+    types.Tool(
+        name="get_available_engines",
+        description="🔧 List available computational engines and capabilities",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "engine_type": {
+                    "type": "string",
+                    "enum": ["all", "mathematical", "statistical", "quantum", "optimization"],
+                    "description": "Filter by engine type",
+                    "default": "all"
+                },
+                "include_capabilities": {
+                    "type": "boolean",
+                    "description": "Include detailed capabilities",
+                    "default": True
+                }
+            }
+        }
+    ),
+    types.Tool(
+        name="maestro_collaboration_response",
+        description="🤝 Handle user responses to collaboration requests",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "collaboration_id": {
+                    "type": "string",
+                    "description": "ID of the collaboration request"
+                },
+                "responses": {
+                    "type": "object",
+                    "description": "User responses to collaboration questions",
+                    "additionalProperties": True
+                },
+                "additional_context": {
+                    "type": "object",
+                    "description": "Additional context provided by user",
+                    "additionalProperties": True
+                },
+                "user_preferences": {
+                    "type": "object",
+                    "description": "User preferences for task execution",
+                    "additionalProperties": True
+                },
+                "approval_status": {
+                    "type": "string",
+                    "enum": ["approved", "rejected", "modified"],
+                    "description": "User approval status",
+                    "default": "approved"
+                },
+                "confidence_level": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "description": "User confidence in provided responses",
+                    "default": 0.8
+                }
+            },
+            "required": ["collaboration_id"]
+        }
+    )
+]
+
 @server.list_tools()
 async def handle_list_tools() -> List[types.Tool]:
     """Handle tools/list requests - return ALL tools with STATIC definitions only"""
-    logger.info("Handling list_tools request")
-    
-    # COMPLETELY STATIC tool definitions - no imports, no instantiation, no computations
-    return [
-        types.Tool(
-            name="maestro_orchestrate",
-            description="🎭 Enhanced intelligent meta-reasoning orchestration for 3-5x LLM capability amplification",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "task_description": {
-                        "type": "string",
-                        "description": "Complex task requiring systematic reasoning"
-                    },
-                    "context": {
-                        "type": "object",
-                        "description": "Relevant background information and constraints",
-                        "additionalProperties": True
-                    },
-                    "success_criteria": {
-                        "type": "object",
-                        "description": "Success criteria for the task",
-                        "additionalProperties": True
-                    },
-                    "complexity_level": {
-                        "type": "string",
-                        "enum": ["simple", "moderate", "complex", "expert"],
-                        "description": "Complexity level of the task",
-                        "default": "moderate"
-                    },
-                    "quality_threshold": {
-                        "type": "number",
-                        "minimum": 0.7,
-                        "maximum": 0.95,
-                        "description": "Minimum acceptable quality (0.7-0.95, default 0.85)",
-                        "default": 0.85
-                    },
-                    "resource_level": {
-                        "type": "string",
-                        "enum": ["limited", "moderate", "abundant"],
-                        "description": "Available computational resources",
-                        "default": "moderate"
-                    },
-                    "reasoning_focus": {
-                        "type": "string",
-                        "enum": ["logical", "creative", "analytical", "research", "synthesis", "auto"],
-                        "description": "Primary reasoning approach to emphasize",
-                        "default": "auto"
-                    },
-                    "validation_rigor": {
-                        "type": "string",
-                        "enum": ["basic", "standard", "thorough", "rigorous"],
-                        "description": "Validation thoroughness level",
-                        "default": "standard"
-                    },
-                                            "max_iterations": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 5,
-                            "description": "Maximum refinement cycles",
-                            "default": 3
-                        },
-                        "domain_specialization": {
-                            "type": "string",
-                            "description": "Preferred domain expertise to emphasize"
-                        },
-                        "enable_collaboration_fallback": {
-                            "type": "boolean",
-                            "description": "Enable collaborative fallback when ambiguity or insufficient context is detected",
-                            "default": True
-                        }
-                },
-                "required": ["task_description"]
-            }
-        ),
-        types.Tool(
-            name="maestro_iae_discovery",
-            description="🔍 Integrated Analysis Engine discovery for optimal computation selection",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "task_type": {
-                        "type": "string",
-                        "description": "Type of task for engine discovery",
-                        "default": "general"
-                    },
-                    "domain_context": {
-                        "type": "string",
-                        "description": "Domain context for the task"
-                    },
-                    "complexity_requirements": {
-                        "type": "object",
-                        "description": "Complexity requirements",
-                        "additionalProperties": True
-                    }
-                },
-                "required": ["task_type"]
-            }
-        ),
-        types.Tool(
-            name="maestro_tool_selection",
-            description="🧰 Intelligent tool selection based on task requirements",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "request_description": {
-                        "type": "string",
-                        "description": "Description of the request for tool selection"
-                    },
-                    "available_context": {
-                        "type": "object",
-                        "description": "Available context",
-                        "additionalProperties": True
-                    },
-                    "precision_requirements": {
-                        "type": "object",
-                        "description": "Precision requirements",
-                        "additionalProperties": True
-                    }
-                },
-                "required": ["request_description"]
-            }
-        ),
-        types.Tool(
-            name="maestro_iae",
-            description="⚡ Integrated Analysis Engine for computational tasks",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "analysis_request": {
-                        "type": "string",
-                        "description": "The analysis or computation request"
-                    },
-                    "engine_type": {
-                        "type": "string",
-                        "enum": ["statistical", "mathematical", "quantum", "auto"],
-                        "description": "Type of analysis engine to use",
-                        "default": "auto"
-                    },
-                    "precision_level": {
-                        "type": "string",
-                        "enum": ["standard", "high", "ultra"],
-                        "description": "Required precision level",
-                        "default": "standard"
-                    },
-                    "computational_context": {
-                        "type": "object",
-                        "description": "Additional computational context",
-                        "additionalProperties": True
-                    }
-                },
-                "required": ["analysis_request"]
-            }
-        ),
-        types.Tool(
-            name="maestro_search",
-            description="🔎 Enhanced search capabilities across multiple sources",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Search query"
-                    },
-                    "max_results": {
-                        "type": "integer",
-                        "description": "Maximum number of results",
-                        "default": 10
-                    },
-                    "search_engine": {
-                        "type": "string",
-                        "enum": ["duckduckgo", "google", "bing"],
-                        "description": "Search engine to use",
-                        "default": "duckduckgo"
-                    },
-                    "temporal_filter": {
-                        "type": "string",
-                        "enum": ["any", "recent", "week", "month", "year"],
-                        "description": "Time filter for results",
-                        "default": "any"
-                    },
-                    "result_format": {
-                        "type": "string",
-                        "enum": ["structured", "summary", "detailed"],
-                        "description": "Format of results",
-                        "default": "structured"
-                    }
-                },
-                "required": ["query"]
-            }
-        ),
-        types.Tool(
-            name="maestro_scrape",
-            description="📑 Web scraping functionality with content extraction",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "URL to scrape"
-                    },
-                    "output_format": {
-                        "type": "string",
-                        "enum": ["markdown", "text", "html", "json"],
-                        "description": "Output format",
-                        "default": "markdown"
-                    },
-                    "selectors": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "CSS selectors for specific elements"
-                    },
-                    "wait_time": {
-                        "type": "number",
-                        "description": "Time to wait for page load (seconds)",
-                        "default": 3
-                    },
-                    "extract_links": {
-                        "type": "boolean",
-                        "description": "Whether to extract links",
-                        "default": False
-                    }
-                },
-                "required": ["url"]
-            }
-        ),
-        types.Tool(
-            name="maestro_execute",
-            description="⚙️ Execute computational tasks with enhanced error handling",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "command": {
-                        "type": "string",
-                        "description": "Command or code to execute"
-                    },
-                    "execution_context": {
-                        "type": "object",
-                        "description": "Execution context",
-                        "additionalProperties": True
-                    },
-                    "timeout_seconds": {
-                        "type": "number",
-                        "description": "Execution timeout in seconds",
-                        "default": 30
-                    },
-                    "safe_mode": {
-                        "type": "boolean",
-                        "description": "Enable safe execution mode",
-                        "default": True
-                    }
-                },
-                "required": ["command"]
-            }
-        ),
-        types.Tool(
-            name="maestro_error_handler",
-            description="🚨 Advanced error handling and recovery suggestions",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "error_message": {
-                        "type": "string",
-                        "description": "The error message to analyze"
-                    },
-                    "error_context": {
-                        "type": "object",
-                        "description": "Context where the error occurred",
-                        "additionalProperties": True
-                    },
-                    "recovery_suggestions": {
-                        "type": "boolean",
-                        "description": "Whether to provide recovery suggestions",
-                        "default": True
-                    }
-                },
-                "required": ["error_message"]
-            }
-        ),
-        types.Tool(
-            name="maestro_temporal_context",
-            description="📅 Temporal context awareness and time-based reasoning",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "temporal_query": {
-                        "type": "string",
-                        "description": "Query requiring temporal reasoning"
-                    },
-                    "time_range": {
-                        "type": "object",
-                        "properties": {
-                            "start": {"type": "string"},
-                            "end": {"type": "string"}
-                        },
-                        "description": "Time range for the query"
-                    },
-                    "temporal_precision": {
-                        "type": "string",
-                        "enum": ["year", "month", "day", "hour", "minute"],
-                        "description": "Required temporal precision",
-                        "default": "day"
-                    }
-                },
-                "required": ["temporal_query"]
-            }
-        ),
-        types.Tool(
-            name="get_available_engines",
-            description="🔧 Get list of available computational engines and their capabilities",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "engine_type": {
-                        "type": "string",
-                        "enum": ["all", "statistical", "mathematical", "quantum", "enhanced"],
-                        "description": "Filter by engine type",
-                        "default": "all"
-                    },
-                    "include_capabilities": {
-                        "type": "boolean",
-                        "description": "Include detailed capabilities",
-                        "default": True
-                    }
-                }
-            }
-        ),
-        types.Tool(
-            name="maestro_collaboration_response",
-            description="🤝 Handle user responses to collaboration requests from orchestration workflows",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "collaboration_id": {
-                        "type": "string",
-                        "description": "The collaboration request ID from the original request"
-                    },
-                    "responses": {
-                        "type": "object",
-                        "description": "User responses to the specific questions",
-                        "additionalProperties": True
-                    },
-                    "additional_context": {
-                        "type": "object",
-                        "description": "Additional context provided by the user",
-                        "additionalProperties": True
-                    },
-                    "user_preferences": {
-                        "type": "object",
-                        "description": "User preferences for workflow execution",
-                        "additionalProperties": True
-                    },
-                    "approval_status": {
-                        "type": "string",
-                        "enum": ["approved", "needs_revision", "rejected"],
-                        "description": "User's approval status for continuing",
-                        "default": "approved"
-                    },
-                    "confidence_level": {
-                        "type": "number",
-                        "minimum": 0.0,
-                        "maximum": 1.0,
-                        "description": "User confidence in the provided information",
-                        "default": 0.8
-                    }
-                },
-                "required": ["collaboration_id", "responses"]
-            }
-        )
-    ]
+    # NO LOGGING during tool scanning - Smithery requires instantaneous response
+    # Return pre-computed static tools for maximum speed
+    return STATIC_TOOLS
 
 # Lazy-loaded instances - ONLY created when tools are actually called
 _maestro_tools_instance = None
@@ -687,7 +703,7 @@ async def _handle_maestro_collaboration_response(arguments: Dict[str, Any]) -> L
 
 async def main():
     """Run the MCP server with stdio transport"""
-    logger.info("Starting Maestro MCP Server with stdio transport")
+    # Minimal logging for Smithery deployment - only critical errors
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(

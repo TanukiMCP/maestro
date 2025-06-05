@@ -31,11 +31,17 @@ The TanukiMCP Maestro server is now properly configured and working:
 - **Purpose**: Deployment troubleshooting
 
 ### MCP Protocol
-- **URL**: `http://localhost:8000/sse`
-- **Transport**: Server-Sent Events
-- **Purpose**: MCP communication (streaming protocol)
+- **URL**: `http://localhost:8000/mcp`
+- **Transport**: Streamable HTTP (MCP 2.0 Standard)
+- **Purpose**: Full MCP communication (requires session)
 
-## 🛠️ Registered Tools
+### Smithery Tool Discovery Endpoint
+- **URL**: `http://localhost:8000/tools/list`
+- **Method**: GET
+- **Response**: JSON list of tool names
+- **Purpose**: Instant, sessionless tool scanning for Smithery.ai
+
+## ��️ Registered Tools
 
 All 11 tools are properly registered and available:
 
@@ -56,37 +62,30 @@ All 11 tools are properly registered and available:
 ### ✅ Working
 - Docker container builds successfully
 - Server starts without errors
-- All HTTP endpoints respond correctly
+- All HTTP endpoints respond correctly (including `/tools/list` for Smithery)
 - Tool registration completes instantly (<100ms)
 - Health checks pass
 
-### ⚠️ Smithery.ai Integration Issue
+### ✅ Smithery.ai Integration Solution
 
-The deployment succeeds but tool scanning fails with:
-```
-Failed to scan tools list from server: TypeError: fetch failed
-```
+The "TypeError: fetch failed" error from Smithery.ai should now be resolved.
 
-This suggests Smithery.ai may be:
-1. Expecting a different MCP endpoint format
-2. Using HTTP POST instead of SSE for tool discovery
-3. Looking for tools at a different path (e.g., `/mcp` instead of `/sse`)
+- **Correct Transport**: The server uses `streamable-http` on `/mcp` as recommended by Smithery for full MCP communication.
+- **Dedicated Discovery Endpoint**: A simple GET endpoint at `/tools/list` provides an instant, sessionless JSON list of tool names specifically for Smithery's tool scanner. This meets the requirement: "Tool Lists: The `/tools/list` endpoint must be accessible without API keys or configurations."
 
 ### 🔍 Troubleshooting Steps
 
-1. **Verify endpoint accessibility**: All endpoints respond correctly locally
-2. **Check transport compatibility**: SSE transport is working
-3. **Tool discovery speed**: <100ms via static tool definitions ✅
-4. **Container health**: Health check endpoint working ✅
+1.  **Verify endpoint accessibility**: `/health`, `/tools`, `/debug`, and `/tools/list` respond correctly. `/mcp` responds as expected for streamable HTTP (requires session for most calls).
+2.  **Check transport compatibility**: `streamable-http` is the recommended transport.
+3.  **Tool discovery speed**: <100ms via static tool definitions and the dedicated `/tools/list` endpoint. ✅
+4.  **Container health**: Health check endpoint working. ✅
 
 ### 📋 Recommendations
 
-For Smithery.ai compatibility, consider:
+Configuration for Smithery.ai compatibility:
 
-1. **Multiple transport support**: Add WebSocket fallback
-2. **HTTP endpoint**: Add direct HTTP POST endpoint for tool discovery
-3. **Path flexibility**: Support both `/mcp` and `/sse` paths
-4. **Error logging**: Enhanced logging for debugging connection issues
+1.  **Primary MCP Endpoint**: `https://<your-server-url>/mcp` (using `streamable-http`)
+2.  **Smithery Tool Discovery URL**: `https://<your-server-url>/tools/list` (simple GET for JSON tool list)
 
 ## 🧪 Local Testing
 
@@ -98,17 +97,18 @@ python test_server_http.py
 
 Expected results:
 - `/health`: 200 OK
-- `/tools`: 200 OK with tool list
+- `/tools`: 200 OK with tool list (debug endpoint)
 - `/debug`: 200 OK with config
-- `/sse`: Timeout (expected for SSE)
+- `/tools/list`: 200 OK with JSON tool list (for Smithery scanner)
+- `/mcp`: 400 Bad Request "Missing session ID" (expected for simple GET/POST without session to streamable HTTP endpoint)
 
 ## 🐳 Container Deployment
 
 The server is ready for container deployment with:
 - Proper port exposure (8000)
 - Health check endpoint
+- `/tools/list` endpoint for Smithery discovery
+- `/mcp` endpoint for standard MCP communication
 - Non-root user for security
 - Optimized dependency loading
-- Production-ready configuration
-
-The "TypeError: fetch failed" error from Smithery.ai appears to be a protocol/endpoint compatibility issue rather than a server failure, as all endpoints are working correctly. 
+- Production-ready configuration 

@@ -347,6 +347,23 @@ async def maestro_error_handler(
         learning_enabled=learning_enabled
     )
 
+# Simple HTTP endpoint for tool listing (for Smithery scanning)
+@mcp.custom_route("/tools/list", methods=["GET"])
+async def http_tools_list(request):
+    """Return a JSON list of tool names for instant scanning without session requirements."""
+    from starlette.responses import JSONResponse
+    try:
+        tools_result = mcp.get_tools()
+        if hasattr(tools_result, '__await__'):
+            tools = await tools_result
+        else:
+            tools = tools_result
+        return JSONResponse({
+            "tools": list(tools)
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 # Production server startup
 if __name__ == "__main__":
     print("🚀 TanukiMCP Maestro - PRODUCTION SERVER")
@@ -385,15 +402,16 @@ if __name__ == "__main__":
         print(f"⚠️ Error in tools debug: {e}")
     
     try:
-        # Run FastMCP server for Smithery.ai with STDIO transport
-        print("🚀 Starting server...")
-        print("📋 Using STDIO transport - Smithery will wrap with WebSocket automatically")
-        print("📖 Per Smithery docs: 'We will wrap your server and proxy it over HTTP'")
-        
-        # Use STDIO transport - Smithery will handle WebSocket wrapping
-        mcp.run(transport="stdio")
-        
+        # Run FastMCP server with Streamable HTTP transport for Smithery.ai
+        print("🚀 Starting server with Streamable HTTP transport...")
+        print("📡 MCP endpoint: http://{host}:{port}/mcp")
+        mcp.run(
+            transport="streamable-http",
+            host=host,
+            port=port,
+            path="/mcp"
+        )
     except Exception as e:
-        print(f"❌ Server startup with STDIO failed: {e}")
+        print(f"❌ Server startup with HTTP transport failed: {e}")
         import traceback
         traceback.print_exc() 

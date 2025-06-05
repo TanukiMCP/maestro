@@ -1248,7 +1248,7 @@ Parameters:
         except Exception as e:
             logger.error(f"❌ Tool selection failed: {str(e)}")
             return f"❌ **Tool Selection Error**\n\nFailed to analyze tools: {str(e)}"
-            
+
     async def _handle_tool_selection(self, arguments: dict) -> List[TextContent]:
         """Handle tool selection recommendations."""
         try:
@@ -1875,12 +1875,12 @@ The enhanced orchestration will resume automatically using the collaborative fal
     async def _assess_ambiguity(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> float:
         """Assess the ambiguity of a task description using deterministic analysis"""
         # Use only programmatic assessment - no LLM calls needed
-        return self._programmatic_ambiguity_assessment(task_description, context)
+            return self._programmatic_ambiguity_assessment(task_description, context)
 
     async def _assess_context_completeness(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> float:
         """Assess the completeness of the task context using deterministic analysis"""
         # Use only programmatic assessment - no LLM calls needed
-        return self._programmatic_completeness_assessment(task_description, context)
+            return self._programmatic_completeness_assessment(task_description, context)
 
     async def _detect_requirement_conflicts(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> bool:
         """Detect if there are conflicting requirements in the task description and context"""
@@ -3026,10 +3026,10 @@ The search results have been analyzed for relevance, credibility, and temporal a
             # In a real implementation, this would integrate with search APIs
             
             search_results = {
-                "query": query,
+            "query": query,
                 "results_found": max_results,
-                "search_type": search_type,
-                "temporal_filter": temporal_filter,
+            "search_type": search_type,
+            "temporal_filter": temporal_filter,
                 "timestamp": datetime.now().isoformat(),
                 "results": [
                     {
@@ -3264,7 +3264,7 @@ The search results have been analyzed for relevance, credibility, and temporal a
             
             # Format and return results
             return self._format_execution_result(result, execution_type, language, security_level)
-            
+                
         except Exception as e:
             logger.error(f"❌ Secure execution failed: {str(e)}")
             return f"❌ **Execution Error**\n\nExecution failed: {str(e)}"

@@ -14,7 +14,7 @@ async def test_endpoints():
     """Test all HTTP endpoints to ensure they work."""
     
     base_url = "http://localhost:8000"
-    endpoints = ["/health", "/tools", "/debug", "/mcp"]
+    endpoints = ["/health", "/tools", "/debug", "/tools/list", "/mcp"]
     
     print("🧪 Testing TanukiMCP Maestro HTTP endpoints...")
     print(f"🌐 Base URL: {base_url}")
@@ -26,10 +26,13 @@ async def test_endpoints():
         for endpoint in endpoints:
             url = f"{base_url}{endpoint}"
             print(f"📡 Testing {endpoint}...")
-            
+            # Set Accept header for MCP endpoint
+            headers = {}
+            if endpoint == "/mcp":
+                headers = {"Accept": "text/event-stream"}
             try:
                 start_time = time.time()
-                async with session.get(url) as response:
+                async with session.get(url, headers=headers) as response:
                     duration = (time.time() - start_time) * 1000
                     
                     if response.status == 200:
@@ -59,9 +62,9 @@ async def test_endpoints():
     
     print("🏁 Testing complete!")
 
-async def test_mcp_tools():
-    """Test MCP tools endpoint specifically."""
-    print("\n🔧 Testing MCP tools discovery...")
+async def test_mcp_protocol_tools_method():
+    """Test MCP protocol's tools/list method via POST to /mcp."""
+    print("\n🔧 Testing MCP protocol tools/list method via POST to /mcp...")
     
     base_url = "http://localhost:8000"
     mcp_url = f"{base_url}/mcp"
@@ -79,11 +82,13 @@ async def test_mcp_tools():
                 "params": {}
             }
             
+            # Include Accept header for JSON-RPC calls
+            rpc_headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
             start_time = time.time()
             async with session.post(
                 mcp_url,
                 json=tools_payload,
-                headers={"Content-Type": "application/json"}
+                headers=rpc_headers
             ) as response:
                 duration = (time.time() - start_time) * 1000
                 
@@ -105,7 +110,7 @@ if __name__ == "__main__":
     
     try:
         asyncio.run(test_endpoints())
-        asyncio.run(test_mcp_tools())
+        asyncio.run(test_mcp_protocol_tools_method())
     except KeyboardInterrupt:
         print("\n⛔ Test interrupted by user")
         sys.exit(1)

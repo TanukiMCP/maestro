@@ -10,6 +10,7 @@ import os
 import asyncio
 import sys
 from typing import Dict, Any, Optional, List
+from mcp.types import Tool
 
 # CRITICAL: Pre-define tools as pure dictionaries for INSTANT access (Smithery requirement)
 # NO imports, NO processing, NO conversion - just raw data
@@ -172,27 +173,23 @@ INSTANT_TOOLS_RAW = [
     }
 ]
 
-print(f"✅ Instant tools pre-defined: {len(INSTANT_TOOLS_RAW)} tools available")
+# NEW: Pre-convert tools at module level
+PRE_CONVERTED_MCP_TOOLS = []
+for tool_dict_item in INSTANT_TOOLS_RAW: # Changed iteration variable name to avoid conflict
+    tool_obj = Tool( # Changed variable name to avoid conflict
+        name=tool_dict_item["name"],
+        description=tool_dict_item["description"],
+        inputSchema=tool_dict_item["inputSchema"]
+    )
+    PRE_CONVERTED_MCP_TOOLS.append(tool_obj)
 
 # Lazy loading variables
 _mcp = None
-_instant_tools_converted = None
 
 def get_instant_tools():
-    """Convert raw tools to MCP Tool objects only when needed"""
-    global _instant_tools_converted
-    if _instant_tools_converted is None:
-        from mcp.types import Tool
-        _instant_tools_converted = []
-        for tool_dict in INSTANT_TOOLS_RAW:
-            tool = Tool(
-                name=tool_dict["name"],
-                description=tool_dict["description"],
-                inputSchema=tool_dict["inputSchema"]
-            )
-            _instant_tools_converted.append(tool)
-        print(f"🚀 Converted {len(_instant_tools_converted)} tools to MCP format")
-    return _instant_tools_converted
+    """Return pre-converted MCP Tool objects."""
+    # No more lazy loading or conversion here - directly return the pre-converted list
+    return PRE_CONVERTED_MCP_TOOLS
 
 def get_mcp():
     """Lazy load FastMCP only when needed for actual server operations"""

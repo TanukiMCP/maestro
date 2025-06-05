@@ -30,7 +30,7 @@ async def test_iae_mathematical_analysis():
     """Test IAE with mathematical problem"""
     import server
     
-    result = await server.maestro_iae(
+    result = await server.maestro_iae(None,
         analysis_request="Calculate the time complexity of merge sort and explain the analysis",
         engine_type="computational",
         complexity_level="moderate"
@@ -46,7 +46,7 @@ async def test_iae_logical_reasoning():
     """Test IAE with logical reasoning problem"""
     import server
     
-    result = await server.maestro_iae(
+    result = await server.maestro_iae(None,
         analysis_request="Analyze the logical fallacies in this argument: 'All successful people wake up early, therefore waking up early causes success'",
         engine_type="logical",
         complexity_level="moderate"
@@ -65,7 +65,7 @@ async def test_iae_different_engines():
     analysis_request = "Optimize a database query with multiple joins"
     
     for engine in ["general", "computational", "analytical"]:
-        result = await server.maestro_iae(
+        result = await server.maestro_iae(None,
             analysis_request=analysis_request,
             engine_type=engine,
             complexity_level="moderate"
@@ -84,7 +84,7 @@ async def test_iae_complexity_levels():
     request = "Explain REST API design principles"
     
     for complexity in ["simple", "moderate", "complex"]:
-        result = await server.maestro_iae(
+        result = await server.maestro_iae(None,
             analysis_request=request,
             complexity_level=complexity
         )

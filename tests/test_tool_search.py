@@ -32,7 +32,7 @@ async def test_search_technical_query():
     """Test search with technical programming query"""
     import server
     
-    result = await server.maestro_search(
+    result = await server.maestro_search(None,
         query="Python asyncio best practices 2024",
         max_results=5,
         search_type="comprehensive",
@@ -49,7 +49,7 @@ async def test_search_current_events():
     """Test search for current events and trends"""
     import server
     
-    result = await server.maestro_search(
+    result = await server.maestro_search(None,
         query="latest developments in AI development tools",
         max_results=8,
         temporal_filter="recent",
@@ -67,7 +67,7 @@ async def test_search_error_handling():
     import server
     
     # Empty query
-    result = await server.maestro_search(
+    result = await server.maestro_search(None,
         query="",
         max_results=5
     )
@@ -84,7 +84,7 @@ async def test_search_different_formats():
     query = "machine learning frameworks comparison"
     
     for format_type in ["summary", "detailed", "structured"]:
-        result = await server.maestro_search(
+        result = await server.maestro_search(None,
             query=query,
             max_results=3,
             output_format=format_type

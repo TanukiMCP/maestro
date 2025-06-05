@@ -46,13 +46,13 @@ async def test_get_available_engines():
     import server
     
     # Basic engines query
-    result = await server.get_available_engines()
+    result = await server.get_available_engines(None)
     assert isinstance(result, str)
     assert len(result) > 50
     print(f"✅ Basic engines query: {len(result)} characters")
     
     # Detailed engines query
-    result = await server.get_available_engines(detailed=True, include_status=True)
+    result = await server.get_available_engines(None, detailed=True, include_status=True)
     assert isinstance(result, str)
     assert len(result) > 100
     print(f"✅ Detailed engines query: {len(result)} characters")
@@ -64,6 +64,7 @@ async def test_iae_discovery():
     import server
     
     result = await server.maestro_iae_discovery(
+        None,
         discovery_type="comprehensive",
         target_domain="machine_learning",
         depth_level="moderate"
@@ -80,6 +81,7 @@ async def test_tool_selection():
     import server
     
     result = await server.maestro_tool_selection(
+        None,
         task_context="I need to analyze large datasets and create visualizations",
         available_tools=["pandas", "matplotlib", "seaborn"],
         selection_criteria="optimal"
@@ -96,6 +98,7 @@ async def test_collaboration_response():
     import server
     
     result = await server.maestro_collaboration_response(
+        None,
         collaboration_id="test_collab_123",
         responses={"approach": "use_microservices", "timeline": "2_weeks"},
         additional_guidance={"preferred_tech": "Python"},
@@ -113,6 +116,7 @@ async def test_scrape():
     import server
     
     result = await server.maestro_scrape(
+        None,
         url="https://example.com",
         extraction_type="text",
         content_filter="relevant"
@@ -129,6 +133,7 @@ async def test_execute():
     import server
     
     result = await server.maestro_execute(
+        None,
         execution_type="analysis",
         content="Calculate the average of [1, 2, 3, 4, 5]",
         language="python"
@@ -145,6 +150,7 @@ async def test_temporal_context():
     import server
     
     result = await server.maestro_temporal_context(
+        None,
         query="What are the latest trends in web development?",
         time_scope="current",
         context_depth="moderate"
@@ -161,6 +167,7 @@ async def test_error_handler():
     import server
     
     result = await server.maestro_error_handler(
+        None,
         error_context="Python ImportError: No module named 'pandas'",
         error_type="dependency",
         recovery_mode="automatic"
@@ -188,7 +195,7 @@ async def test_edge_cases():
     
     for tool_name, kwargs in tools_and_minimal_inputs:
         tool_func = getattr(server, tool_name)
-        result = await tool_func(**kwargs)
+        result = await tool_func(None, **kwargs)
         
         assert isinstance(result, str)
         assert len(result) > 10  # Should provide some response

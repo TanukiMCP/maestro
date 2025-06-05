@@ -43,7 +43,7 @@ class ComputationalTools:
         # self._numpy_available = None # Removed for direct import check
         
         logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
-    
+
     def _ensure_numpy(self):
         """Lazy import numpy only when actually needed."""
         if self._numpy is None:
@@ -524,7 +524,7 @@ class ComputationalTools:
                 result.append(complex(element, 0))
         return result
     
-    async def get_available_engines(self, detailed: bool = False, include_status: bool = True) -> str:
+    async def get_available_engines(self, ctx, detailed: bool = False, include_status: bool = True) -> str:
         """
         Get information about available computational engines.
         
@@ -587,7 +587,6 @@ class ComputationalTools:
                 return self._format_detailed_engines_info(engines_info, include_status)
             else:
                 return self._format_concise_engines_info(engines_info, include_status)
-                
         except Exception as e:
             logger.error(f"❌ Failed to get available engines: {str(e)}")
             return f"❌ **Engine Information Error**\n\nFailed to retrieve engine information: {str(e)}"
@@ -688,19 +687,26 @@ class ComputationalTools:
             work = f"Result formatting error: {str(e)}\nRaw result: {str(result)}"
         return f"# 🧠 {title} - IAE Computation Result\n\n## Results\n{work}\n\n## Show Your Work\nAll intermediate steps, formulas, and reasoning are included above. Please review for manual validation." 
 
-    async def intelligence_amplification_engine(self, analysis_request: str, engine_type: str = "general", complexity_level: str = "moderate", output_format: str = "detailed") -> str:
+    async def intelligence_amplification_engine(self, ctx, analysis_request: str, engine_type: str = "auto", data: Any = None, parameters: Dict[str, Any] = None) -> str:
         """
         Intelligence Amplification Engine - Gateway to computational intelligence methods.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             analysis_request: Description of the analysis to perform
-            engine_type: Type of engine to use ("general", "knowledge_network", "cognitive_load", "concept_clustering")
-            complexity_level: Complexity level ("simple", "moderate", "complex")
-            output_format: Output format ("detailed", "concise")
-            
+            engine_type: Type of engine to use ("auto", "knowledge_network", "cognitive_load", "concept_clustering")
+            data: Optional input data for the engine
+            parameters: Optional engine-specific parameters dictionary that may include:
+                - complexity_level: Complexity level ("simple", "moderate", "complex")
+                - output_format: Output format ("detailed", "concise")
         Returns:
             Formatted analysis result string
         """
+        parameters = parameters or {}
+        # Extract complexity_level and output_format from parameters if provided
+        complexity_level = parameters.get("complexity_level", "moderate")
+        output_format = parameters.get("output_format", "detailed")
+        
         try:
             logger.info(f"🧠 Intelligence Amplification Engine called: {engine_type}")
             
@@ -732,7 +738,7 @@ class ComputationalTools:
                 result = engine.analyze_concept_clustering(concept_features, concept_names, n_clusters)
                 title = "Concept Clustering Analysis"
                 
-            else:  # engine_type == "general" or fallback
+            else:  # engine_type == "auto" or fallback
                 # For general analysis, try to determine the best method based on content
                 if any(keyword in analysis_request.lower() for keyword in ["network", "relationship", "connection", "graph"]):
                     concepts, relationships = self._parse_knowledge_network_request(analysis_request)

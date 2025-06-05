@@ -50,7 +50,7 @@ async def test_orchestrate_simple_task():
     }
     
     # Execute the tool as it would be called in production
-    result = await server.maestro_orchestrate(
+    result = await server.maestro_orchestrate(None,
         task_description=task,
         context=context,
         complexity_level="moderate",
@@ -80,7 +80,7 @@ async def test_orchestrate_complex_workflow():
         "deliverables": ["API specification", "architecture diagram concepts", "implementation recommendations"]
     }
     
-    result = await server.maestro_orchestrate(
+    result = await server.maestro_orchestrate(None,
         task_description=task,
         context=context,
         complexity_level="high",
@@ -105,7 +105,7 @@ async def test_orchestrate_with_collaboration():
     task = "Help me with the thing"
     context = {"vague_request": True}
     
-    result = await server.maestro_orchestrate(
+    result = await server.maestro_orchestrate(None,
         task_description=task,
         context=context,
         enable_collaboration_fallback=True
@@ -124,7 +124,7 @@ async def test_orchestrate_error_handling():
     import server
     
     # Test with empty task
-    result = await server.maestro_orchestrate(
+    result = await server.maestro_orchestrate(None,
         task_description="",
         context={}
     )
@@ -134,7 +134,7 @@ async def test_orchestrate_error_handling():
     print("✅ Empty task handled gracefully")
     
     # Test with None values  
-    result = await server.maestro_orchestrate(
+    result = await server.maestro_orchestrate(None,
         task_description="Test task",
         context=None
     )
@@ -152,7 +152,7 @@ async def test_orchestrate_different_complexity_levels():
     
     # Test different complexity levels
     for complexity in ["minimal", "moderate", "high", "maximum"]:
-        result = await server.maestro_orchestrate(
+        result = await server.maestro_orchestrate(None,
             task_description=base_task,
             context={"learning_level": "intermediate"},
             complexity_level=complexity

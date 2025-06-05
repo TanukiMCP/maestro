@@ -1217,6 +1217,38 @@ Parameters:
         
         return engines
 
+    async def tool_selection(self, ctx, task_description: str, available_tools: List[str] = None, constraints: Dict[str, Any] = None) -> str:
+        """
+        Intelligent tool selection and recommendation based on task analysis.
+        
+        Args:
+            ctx: MCP context (unused, but required for signature compatibility)
+            task_description: Description of the task to analyze
+            available_tools: List of available tools to consider
+            constraints: Optional constraints for tool selection
+            
+        Returns:
+            Formatted tool selection recommendations
+        """
+        try:
+            logger.info(f"🎯 Analyzing tool selection for: {task_description[:100]}...")
+            
+            # Use the existing implementation by converting parameters
+            from mcp.types import TextContent
+            
+            arguments = {
+                "request_description": task_description,
+                "available_context": {"available_tools": available_tools or []},
+                "precision_requirements": constraints or {}
+            }
+            
+            result = await self._handle_tool_selection(arguments)
+            return result[0].text if result and result[0].text else "Error in tool selection"
+            
+        except Exception as e:
+            logger.error(f"❌ Tool selection failed: {str(e)}")
+            return f"❌ **Tool Selection Error**\n\nFailed to analyze tools: {str(e)}"
+            
     async def _handle_tool_selection(self, arguments: dict) -> List[TextContent]:
         """Handle tool selection recommendations."""
         try:
@@ -2967,6 +2999,7 @@ The search results have been analyzed for relevance, credibility, and temporal a
     # ============================================================================
     
     async def enhanced_search(self,
+                             ctx,
                              query: str,
                              max_results: int = 10,
                              search_type: str = "comprehensive",
@@ -2976,6 +3009,7 @@ The search results have been analyzed for relevance, credibility, and temporal a
         Enhanced search with temporal filtering and comprehensive analysis.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             query: Search query
             max_results: Maximum number of results to return
             search_type: Type of search ("comprehensive", "focused", "exploratory")
@@ -3033,11 +3067,12 @@ The search results have been analyzed for relevance, credibility, and temporal a
             logger.error(f"❌ Enhanced search failed: {str(e)}")
             return f"❌ **Enhanced Search Error**\n\nSearch failed: {str(e)}"
 
-    async def intelligent_scrape(self, url: str, extraction_type: str = "text", content_filter: str = "relevant", output_format: str = "structured") -> str:
+    async def intelligent_scrape(self, ctx, url: str, extraction_type: str = "text", content_filter: str = "relevant", output_format: str = "structured") -> str:
         """
         Intelligent web scraping with content extraction and filtering.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             url: URL to scrape
             extraction_type: Type of extraction ("text", "metadata", "combined")
             content_filter: Content filtering ("all", "relevant", "summary")
@@ -3190,11 +3225,12 @@ The search results have been analyzed for relevance, credibility, and temporal a
             
             return output
 
-    async def secure_execute(self, execution_type: str = "code", content: str = "", language: str = "python", security_level: str = "standard", timeout: int = 30) -> str:
+    async def secure_execute(self, ctx, execution_type: str = "code", content: str = "", language: str = "python", security_level: str = "standard", timeout: int = 30) -> str:
         """
         Secure code execution with sandboxing and resource limits.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             execution_type: Type of execution ("code", "script", "command")
             content: Code or command content to execute
             language: Programming language ("python", "javascript", "shell")
@@ -3468,11 +3504,12 @@ The search results have been analyzed for relevance, credibility, and temporal a
         
         return output
 
-    async def temporal_reasoning(self, query: str, time_scope: str = "current", context_depth: str = "moderate", currency_check: bool = True) -> str:
+    async def temporal_reasoning(self, ctx, query: str, time_scope: str = "current", context_depth: str = "moderate", currency_check: bool = True) -> str:
         """
         Temporal reasoning with time-aware analysis and currency validation.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             query: Query requiring temporal analysis
             time_scope: Time scope ("historical", "current", "future", "relative")
             context_depth: Context depth ("minimal", "moderate", "comprehensive")
@@ -3773,11 +3810,12 @@ The search results have been analyzed for relevance, credibility, and temporal a
         
         return output
 
-    async def intelligent_error_handler(self, error_context: str, error_type: str = "general", recovery_mode: str = "automatic", learning_enabled: bool = True) -> str:
+    async def intelligent_error_handler(self, ctx, error_context: str, error_type: str = "general", recovery_mode: str = "automatic", learning_enabled: bool = True) -> str:
         """
         Intelligent error handling with pattern recognition and recovery suggestions.
         
         Args:
+            ctx: MCP context (unused, but required for signature compatibility)
             error_context: Context and details of the error
             error_type: Type of error ("general", "code", "reasoning", "data")
             recovery_mode: Recovery mode ("automatic", "guided", "analysis_only")

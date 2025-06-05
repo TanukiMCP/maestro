@@ -1,57 +1,58 @@
 #!/usr/bin/env python3
 """
-TanukiMCP Maestro - Production FastMCP Server for Smithery.ai
-Optimized for instant tool discovery (<100ms) and production deployment
-Protocol Version: 2024-11-05 | Smithery.ai Compatible
+TanukiMCP Maestro - Production-Ready MCP Server
+
+Fast-loading MCP server with 11 production tools optimized for Smithery.ai deployment.
+All heavy imports are deferred to ensure <100ms tool discovery.
 """
 
-import asyncio
-import logging
 import os
+import asyncio
 from typing import Dict, Any, Optional, List
 
-# Import FastMCP for proper MCP protocol implementation
-from mcp.server.fastmcp import FastMCP
-
-# Import static tool definitions for instant discovery
-from static_tools_dict import STATIC_TOOLS_DICT
-
-# Production logging configuration
-log_level = logging.INFO if os.getenv("DEBUG_MODE", "false").lower() == "true" else logging.WARNING
-logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Only import FastMCP - all other imports are deferred
+from fastmcp import FastMCP
 
 # Initialize FastMCP server for instant tool registration
-mcp = FastMCP("TanukiMCP Maestro", tools=STATIC_TOOLS_DICT)
+mcp = FastMCP("TanukiMCP Maestro")
 
-# Lazy loading for tool implementations (only when tools are called)
-_tool_handlers = None
+# Health check endpoint for Smithery.ai deployment
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    """Health check endpoint for load balancers and container orchestration."""
+    from starlette.responses import PlainTextResponse
+    return PlainTextResponse("ok", status_code=200)
+
+# Global variables for lazy loading
+_maestro_tools = None
 _computational_tools = None
 
-def get_tool_handlers():
-    """Lazy load tool handlers only when needed"""
-    global _tool_handlers
-    if _tool_handlers is None:
-        from src.maestro_tools import MaestroTools
-        _tool_handlers = MaestroTools()
-    return _tool_handlers
+def get_maestro_tools():
+    """Lazy load maestro tools only when needed."""
+    global _maestro_tools
+    if _maestro_tools is None:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent / "src"))
+        from maestro_tools import MaestroTools
+        _maestro_tools = MaestroTools()
+    return _maestro_tools
 
 def get_computational_tools():
-    """Lazy load computational tools only when needed"""
+    """Lazy load computational tools only when needed."""
     global _computational_tools
     if _computational_tools is None:
-        from src.computational_tools import ComputationalTools
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent / "src"))
+        from computational_tools import ComputationalTools
         _computational_tools = ComputationalTools()
     return _computational_tools
 
-# FastMCP Tool Decorators - Instant Registration for Smithery.ai
-# Tools are registered at import time for <100ms discovery
-
+# Tool 1: Maestro Orchestration
 @mcp.tool()
 async def maestro_orchestrate(
+    ctx,
     task_description: str,
     context: Optional[Dict[str, Any]] = None,
     complexity_level: str = "moderate",
@@ -64,129 +65,132 @@ async def maestro_orchestrate(
     enable_collaboration_fallback: bool = True
 ) -> str:
     """
-    Meta-reasoning orchestration with multi-agent validation and iterative refinement.
+    Enhanced meta-reasoning orchestration with collaborative fallback.
     
-    Provides 3-5x LLM capability amplification through intelligent task decomposition,
-    specialized agent coordination, and adaptive workflow management.
+    Amplifies LLM capabilities 3-5x through multi-agent validation, iterative refinement,
+    and quality control. Supports complex reasoning, research, analysis, and problem-solving
+    with operator profiles and dynamic workflow planning.
     """
-    tools = get_tool_handlers()
-    # Create a simple orchestration without LLM dependencies
-    return await tools.orchestrate_task_simple(
-        task_description=task_description, context=context or {},
-        complexity_level=complexity_level, quality_threshold=quality_threshold,
-        resource_level=resource_level, reasoning_focus=reasoning_focus,
-        validation_rigor=validation_rigor, max_iterations=max_iterations,
+    tools = get_maestro_tools()
+    return await tools.orchestrate_task(
+        ctx,
+        task_description=task_description,
+        context=context or {},
+        complexity_level=complexity_level,
+        quality_threshold=quality_threshold,
+        resource_level=resource_level,
+        reasoning_focus=reasoning_focus,
+        validation_rigor=validation_rigor,
+        max_iterations=max_iterations,
         domain_specialization=domain_specialization,
         enable_collaboration_fallback=enable_collaboration_fallback
     )
 
+# Tool 2: Collaboration Response Handler
 @mcp.tool()
-async def maestro_iae(
-    analysis_request: str,
-    engine_type: str = "general",
-    complexity_level: str = "moderate",
-    output_format: str = "detailed"
+async def maestro_collaboration_response(
+    ctx,
+    collaboration_id: str,
+    responses: Dict[str, Any],
+    approval_status: str,
+    additional_guidance: str = ""
 ) -> str:
     """
-    Intelligence Amplification Engine for computational analysis and problem-solving.
+    Handle user responses during collaborative workflows.
     
-    Provides enhanced reasoning capabilities through specialized computational engines
-    optimized for mathematical, logical, and analytical tasks.
+    Processes user input and continues orchestration with provided guidance.
+    """
+    tools = get_maestro_tools()
+    return await tools.handle_collaboration_response(
+        ctx,
+        collaboration_id=collaboration_id,
+        responses=responses,
+        approval_status=approval_status,
+        additional_guidance=additional_guidance
+    )
+
+# Tool 3: IAE Discovery
+@mcp.tool()
+async def maestro_iae_discovery(
+    ctx,
+    task_type: str,
+    requirements: Optional[List[str]] = None,
+    complexity: str = "medium"
+) -> str:
+    """
+    Discover and recommend optimal Intelligence Amplification Engine (IAE) based on task requirements.
+    
+    Analyzes computational needs and suggests best engine configurations.
+    """
+    tools = get_maestro_tools()
+    return await tools.iae_discovery(
+        ctx,
+        task_type=task_type,
+        requirements=requirements or [],
+        complexity=complexity
+    )
+
+# Tool 4: Tool Selection
+@mcp.tool()
+async def maestro_tool_selection(
+    ctx,
+    task_description: str,
+    available_tools: Optional[List[str]] = None,
+    constraints: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Intelligent tool selection and recommendation based on task analysis.
+    
+    Provides optimal tool combinations and usage strategies.
+    """
+    tools = get_maestro_tools()
+    return await tools.tool_selection(
+        ctx,
+        task_description=task_description,
+        available_tools=available_tools or [],
+        constraints=constraints or {}
+    )
+
+# Tool 5: Intelligence Amplification Engine
+@mcp.tool()
+async def maestro_iae(
+    ctx,
+    analysis_request: str,
+    engine_type: str = "auto",
+    data: Optional[Any] = None,
+    parameters: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Intelligence Amplification Engine for advanced computational analysis.
+    
+    Supports mathematical, quantum physics, data analysis, language enhancement,
+    and code quality engines.
     """
     comp_tools = get_computational_tools()
     return await comp_tools.intelligence_amplification_engine(
-        analysis_request=analysis_request, engine_type=engine_type,
-        complexity_level=complexity_level, output_format=output_format
+        ctx,
+        analysis_request=analysis_request,
+        engine_type=engine_type,
+        data=data,
+        parameters=parameters or {}
     )
 
+# Tool 6: Available Engines
 @mcp.tool()
 async def get_available_engines(
-    detailed: bool = False,
-    include_status: bool = True
+    ctx,
+    detailed: bool = False
 ) -> str:
     """
-    Get information about available computational engines and their capabilities.
-    
-    Returns comprehensive details about engine types, specializations, and current status
-    for optimal task routing and resource allocation.
+    Get list of available Intelligence Amplification Engines and their capabilities.
     """
     comp_tools = get_computational_tools()
-    return await comp_tools.get_available_engines(
-        detailed=detailed, include_status=include_status
-    )
+    return await comp_tools.get_available_engines(ctx, detailed=detailed)
 
-@mcp.tool()
-async def maestro_iae_discovery(
-    discovery_type: str = "comprehensive",
-    target_domain: str = "",
-    depth_level: str = "moderate"
-) -> str:
-    """
-    Intelligent Agent Engine discovery for specialized task routing.
-    
-    Discovers and evaluates available agents and engines for optimal task assignment
-    based on domain expertise and capability matching.
-    """
-    tools = get_tool_handlers()
-    result = await tools._handle_iae_discovery({
-        "discovery_type": discovery_type,
-        "target_domain": target_domain,
-        "depth_level": depth_level
-    })
-    # Extract text from TextContent if it's a list
-    if isinstance(result, list) and len(result) > 0:
-        return result[0].text
-    return str(result)
-
-@mcp.tool()
-async def maestro_tool_selection(
-    task_context: str,
-    available_tools: Optional[List[str]] = None,
-    selection_criteria: str = "optimal",
-    confidence_threshold: float = 0.7
-) -> str:
-    """
-    Intelligent tool selection and routing for complex task execution.
-    
-    Analyzes task requirements and selects optimal tools and execution strategies
-    for maximum efficiency and quality outcomes.
-    """
-    tools = get_tool_handlers()
-    result = await tools._handle_tool_selection({
-        "request_description": task_context,  # Fix parameter name mismatch
-        "available_tools": available_tools or [],
-        "selection_criteria": selection_criteria,
-        "confidence_threshold": confidence_threshold
-    })
-    # Extract text from TextContent if it's a list
-    if isinstance(result, list) and len(result) > 0:
-        return result[0].text
-    return str(result)
-
-@mcp.tool()
-async def maestro_collaboration_response(
-    collaboration_id: str,
-    responses: Dict[str, Any],
-    additional_guidance: Optional[Dict[str, Any]] = None,
-    approval_status: str = "approved",
-    confidence_level: float = 1.0
-) -> str:
-    """
-    Handle collaborative responses and multi-agent coordination.
-    
-    Processes responses from multiple agents and coordinates collaborative workflows
-    for complex task execution and validation.
-    """
-    tools = get_tool_handlers()
-    return await tools.handle_collaboration_response(
-        collaboration_id=collaboration_id, responses=responses,
-        additional_context=additional_guidance or {},
-        user_preferences={}, approval_status=approval_status,
-        confidence_level=confidence_level
-    )
-
+# Tool 7: Enhanced Search
 @mcp.tool()
 async def maestro_search(
+    ctx,
     query: str,
     max_results: int = 10,
     search_type: str = "comprehensive",
@@ -194,38 +198,47 @@ async def maestro_search(
     output_format: str = "detailed"
 ) -> str:
     """
-    Enhanced web search with LLM analysis and intelligent result processing.
+    Enhanced web search with LLM-powered analysis and filtering.
     
-    Performs comprehensive web searches with intelligent filtering, analysis,
-    and structured result presentation for research and information gathering.
+    Provides intelligent search results with temporal filtering and result formatting.
     """
-    tools = get_tool_handlers()
+    tools = get_maestro_tools()
     return await tools.enhanced_search(
-        query=query, max_results=max_results, search_type=search_type,
-        temporal_filter=temporal_filter, output_format=output_format
+        ctx,
+        query=query,
+        max_results=max_results,
+        search_type=search_type,
+        temporal_filter=temporal_filter,
+        output_format=output_format
     )
 
+# Tool 8: Intelligent Scraping
 @mcp.tool()
 async def maestro_scrape(
+    ctx,
     url: str,
     extraction_type: str = "text",
     content_filter: str = "relevant",
     output_format: str = "structured"
 ) -> str:
     """
-    Intelligent web scraping with content extraction and analysis.
+    Intelligent web scraping with content extraction and filtering.
     
-    Extracts and processes web content with intelligent filtering and structuring
-    for data collection and analysis tasks.
+    Extracts and processes web content with smart filtering and formatting.
     """
-    tools = get_tool_handlers()
+    tools = get_maestro_tools()
     return await tools.intelligent_scrape(
-        url=url, extraction_type=extraction_type,
-        content_filter=content_filter, output_format=output_format
+        ctx,
+        url=url,
+        extraction_type=extraction_type,
+        content_filter=content_filter,
+        output_format=output_format
     )
 
+# Tool 9: Secure Execution
 @mcp.tool()
 async def maestro_execute(
+    ctx,
     execution_type: str = "code",
     content: str = "",
     language: str = "python",
@@ -233,63 +246,87 @@ async def maestro_execute(
     timeout: int = 30
 ) -> str:
     """
-    Secure code execution with validation and safety checks.
+    Secure code execution with sandboxing and safety controls.
     
-    Executes code and commands in a secure environment with comprehensive
-    validation, error handling, and safety measures.
+    Executes code in isolated environments with comprehensive security measures.
     """
-    tools = get_tool_handlers()
+    tools = get_maestro_tools()
     return await tools.secure_execute(
-        execution_type=execution_type, content=content, language=language,
-        security_level=security_level, timeout=timeout
+        ctx,
+        execution_type=execution_type,
+        content=content,
+        language=language,
+        security_level=security_level,
+        timeout=timeout
     )
 
+# Tool 10: Temporal Reasoning
 @mcp.tool()
 async def maestro_temporal_context(
+    ctx,
     query: str,
     time_scope: str = "current",
     context_depth: str = "moderate",
     currency_check: bool = True
 ) -> str:
     """
-    Time-aware reasoning and contextual analysis.
+    Advanced temporal reasoning and context analysis.
     
-    Provides temporal context analysis with currency assessment and time-sensitive
-    reasoning for accurate and up-to-date information processing.
+    Analyzes temporal dependencies and provides time-aware insights.
     """
-    tools = get_tool_handlers()
+    tools = get_maestro_tools()
     return await tools.temporal_reasoning(
-        query=query, time_scope=time_scope, context_depth=context_depth,
+        ctx,
+        query=query,
+        time_scope=time_scope,
+        context_depth=context_depth,
         currency_check=currency_check
     )
 
+# Tool 11: Error Handler
 @mcp.tool()
 async def maestro_error_handler(
+    ctx,
     error_context: str,
     error_type: str = "general",
     recovery_mode: str = "automatic",
     learning_enabled: bool = True
 ) -> str:
     """
-    Intelligent error analysis and recovery with pattern recognition.
+    Intelligent error analysis and recovery system.
     
-    Analyzes errors, identifies patterns, and provides intelligent recovery
-    strategies with learning capabilities for improved future handling.
+    Analyzes errors, suggests fixes, and learns from patterns for improved handling.
     """
-    tools = get_tool_handlers()
+    tools = get_maestro_tools()
     return await tools.intelligent_error_handler(
-        error_context=error_context, error_type=error_type,
-        recovery_mode=recovery_mode, learning_enabled=learning_enabled
+        ctx,
+        error_context=error_context,
+        error_type=error_type,
+        recovery_mode=recovery_mode,
+        learning_enabled=learning_enabled
     )
 
 # Production server startup
 if __name__ == "__main__":
-    print("🚀 TanukiMCP Maestro - FASTMCP PRODUCTION SERVER")
-    print("⚡ Discovery: INSTANT (<100ms) via FastMCP decorators")
+    print("🚀 TanukiMCP Maestro - PRODUCTION SERVER")
+    print("⚡ Discovery: INSTANT (<100ms) via FastMCP 2.0")
     print("🛠️ Tools: 11 production-grade tools")
     print("🌐 Protocol: MCP 2024-11-05")
     print("☁️ Smithery.ai: Compatible")
     print("🎯 Ready for deployment!")
     
-    # Run FastMCP server with standard MCP transport for Smithery.ai
-    mcp.run() 
+    # Get port from environment variable (Smithery.ai requirement)
+    port = int(os.getenv("PORT", 8000))
+    host = "0.0.0.0"  # Required for container deployment
+    
+    print(f"🌐 Starting HTTP server on {host}:{port}")
+    print(f"📡 MCP endpoint: http://{host}:{port}/mcp")
+    print(f"🏥 Health check: http://{host}:{port}/health")
+    
+    # Run FastMCP server with streamable-http transport for Smithery.ai
+    mcp.run(
+        transport="streamable-http",
+        host=host,
+        port=port,
+        path="/mcp"
+    ) 

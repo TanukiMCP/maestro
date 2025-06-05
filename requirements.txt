@@ -1,11 +1,12 @@
 # MCP Framework - Latest Official Python SDK with FastMCP (2024-11-05 protocol)
 mcp>=1.9.2
-fastmcp>=0.9.0
+fastmcp>=2.6.0
 
 # Production web server with optimizations (for HTTP endpoints if needed)
 uvicorn[standard]>=0.24.0
 fastapi>=0.104.0
 httptools>=0.6.0
+starlette>=0.27.0
 
 # LangChain Orchestration  
 langchain

@@ -6,7 +6,7 @@ startCommand:
   type: "http"
   command: "python server.py"
   healthCheck:
-    path: "/health"
+    path: "/mcp"
     intervalSeconds: 30
     timeoutSeconds: 5
   configSchema:

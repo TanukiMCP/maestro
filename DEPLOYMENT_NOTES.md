@@ -112,3 +112,58 @@ The server is ready for container deployment with:
 - Non-root user for security
 - Optimized dependency loading
 - Production-ready configuration 
+
+## Deployment Strategy for Smithery.ai
+
+**Final Configuration (After multiple attempts):**
+
+1.  **Primary Transport**: The TanukiMCP Maestro server is configured to use **`stdio` transport exclusively**.
+    *   **File**: `server.py`
+    *   **Rationale**: Smithery.ai documentation states: "If you deploy a STDIO server, we will wrap your server and proxy it over HTTP for you." This is the most robust way to ensure compatibility, removing complexities of HTTP session management, specific endpoint requirements for scanning, or potential mismatches with `fastmcp`'s `streamable-http` transport and Smithery's scanner/proxy.
+    *   The `FastMCP` instance in `server.py` is started with `mcp.run(transport="stdio")`.
+    *   All custom HTTP endpoints (`/health`, `/tools`, `/debug`, `/tools/list`) have been **removed** from `server.py` as they are not relevant when relying on Smithery's STDIO wrapping.
+
+2.  **Tool Discovery**: Smithery.ai will perform tool discovery by communicating with the `stdio` server through its WebSocket proxy. The standard MCP `tools/list` method will be used by Smithery's scanner.
+    *   Our server uses `STATIC_TOOLS_DICT` for instant tool loading, so discovery via the proxied `stdio` connection will be fast.
+
+3.  **Dockerfile**: `Dockerfile` remains the same, ensuring Python 3.11-slim, copying necessary files, installing dependencies from `requirements.txt`, and running `server.py`.
+
+4.  **`requirements.txt`**: Contains all necessary dependencies, including `fastmcp>=2.6.0`.
+
+**Why this approach?**
+
+*   **Simplicity**: The server's only job is to be a compliant `stdio` MCP server. Smithery takes on the responsibility of web exposure.
+*   **Robustness**: Avoids potential issues with HTTP header mismatches, session handling differences, or specific path expectations for tool scanning between `fastmcp` and Smithery's infrastructure.
+*   **Direct Compliance**: Directly follows Smithery's documented capability for `stdio` servers.
+
+**Previous Failed Approaches & Learnings:**
+
+*   **Initial `streamable-http` with `/mcp` and custom `/tools/list`**: Despite a dedicated `/tools/list` GET endpoint for easy scanning, Smithery still reported "TypeError: fetch failed". This suggests that either their scanner was still trying to use `/mcp` in a way that was incompatible with `fastmcp`'s session requirements for that path, or there were other underlying HTTP/network issues in their environment.
+*   **Various HTTP transport configurations (`sse`, `ws` on different paths)**: These were based on misunderstandings of Smithery's requirements and `fastmcp`'s capabilities. `fastmcp`'s `run()` method doesn't support a generic "http" transport, and SSE is not supported by Smithery for hosting.
+*   **Slow tool discovery**: Initially resolved by static tool loading.
+
+This `stdio`-first approach is the most direct and simplified configuration to meet Smithery.ai's deployment model.
+
+**To Test Locally (Simulating STDIO interaction - conceptual):**
+
+Since the server now runs in `stdio` mode, you cannot directly test it with `curl` or a web browser. Local testing would involve running `python server.py` and then using a separate MCP client script that communicates over `stdio`.
+
+Example of how one might interact with an STDIO MCP server (from `mcp-py` docs, adapted):
+
+```python
+# client_stdio.py (conceptual - NOT PART OF THIS REPO)
+import asyncio
+from mcp.client.stdio import StdioClient
+
+async def main():
+    client = StdioClient(command=["python", "server.py"]) # Path to your server script
+    async with client.connect():
+        print("Attempting to list tools...")
+        tools = await client.tools.list()
+        print(f"Tools from STDIO server: {tools}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+This type of client is how Smithery's wrapper would interact with our server before exposing it over WebSockets. 

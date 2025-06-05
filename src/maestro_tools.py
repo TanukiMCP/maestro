@@ -161,7 +161,7 @@ class MaestroTools:
         self._workflow_registry = {}
         self._validation_templates = self._initialize_validation_templates()
         
-        logger.info("🎭 MaestroTools initialized with enhanced orchestration capabilities")
+        # logger.info("🎭 MaestroTools initialized with enhanced orchestration capabilities") # Commented out to prevent logging during initialization for Smithery
     
     def _initialize_agent_profiles(self) -> Dict[str, AgentProfile]:
         """Initialize specialized agent profiles for multi-agent orchestration"""
@@ -1875,12 +1875,12 @@ The enhanced orchestration will resume automatically using the collaborative fal
     async def _assess_ambiguity(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> float:
         """Assess the ambiguity of a task description using deterministic analysis"""
         # Use only programmatic assessment - no LLM calls needed
-            return self._programmatic_ambiguity_assessment(task_description, context)
+        return self._programmatic_ambiguity_assessment(task_description, context)
 
     async def _assess_context_completeness(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> float:
         """Assess the completeness of the task context using deterministic analysis"""
         # Use only programmatic assessment - no LLM calls needed
-            return self._programmatic_completeness_assessment(task_description, context)
+        return self._programmatic_completeness_assessment(task_description, context)
 
     async def _detect_requirement_conflicts(self, ctx: Context, task_description: str, context: Dict[str, Any]) -> bool:
         """Detect if there are conflicting requirements in the task description and context"""

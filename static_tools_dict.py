@@ -5,12 +5,14 @@ No imports, no dependencies, no side effects - designed for instant tool discove
 This is what Smithery needs for successful deployment.
 """
 
+from mcp.types import Tool
+
 # Pure dictionary definitions - ZERO imports, ZERO side effects
 STATIC_TOOLS_DICT = [
-    {
-        "name": "maestro_orchestrate",
-        "description": "Enhanced meta-reasoning orchestration with collaborative fallback. Amplifies LLM capabilities 3-5x through multi-agent validation, iterative refinement, and quality control. Supports complex reasoning, research, analysis, and problem-solving with operator profiles and dynamic workflow planning.",
-        "inputSchema": {
+    Tool(
+        name="maestro_orchestrate",
+        description="Enhanced meta-reasoning orchestration with collaborative fallback. Amplifies LLM capabilities 3-5x through multi-agent validation, iterative refinement, and quality control. Supports complex reasoning, research, analysis, and problem-solving with operator profiles and dynamic workflow planning.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "task_description": {
@@ -73,11 +75,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_description"]
         }
-    },
-    {
-        "name": "maestro_collaboration_response",
-        "description": "Handle user responses during collaborative workflows. Processes user input and continues orchestration with provided guidance.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_collaboration_response",
+        description="Handle user responses during collaborative workflows. Processes user input and continues orchestration with provided guidance.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "collaboration_id": {
@@ -101,11 +103,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["collaboration_id", "responses", "approval_status"]
         }
-    },
-    {
-        "name": "maestro_iae_discovery",
-        "description": "Discover and recommend optimal Intelligence Amplification Engine (IAE) based on task requirements. Analyzes computational needs and suggests best engine configurations.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_iae_discovery",
+        description="Discover and recommend optimal Intelligence Amplification Engine (IAE) based on task requirements. Analyzes computational needs and suggests best engine configurations.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "task_type": {
@@ -125,11 +127,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_type"]
         }
-    },
-    {
-        "name": "maestro_tool_selection",
-        "description": "Intelligent tool selection and recommendation based on task analysis. Provides optimal tool combinations and usage strategies.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_tool_selection",
+        description="Intelligent tool selection and recommendation based on task analysis. Provides optimal tool combinations and usage strategies.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "task_description": {
@@ -150,11 +152,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_description"]
         }
-    },
-    {
-        "name": "maestro_iae",
-        "description": "Intelligence Amplification Engine for advanced computational analysis. Supports mathematical, quantum physics, data analysis, language enhancement, and code quality engines.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_iae",
+        description="Intelligence Amplification Engine for advanced computational analysis. Supports mathematical, quantum physics, data analysis, language enhancement, and code quality engines.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "analysis_request": {
@@ -179,11 +181,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["analysis_request"]
         }
-    },
-    {
-        "name": "get_available_engines",
-        "description": "Get list of available Intelligence Amplification Engines and their capabilities.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="get_available_engines",
+        description="Get list of available Intelligence Amplification Engines and their capabilities.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "detailed": {
@@ -193,11 +195,11 @@ STATIC_TOOLS_DICT = [
                 }
             }
         }
-    },
-    {
-        "name": "maestro_search",
-        "description": "Enhanced web search with LLM-powered analysis and filtering. Provides intelligent search results with temporal filtering and result formatting.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_search",
+        description="Enhanced web search with LLM-powered analysis and filtering. Provides intelligent search results with temporal filtering and result formatting.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "query": {
@@ -232,11 +234,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["query"]
         }
-    },
-    {
-        "name": "maestro_scrape",
-        "description": "Intelligent web scraping with content extraction and structured data processing. Handles dynamic content and provides clean, formatted output.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_scrape",
+        description="Intelligent web scraping with content extraction and structured data processing. Handles dynamic content and provides clean, formatted output.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "url": {
@@ -258,102 +260,126 @@ STATIC_TOOLS_DICT = [
                     "type": "string",
                     "description": "CSS selector to wait for before scraping",
                     "default": ""
+                },
+                "content_filter": {
+                    "type": "string",
+                    "enum": ["relevant", "full", "minimal"],
+                    "description": "Filter for extracted content",
+                    "default": "relevant"
+                },
+                "output_format": {
+                    "type": "string",
+                    "enum": ["text", "json", "markdown"],
+                    "description": "Output format of scraped data",
+                    "default": "text"
                 }
             },
             "required": ["url"]
         }
-    },
-    {
-        "name": "maestro_execute",
-        "description": "Secure code and workflow execution with validation. Supports multiple languages and execution modes with comprehensive safety checks.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_execute",
+        description="Secure code execution sandbox for Python, JavaScript, and shell commands. Enforces security policies and resource limits.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "execution_type": {
                     "type": "string",
-                    "enum": ["code", "workflow", "plan"],
-                    "description": "Type of execution to perform"
+                    "enum": ["code", "script", "command"],
+                    "description": "Type of execution",
+                    "default": "code"
                 },
                 "content": {
                     "type": "string",
-                    "description": "Code, workflow definition, or plan to execute"
+                    "description": "Code, script content, or command to execute"
                 },
                 "language": {
                     "type": "string",
-                    "enum": ["python", "javascript", "bash", "sql", "auto"],
-                    "description": "Programming language for code execution",
-                    "default": "auto"
+                    "enum": ["python", "javascript", "shell"],
+                    "description": "Programming language (if execution_type is code/script)",
+                    "default": "python"
                 },
-                "environment": {
-                    "type": "object",
-                    "description": "Execution environment variables",
-                    "default": {}
+                "security_level": {
+                    "type": "string",
+                    "enum": ["standard", "hardened", "trusted"],
+                    "description": "Security context for execution",
+                    "default": "standard"
                 },
                 "timeout": {
                     "type": "integer",
                     "minimum": 5,
-                    "maximum": 300,
+                    "maximum": 120,
                     "description": "Execution timeout in seconds",
                     "default": 30
-                },
-                "validation_level": {
-                    "type": "string",
-                    "enum": ["none", "basic", "strict"],
-                    "description": "Code validation rigor",
-                    "default": "basic"
                 }
             },
-            "required": ["execution_type", "content"]
+            "required": ["content"]
         }
-    },
-    {
-        "name": "maestro_temporal_context",
-        "description": "Time-aware reasoning and context analysis. Provides temporal insights, information currency assessment, and time-based recommendations.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_temporal_context",
+        description="Provides temporal reasoning and context awareness. Analyzes time-sensitive queries and ensures information currency.",
+        inputSchema={
             "type": "object",
             "properties": {
-                "context_request": {
+                "query": {
                     "type": "string",
-                    "description": "Description of temporal context needed"
+                    "description": "Query requiring temporal context"
                 },
-                "time_frame": {
+                "time_scope": {
                     "type": "string",
-                    "description": "Relevant time frame for analysis",
+                    "enum": ["current", "past_hour", "past_day", "past_week", "custom_range"],
+                    "description": "Temporal scope for the query",
                     "default": "current"
                 },
-                "temporal_factors": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Specific temporal factors to consider",
-                    "default": []
+                "custom_start_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Custom start time if time_scope is custom_range"
+                },
+                "custom_end_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Custom end time if time_scope is custom_range"
+                },
+                "currency_check": {
+                    "type": "boolean",
+                    "description": "Perform data currency validation",
+                    "default": True
                 }
             },
-            "required": ["context_request"]
+            "required": ["query"]
         }
-    },
-    {
-        "name": "maestro_error_handler",
-        "description": "Intelligent error analysis and recovery suggestions. Provides adaptive error handling with context-aware recovery strategies.",
-        "inputSchema": {
+    ),
+    Tool(
+        name="maestro_error_handler",
+        description="Intelligent error analysis and recovery. Diagnoses issues, suggests solutions, and can attempt automated recovery for common problems.",
+        inputSchema={
             "type": "object",
             "properties": {
                 "error_context": {
                     "type": "string",
-                    "description": "Description of the error or failure"
+                    "description": "Detailed context of the error (e.g., stack trace, logs)"
                 },
-                "error_details": {
-                    "type": "object",
-                    "description": "Specific error information",
-                    "default": {}
+                "error_type": {
+                    "type": "string",
+                    "enum": ["general", "code_execution", "data_processing", "api_call", "tool_failure"],
+                    "description": "Type of error encountered",
+                    "default": "general"
                 },
-                "recovery_preferences": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Preferred recovery approaches",
-                    "default": []
+                "recovery_mode": {
+                    "type": "string",
+                    "enum": ["diagnose_only", "suggest_solutions", "attempt_automatic_recovery"],
+                    "description": "Desired error handling mode",
+                    "default": "suggest_solutions"
+                },
+                "learning_enabled": {
+                    "type": "boolean",
+                    "description": "Allow the handler to learn from this error",
+                    "default": True
                 }
             },
             "required": ["error_context"]
         }
-    }
+    )
 ] 

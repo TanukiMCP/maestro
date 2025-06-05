@@ -42,7 +42,7 @@ class ComputationalTools:
         self._engines_initialized = False
         # self._numpy_available = None # Removed for direct import check
         
-        logger.info(f"🔧 Computational tools initialized (lazy loading enabled)")
+        # logger.info(f"🔧 Computational tools initialized (lazy loading enabled)") # Commented out for Smithery
 
     def _ensure_numpy(self):
         """Lazy import numpy only when actually needed."""

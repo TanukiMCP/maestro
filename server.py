@@ -16,54 +16,6 @@ from fastmcp import FastMCP
 # Initialize FastMCP server for instant tool registration
 mcp = FastMCP("TanukiMCP Maestro")
 
-# Health check endpoint for Smithery.ai deployment
-@mcp.custom_route("/health", methods=["GET"])
-async def health_check(request):
-    """Health check endpoint for load balancers and container orchestration."""
-    from starlette.responses import PlainTextResponse
-    return PlainTextResponse("ok", status_code=200)
-
-# Tools endpoint for debugging
-@mcp.custom_route("/tools", methods=["GET"])
-async def tools_endpoint(request):
-    """Tools endpoint for debugging and manual verification."""
-    from starlette.responses import JSONResponse
-    try:
-        # Handle async get_tools method
-        tools_result = mcp.get_tools()
-        if hasattr(tools_result, '__await__'):
-            tools = await tools_result
-        else:
-            tools = tools_result
-            
-        return JSONResponse({
-            "status": "success",
-            "tool_count": len(tools),
-            "tools": list(tools)
-        })
-    except Exception as e:
-        return JSONResponse({
-            "status": "error",
-            "error": str(e)
-        }, status_code=500)
-
-# Debug endpoint for troubleshooting
-@mcp.custom_route("/debug", methods=["GET"])
-async def debug_endpoint(request):
-    """Debug endpoint for troubleshooting deployment issues."""
-    from starlette.responses import JSONResponse
-    import os
-    return JSONResponse({
-        "status": "debug",
-        "port": os.getenv("PORT", "8000"),
-        "host": "0.0.0.0",
-        "mcp_version": "2024-11-05",
-        "server_name": "TanukiMCP Maestro",
-        "endpoints": ["/health", "/tools", "/debug"],
-        "transport": "STDIO (Smithery wraps with WebSocket)",
-        "note": "Using STDIO transport - Smithery automatically wraps with WebSocket proxy"
-    })
-
 # Global variables for lazy loading
 _maestro_tools = None
 _computational_tools = None
@@ -347,71 +299,21 @@ async def maestro_error_handler(
         learning_enabled=learning_enabled
     )
 
-# Simple HTTP endpoint for tool listing (for Smithery scanning)
-@mcp.custom_route("/tools/list", methods=["GET"])
-async def http_tools_list(request):
-    """Return a JSON list of tool names for instant scanning without session requirements."""
-    from starlette.responses import JSONResponse
-    try:
-        tools_result = mcp.get_tools()
-        if hasattr(tools_result, '__await__'):
-            tools = await tools_result
-        else:
-            tools = tools_result
-        return JSONResponse({
-            "tools": list(tools)
-        })
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
 # Production server startup
 if __name__ == "__main__":
-    print("🚀 TanukiMCP Maestro - PRODUCTION SERVER")
-    print("⚡ Discovery: INSTANT (<100ms) via FastMCP 2.0")
-    print("🛠️ Tools: 11 production-grade tools")
-    print("🌐 Protocol: MCP 2024-11-05")
-    print("☁️ Smithery.ai: Compatible")
-    print("🎯 Ready for deployment!")
-    
-    # Get port from environment variable (Smithery.ai requirement)
-    port = int(os.getenv("PORT", 8000))
-    host = "0.0.0.0"  # Required for container deployment
-    
-    print(f"🌐 Starting HTTP server on {host}:{port}")
-    print(f"📡 MCP endpoint: http://{host}:{port}/mcp")
-    print(f"🏥 Health check: http://{host}:{port}/health")
-    
-    # Debug: Print available tools
-    try:
-        # Try to get tools list - note this might be async in some versions
-        if hasattr(mcp, 'get_tools'):
-            try:
-                tools = mcp.get_tools()
-                # Handle if it returns a coroutine
-                if hasattr(tools, '__await__'):
-                    print("🔧 Tools method is async - skipping debug listing")
-                else:
-                    print(f"🔧 Registered tools: {len(tools)}")
-                    for tool in tools:
-                        print(f"  - {tool}")
-            except Exception as tools_err:
-                print(f"⚠️ Error getting tools: {tools_err}")
-        else:
-            print("🔧 No get_tools method available")
-    except Exception as e:
-        print(f"⚠️ Error in tools debug: {e}")
+    # All print statements before mcp.run() are removed to ensure clean stdout for Smithery's STDIO wrapper.
+    # Smithery provides PORT, and expects 0.0.0.0 for containers, but these are not directly
+    # used by FastMCP in stdio mode, so logging them here before run() is not critical.
+    # port = int(os.getenv("PORT", 8000)) 
+    # host = "0.0.0.0"
     
     try:
-        # Run FastMCP server with Streamable HTTP transport for Smithery.ai
-        print("🚀 Starting server with Streamable HTTP transport...")
-        print("📡 MCP endpoint: http://{host}:{port}/mcp")
-        mcp.run(
-            transport="streamable-http",
-            host=host,
-            port=port,
-            path="/mcp"
-        )
+        # Run FastMCP server with STDIO transport
+        # FastMCP will handle communication over stdin/stdout.
+        mcp.run(transport="stdio")
     except Exception as e:
-        print(f"❌ Server startup with HTTP transport failed: {e}")
+        # These print statements are okay as they only execute if the server fails to start.
+        print(f"❌ Server startup with STDIO failed: {e}", file=sys.stderr) # Print errors to stderr
         import traceback
-        traceback.print_exc() 
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1) # Exit if server fails to start 

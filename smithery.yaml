@@ -3,10 +3,10 @@ build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."
 startCommand:
-  type: "http"
-  command: "python server.py"
+  type: http
+  command: python server.py
   healthCheck:
-    path: "/mcp"
+    path: /mcp
     intervalSeconds: 30
     timeoutSeconds: 5
   configSchema:

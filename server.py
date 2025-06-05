@@ -302,35 +302,6 @@ async def maestro_error_handler(
 
 # Production server startup
 if __name__ == "__main__":
-    # Check if we're running in Smithery (container with PORT env var)
-    port = os.getenv("PORT")
-    
-    if port:
-        # Smithery deployment - use Streamable HTTP transport (preferred for 2025)
-        try:
-            port = int(port)
-            print(f"Starting Smithery-compatible Streamable HTTP server on port {port}")
-            
-            # Use streamable-http transport which is the recommended method for Smithery
-            mcp.run(
-                transport="streamable-http",
-                host="0.0.0.0", 
-                port=port,
-                path="/mcp"  # Streamable HTTP standard endpoint
-            )
-            
-        except Exception as e:
-            print(f"HTTP server startup failed: {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            sys.exit(1)
-    else:
-        # Local development - use STDIO transport
-        try:
-            print("Starting local STDIO server")
-            mcp.run(transport="stdio")
-        except Exception as e:
-            print(f"STDIO server startup failed: {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            sys.exit(1) 
+    port = int(os.getenv("PORT", 8000))
+    print(f"Starting HTTP MCP server on port {port} (path: /mcp)")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=port, path="/mcp") 

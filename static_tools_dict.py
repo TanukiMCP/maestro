@@ -5,14 +5,15 @@ No imports, no dependencies, no side effects - designed for instant tool discove
 This is what Smithery needs for successful deployment.
 """
 
-from mcp.types import Tool
+# ZERO imports - pure dictionary definitions for instant tool discovery
+# This ensures absolutely no dynamic imports during Smithery's tool scanning phase
 
 # Pure dictionary definitions - ZERO imports, ZERO side effects
 STATIC_TOOLS_DICT = [
-    Tool(
-        name="maestro_orchestrate",
-        description="Enhanced meta-reasoning orchestration with collaborative fallback. Amplifies LLM capabilities 3-5x through multi-agent validation, iterative refinement, and quality control. Supports complex reasoning, research, analysis, and problem-solving with operator profiles and dynamic workflow planning.",
-        inputSchema={
+    {
+        "name": "maestro_orchestrate",
+        "description": "Enhanced meta-reasoning orchestration with collaborative fallback. Amplifies LLM capabilities 3-5x through multi-agent validation, iterative refinement, and quality control. Supports complex reasoning, research, analysis, and problem-solving with operator profiles and dynamic workflow planning.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "task_description": {
@@ -75,11 +76,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_description"]
         }
-    ),
-    Tool(
-        name="maestro_collaboration_response",
-        description="Handle user responses during collaborative workflows. Processes user input and continues orchestration with provided guidance.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_collaboration_response",
+        "description": "Handle user responses during collaborative workflows. Processes user input and continues orchestration with provided guidance.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "collaboration_id": {
@@ -103,11 +104,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["collaboration_id", "responses", "approval_status"]
         }
-    ),
-    Tool(
-        name="maestro_iae_discovery",
-        description="Discover and recommend optimal Intelligence Amplification Engine (IAE) based on task requirements. Analyzes computational needs and suggests best engine configurations.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_iae_discovery",
+        "description": "Discover and recommend optimal Intelligence Amplification Engine (IAE) based on task requirements. Analyzes computational needs and suggests best engine configurations.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "task_type": {
@@ -127,11 +128,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_type"]
         }
-    ),
-    Tool(
-        name="maestro_tool_selection",
-        description="Intelligent tool selection and recommendation based on task analysis. Provides optimal tool combinations and usage strategies.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_tool_selection",
+        "description": "Intelligent tool selection and recommendation based on task analysis. Provides optimal tool combinations and usage strategies.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "task_description": {
@@ -152,11 +153,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["task_description"]
         }
-    ),
-    Tool(
-        name="maestro_iae",
-        description="Intelligence Amplification Engine for advanced computational analysis. Supports mathematical, quantum physics, data analysis, language enhancement, and code quality engines.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_iae",
+        "description": "Intelligence Amplification Engine for advanced computational analysis. Supports mathematical, quantum physics, data analysis, language enhancement, and code quality engines.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "analysis_request": {
@@ -181,11 +182,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["analysis_request"]
         }
-    ),
-    Tool(
-        name="get_available_engines",
-        description="Get list of available Intelligence Amplification Engines and their capabilities.",
-        inputSchema={
+    },
+    {
+        "name": "get_available_engines",
+        "description": "Get list of available Intelligence Amplification Engines and their capabilities.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "detailed": {
@@ -195,11 +196,11 @@ STATIC_TOOLS_DICT = [
                 }
             }
         }
-    ),
-    Tool(
-        name="maestro_search",
-        description="Enhanced web search with LLM-powered analysis and filtering. Provides intelligent search results with temporal filtering and result formatting.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_search",
+        "description": "Enhanced web search with LLM-powered analysis and filtering. Provides intelligent search results with temporal filtering and result formatting.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {
@@ -234,11 +235,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["query"]
         }
-    ),
-    Tool(
-        name="maestro_scrape",
-        description="Intelligent web scraping with content extraction and structured data processing. Handles dynamic content and provides clean, formatted output.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_scrape",
+        "description": "Intelligent web scraping with content extraction and structured data processing. Handles dynamic content and provides clean, formatted output.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
@@ -276,11 +277,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["url"]
         }
-    ),
-    Tool(
-        name="maestro_execute",
-        description="Secure code execution sandbox for Python, JavaScript, and shell commands. Enforces security policies and resource limits.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_execute",
+        "description": "Secure code execution sandbox for Python, JavaScript, and shell commands. Enforces security policies and resource limits.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "execution_type": {
@@ -315,11 +316,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["content"]
         }
-    ),
-    Tool(
-        name="maestro_temporal_context",
-        description="Provides temporal reasoning and context awareness. Analyzes time-sensitive queries and ensures information currency.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_temporal_context",
+        "description": "Provides temporal reasoning and context awareness. Analyzes time-sensitive queries and ensures information currency.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {
@@ -350,11 +351,11 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["query"]
         }
-    ),
-    Tool(
-        name="maestro_error_handler",
-        description="Intelligent error analysis and recovery. Diagnoses issues, suggests solutions, and can attempt automated recovery for common problems.",
-        inputSchema={
+    },
+    {
+        "name": "maestro_error_handler",
+        "description": "Intelligent error analysis and recovery. Diagnoses issues, suggests solutions, and can attempt automated recovery for common problems.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "error_context": {
@@ -381,5 +382,5 @@ STATIC_TOOLS_DICT = [
             },
             "required": ["error_context"]
         }
-    )
+    }
 ] 

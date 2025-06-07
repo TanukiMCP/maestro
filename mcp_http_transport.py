@@ -52,6 +52,7 @@ def get_mcp_app():
     """Lazy load the MCP server only when tool execution is needed"""
     global _mcp_app
     if _mcp_app is None:
+        # Import the official MCP server implementation
         from mcp_official_server import app as mcp_app
         _mcp_app = mcp_app
     return _mcp_app
@@ -236,125 +237,13 @@ class SmitheryMCPTransport:
             }, status_code=500)
     
     async def _execute_tool_directly(self, tool_name: str, arguments: dict):
-        """Execute tools directly using the same logic as the MCP server"""
+        """Execute tools directly using the MCP server"""
         try:
-            from mcp.types import TextContent, CallToolResult
-            
-            if tool_name.startswith("maestro_") and tool_name != "maestro_iae":
-                # Handle MaestroTools
-                from src.maestro_tools import MaestroTools
-                tools = MaestroTools()
-                
-                # Create a proper context with sample method
-                class MockContext:
-                    async def sample(self, prompt: str, **kwargs):
-                        """Mock sample method for Context"""
-                        # Simple mock response for testing
-                        if "2+2" in prompt or "factorial" in prompt:
-                            return type('Response', (), {'text': 'The answer is 4. This is calculated by adding 2 + 2 = 4.'})()
-                        elif "json" in kwargs.get('response_format', {}).get('type', ''):
-                            return type('Response', (), {'json': lambda: {"score": 0.8, "issues": [], "recommendations": []}})()
-                        else:
-                            return type('Response', (), {'text': f'This is a mock response for: {prompt[:100]}...'})()
-                
-                ctx = MockContext()
-                
-                if tool_name == "maestro_orchestrate":
-                    result_text = await tools.orchestrate_task(
-                        ctx=ctx,
-                        task_description=arguments.get("task_description", ""),
-                        context=arguments.get("context", {}),
-                        complexity_level=arguments.get("complexity_level", "moderate"),
-                        quality_threshold=arguments.get("quality_threshold", 0.8),
-                        resource_level=arguments.get("resource_level", "moderate"),
-                        reasoning_focus=arguments.get("reasoning_focus", "auto"),
-                        validation_rigor=arguments.get("validation_rigor", "standard"),
-                        max_iterations=arguments.get("max_iterations", 3),
-                        domain_specialization=arguments.get("domain_specialization", ""),
-                        enable_collaboration_fallback=arguments.get("enable_collaboration_fallback", True)
-                    )
-                    return CallToolResult(content=[TextContent(type="text", text=result_text)])
-                
-                elif tool_name == "maestro_collaboration_response":
-                    result_text = await tools.handle_collaboration_response(
-                        collaboration_id=arguments.get("collaboration_id", ""),
-                        responses=arguments.get("responses", {}),
-                        additional_context=arguments.get("additional_guidance", {}),
-                        user_preferences={},
-                        approval_status=arguments.get("approval_status", "approved"),
-                        confidence_level=1.0
-                    )
-                    return CallToolResult(content=[TextContent(type="text", text=result_text)])
-                
-                elif tool_name == "maestro_iae_discovery":
-                    result = await tools._handle_iae_discovery(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_tool_selection":
-                    result = await tools._handle_tool_selection(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_search":
-                    result = await tools._handle_maestro_search(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_scrape":
-                    result = await tools._handle_maestro_scrape(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_execute":
-                    result = await tools._handle_maestro_execute(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_temporal_context":
-                    result = await tools._handle_maestro_temporal_context(arguments)
-                    return CallToolResult(content=result)
-                
-                elif tool_name == "maestro_error_handler":
-                    result = await tools._handle_maestro_error_handler(arguments)
-                    return CallToolResult(content=result)
-                
-                else:
-                    return CallToolResult(
-                        content=[TextContent(
-                            type="text", 
-                            text=f"Error: Unknown maestro tool '{tool_name}'"
-                        )]
-                    )
-            
-            elif tool_name == "maestro_iae":
-                # Handle ComputationalTools  
-                from src.computational_tools import ComputationalTools
-                tools = ComputationalTools()
-                
-                result = await tools.handle_tool_call(tool_name, arguments)
-                
-                if isinstance(result, list):
-                    return CallToolResult(content=result)
-                else:
-                    return CallToolResult(content=[TextContent(type="text", text=str(result))])
-            
-            elif tool_name == "get_available_engines":
-                # Handle engine discovery
-                from src.computational_tools import ComputationalTools
-                tools = ComputationalTools()
-                
-                # get_available_engines doesn't take parameters
-                engines = tools.get_available_engines()
-                
-                import json
-                return CallToolResult(
-                    content=[TextContent(type="text", text=json.dumps(engines, indent=2))]
-                )
-            
-            else:
-                return CallToolResult(
-                    content=[TextContent(
-                        type="text", 
-                        text=f"Error: Tool '{tool_name}' not found"
-                    )]
-                )
-        
+            # Get the MCP server
+            mcp_server = self.get_mcp_server()
+            # Call the tool using the official MCP server's tools_call handler
+            from mcp_official_server import tools_call
+            return await tools_call(tool_name, arguments)
         except Exception as e:
             logger.error(f"Error executing tool {tool_name}: {e}")
             from mcp.types import TextContent, CallToolResult

@@ -3,34 +3,21 @@ build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."
 startCommand:
-  type: http
-  command: python server.py
-  healthCheck:
-    path: /mcp
-    intervalSeconds: 30
-    timeoutSeconds: 5
+  type: "http"
   configSchema:
     type: "object"
     properties:
       apiKey:
         type: "string"
-        description: "Optional API key for enhanced LLM functionality"
-        default: ""
+        description: "Optional API key for enhanced search capabilities"
       debugMode:
         type: "boolean"
-        description: "Enable debug logging and verbose output"
         default: false
-      port:
-        type: "integer"
-        description: "Server port (default: 8000)"
-        default: 8000
-        minimum: 1000
-        maximum: 65535
+        description: "Enable debug mode for additional logging"
     required: []
   exampleConfig:
-    apiKey: ""
+    apiKey: "optional-api-key"
     debugMode: false
-    port: 8000
 resources:
   memory: "512Mi"
   cpu: "0.5"

@@ -65,8 +65,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Production command to run the optimized server
-CMD ["python", "server.py"]
+# Use HTTP transport endpoint (NOT stdio)
+CMD ["python", "mcp_http_transport.py"]
 
 # Metadata labels for Smithery.ai and container registries
 LABEL org.opencontainers.image.title="TanukiMCP Maestro" \

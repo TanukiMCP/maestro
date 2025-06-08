@@ -463,7 +463,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
         # Execute the appropriate tool based on name
         if tool_name == "maestro_orchestrate":
             try:
-                from maestro_tools import MaestroTools
+                from .maestro_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
                 # Create real Context with LLM sampling capabilities
@@ -587,7 +587,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_iae_discovery":
             try:
-                from maestro_tools import MaestroTools
+                from .maestro_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
                 # Call the actual implementation
@@ -618,7 +618,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_tool_selection":
             try:
-                from maestro_tools import MaestroTools
+                from .maestro_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
                 # Call the actual implementation
@@ -649,11 +649,11 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_iae":
             try:
-                from computational_tools import ComputationalTools
+                from .computational_tools import ComputationalTools
                 comp_tools = ComputationalTools()
                 
                 # Call the computational engine
-                result = await comp_tools.integrated_analysis_engine(**arguments)
+                result = await comp_tools.intelligence_amplification_engine(None, **arguments)
                 
                 # Return in standardized format
                 return [{"type": "text", "text": result}]
@@ -691,7 +691,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_search":
             try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
+                from .maestro.enhanced_tools import EnhancedToolHandlers
                 enhanced_tools = EnhancedToolHandlers()
                 
                 # Call the search implementation
@@ -733,7 +733,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_scrape":
             try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
+                from .maestro.enhanced_tools import EnhancedToolHandlers
                 enhanced_tools = EnhancedToolHandlers()
                 
                 # Call the scrape implementation
@@ -779,7 +779,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_execute":
             try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
+                from .maestro.enhanced_tools import EnhancedToolHandlers
                 enhanced_tools = EnhancedToolHandlers()
                 
                 # Call the execute implementation
@@ -825,14 +825,14 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_error_handler":
             try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
+                from .maestro.enhanced_tools import EnhancedToolHandlers
                 enhanced_tools = EnhancedToolHandlers()
                 
                 # Call the error handler implementation
-                result = await enhanced_tools.error_handler(**arguments)
+                result_list = await enhanced_tools.handle_maestro_error_handler(arguments)
                 
                 # Return in standardized format
-                return [{"type": "text", "text": result}]
+                return [{"type": "text", "text": result_list[0].text}]
                 
             except ImportError as e:
                 logger.error(f"Failed to import EnhancedToolHandlers: {str(e)}")
@@ -867,7 +867,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_temporal_context":
             try:
-                from maestro.enhanced_tools import EnhancedToolHandlers
+                from .maestro.enhanced_tools import EnhancedToolHandlers
                 enhanced_tools = EnhancedToolHandlers()
                 
                 # Call the temporal context implementation
@@ -912,24 +912,14 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "get_available_engines":
             try:
-                from computational_tools import ComputationalTools
+                from .computational_tools import ComputationalTools
                 comp_tools = ComputationalTools()
                 
                 # Get available engines
-                available_engines = comp_tools.get_available_engines()
+                available_engines = await comp_tools.get_available_engines(None)
                 
                 # Get capabilities if requested
-                response_text = ""
-                if arguments.get("include_capabilities", True):
-                    engines_info = comp_tools.get_engine_capabilities()
-                    response_text = json.dumps({
-                        "engines": available_engines,
-                        "capabilities": engines_info
-                    }, indent=2)
-                else:
-                    response_text = json.dumps({
-                        "engines": available_engines
-                    }, indent=2)
+                response_text = available_engines  # get_available_engines already returns formatted text
                 
                 # Return in standardized format
                 return [{"type": "text", "text": response_text}]
@@ -960,6 +950,54 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                 "message": f"Error retrieving engine information: {str(e)}",
                                 "recoverable": True,
                                 "suggestions": ["Try with a specific engine_type"]
+                            }
+                        }, indent=2)
+                    }
+                ]
+        elif tool_name == "maestro_collaboration_response":
+            try:
+                from .maestro_tools import MaestroTools
+                maestro_tools = MaestroTools()
+                
+                # Call the collaboration response handler
+                result = await maestro_tools.handle_collaboration_response(
+                    collaboration_id=arguments.get("collaboration_id"),
+                    responses=arguments.get("responses", {}),
+                    additional_context=arguments.get("additional_context", {}),
+                    user_preferences=arguments.get("user_preferences", {}),
+                    approval_status=arguments.get("approval_status", "approved"),
+                    confidence_level=arguments.get("confidence_level", 0.8)
+                )
+                
+                # Return in standardized format
+                return [{"type": "text", "text": result}]
+                
+            except ImportError as e:
+                logger.error(f"Failed to import MaestroTools: {str(e)}")
+                return [
+                    {
+                        "type": "text", 
+                        "text": json.dumps({
+                            "error": {
+                                "type": "dependency_error",
+                                "message": f"Server configuration error: {str(e)}",
+                                "recoverable": False,
+                                "suggestions": ["Contact server administrator"]
+                            }
+                        }, indent=2)
+                    }
+                ]
+            except Exception as e:
+                logger.error(f"Error in collaboration response: {str(e)}")
+                return [
+                    {
+                        "type": "text", 
+                        "text": json.dumps({
+                            "error": {
+                                "type": "collaboration_error",
+                                "message": f"Error processing collaboration response: {str(e)}",
+                                "recoverable": True,
+                                "suggestions": ["Check collaboration_id validity", "Ensure responses are properly formatted"]
                             }
                         }, indent=2)
                     }

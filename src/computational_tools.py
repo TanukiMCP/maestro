@@ -364,24 +364,95 @@ class ComputationalTools:
     
     async def _handle_quantum_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
         """Handle quantum physics computations."""
-        engine = self.engines['quantum_physics']
+        engine = self.engines.get('quantum_physics')
+        if not engine:
+            return [types.TextContent(
+                type="text",
+                text="❌ **Quantum Physics Engine not available**\n\nThe engine could not be initialized or loaded."
+            )]
         
         try:
             if computation_type == "entanglement_entropy":
+                # Check if density_matrix is provided
+                if "density_matrix" not in parameters:
+                    # Create a default Bell state density matrix for demonstration
+                    # Bell state |Φ+⟩ = (|00⟩ + |11⟩)/√2
+                    # Initialize with zeros
+                    bell_state_matrix = [
+                        [{'real': 0.5, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.5, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0.5, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.5, 'imag': 0}]
+                    ]
+                    parameters["density_matrix"] = bell_state_matrix
+                    logger.info("Using default Bell state density matrix for demonstration")
+                
+                # Now parse the matrix and compute
                 density_matrix = self._parse_complex_matrix(parameters["density_matrix"])
                 result = engine.calculate_entanglement_entropy(density_matrix)
                 
-            elif computation_type == "bell_violation":
+            elif computation_type == "bell_inequality_violation":
+                # For bell violation test, we need quantum_state and measurement_angles
+                if "quantum_state" not in parameters:
+                    # Create a default Bell state vector for demonstration
+                    bell_state_vector = [
+                        {'real': 1/np.sqrt(2), 'imag': 0},
+                        {'real': 0, 'imag': 0},
+                        {'real': 0, 'imag': 0},
+                        {'real': 1/np.sqrt(2), 'imag': 0}
+                    ]
+                    parameters["quantum_state"] = bell_state_vector
+                    logger.info("Using default Bell state vector for demonstration")
+                
+                if "measurement_angles" not in parameters:
+                    # Optimal measurement angles for Bell test
+                    parameters["measurement_angles"] = {
+                        "alice": [0, np.pi/2],
+                        "bob": [np.pi/4, -np.pi/4]
+                    }
+                    logger.info("Using optimal measurement angles for Bell test")
+                
                 quantum_state = self._parse_complex_vector(parameters["quantum_state"])
                 measurement_angles = parameters["measurement_angles"]
                 result = engine.calculate_bell_inequality_violation(measurement_angles, quantum_state)
                 
             elif computation_type == "quantum_fidelity":
+                if "state1" not in parameters or "state2" not in parameters:
+                    # Create two slightly different quantum states for demonstration
+                    # State 1: Pure Bell state
+                    state1 = [
+                        [{'real': 0.5, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.5, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0.5, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.5, 'imag': 0}]
+                    ]
+                    # State 2: Slightly noisy Bell state
+                    state2 = [
+                        [{'real': 0.48, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.47, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0.02, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.02, 'imag': 0}, {'real': 0, 'imag': 0}],
+                        [{'real': 0.47, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0, 'imag': 0}, {'real': 0.48, 'imag': 0}]
+                    ]
+                    parameters["state1"] = state1
+                    parameters["state2"] = state2
+                    logger.info("Using default quantum states for fidelity calculation")
+                    
                 state1 = self._parse_complex_matrix(parameters["state1"])
                 state2 = self._parse_complex_matrix(parameters["state2"])
                 result = engine.calculate_quantum_fidelity(state1, state2)
                 
             elif computation_type == "pauli_decomposition":
+                if "operator" not in parameters:
+                    # Create a default quantum operator (Hadamard tensor Hadamard)
+                    hadamard_tensor_hadamard = [
+                        [{'real': 0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}],
+                        [{'real': 0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}],
+                        [{'real': 0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}],
+                        [{'real': 0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}, {'real': -0.5, 'imag': 0}, {'real': 0.5, 'imag': 0}]
+                    ]
+                    parameters["operator"] = hadamard_tensor_hadamard
+                    logger.info("Using default Hadamard⊗Hadamard operator for Pauli decomposition")
+                
                 operator = self._parse_complex_matrix(parameters["operator"])
                 result = engine.pauli_decomposition(operator)
                 
@@ -392,7 +463,7 @@ class ComputationalTools:
                          f"'{computation_type}' is not supported.\n\n"
                          f"**Available quantum computations:**\n"
                          f"- entanglement_entropy\n"
-                         f"- bell_violation\n"
+                         f"- bell_inequality_violation\n"
                          f"- quantum_fidelity\n"
                          f"- pauli_decomposition"
                 )]
@@ -406,6 +477,8 @@ class ComputationalTools:
             
         except Exception as e:
             logger.error(f"❌ Quantum computation failed: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return [types.TextContent(
                 type="text",
                 text=f"❌ **Quantum Computation Error**\n\nFailed to perform {computation_type}: {str(e)}"

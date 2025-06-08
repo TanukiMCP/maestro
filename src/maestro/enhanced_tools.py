@@ -444,7 +444,14 @@ class EnhancedToolHandlers:
         await self._ensure_initialized()
         
         try:
+            # Handle both error_message (simple) and error_details (complex) formats
+            error_message = arguments.get("error_message", "")
             error_details = arguments.get("error_details", {})
+            
+            # If error_message is provided but error_details is empty, create error_details
+            if error_message and not error_details:
+                error_details = {"message": error_message, "type": "general"}
+            
             available_tools = arguments.get("available_tools", [])
             success_criteria = arguments.get("success_criteria", [])
             temporal_context_data = arguments.get("temporal_context", {})

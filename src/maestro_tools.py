@@ -13,6 +13,8 @@ import logging
 import asyncio
 import json
 import traceback
+import subprocess
+import sys
 from typing import List, Dict, Any, Optional, Union, Callable
 from datetime import datetime
 from dataclasses import dataclass, asdict
@@ -246,15 +248,15 @@ class MaestroTools:
         }
     
     def _ensure_computational_tools(self):
-        """Lazy load computational tools only when needed."""
-        if self._computational_tools is None:
+        """Ensure computational tools are loaded with lazy initialization."""
+        if not hasattr(self, '_computational_tools') or self._computational_tools is None:
             try:
-                # Import only when method is called, not at initialization
+                # Import here to avoid loading dependencies during Smithery tool scanning
                 from .computational_tools import ComputationalTools
                 self._computational_tools = ComputationalTools()
-                logger.info("✅ ComputationalTools loaded on first use")
+                logger.info("✅ Computational tools loaded successfully")
             except ImportError as e:
-                logger.error(f"❌ Failed to import ComputationalTools: {e}")
+                logger.warning(f"⚠️ Unable to load computational tools: {e}")
                 self._computational_tools = None
     
     def _ensure_enhanced_tool_handlers(self):
@@ -1042,146 +1044,335 @@ class MaestroTools:
         return "\n".join(output)
 
     async def _handle_iae_discovery(self, arguments: dict) -> List[TextContent]:
-        """Handle Intelligence Amplification Engine discovery and mapping."""
+        """Handle IAE discovery tool calls to analyze computational requirements."""
         try:
-            # Lazy import TextContent only when needed
-            from mcp.types import TextContent
-            
-            task_type = arguments.get("task_type", "general")
+            # Extract arguments
+            task_description = arguments.get("task_description", "")
             domain_context = arguments.get("domain_context", "")
-            complexity_requirements = arguments.get("complexity_requirements", {})
+            complexity_assessment = arguments.get("complexity_assessment", "auto")
+            computational_requirements = arguments.get("computational_requirements", {})
             
-            logger.info(f"🔍 Discovering IAEs for: {task_type}")
+            # Create mock context for internal use (Context doesn't need arguments)
+            mock_ctx = None  # We don't actually need the context for this analysis
             
-            # Lazy load computational tools only when needed
-            self._ensure_computational_tools()
+            # Ensure computational tools are loaded
+            if not hasattr(self, '_computational_tools') or self._computational_tools is None:
+                self._ensure_computational_tools()
             
-            # Get available engines from computational tools
-            available_engines = {}
-            if self._computational_tools:
-                available_engines_result = await self._computational_tools.get_available_engines()
-                # Parse the string result to extract engine information
-                available_engines = self._parse_engines_from_string(available_engines_result)
+            # Analyze computational requirements
+            requirements = self._analyze_computational_requirements(task_description, {
+                "domain_context": domain_context,
+                "complexity_assessment": complexity_assessment,
+                **(computational_requirements or {})
+            })
             
-            response = f"""# 🔍 Intelligence Amplification Engine Discovery
+            # Generate engine recommendations
+            recommended_engines = self._get_engine_recommendations(
+                task_type=requirements.get("computation_type", "unknown"),
+                domain_context=domain_context
+            )
+            
+            # Parse engine capabilities from recommendation string
+            engines_data = self._parse_engines_from_string(recommended_engines)
+            
+            # Check if computational tools are available
+            computational_tools_available = hasattr(self, '_computational_tools') and self._computational_tools is not None
+            
+            # Format response
+            if engines_data:
+                # Format success criteria for high-quality results
+                success_criteria = self._format_success_criteria(requirements)
+                
+                # Build the response
+                result = f"""# 🔬 Computational Requirements Analysis
 
-## Available Computational Engines
+## Task Analysis
+**Description:** {task_description}
+**Domain Context:** {domain_context or "General computation"}
+**Computation Type:** {requirements.get("computation_type", "Unknown")}
+**Complexity Level:** {requirements.get("complexity_level", "Unknown")}
 
-### Active Engines (Ready for Use)
+## Computational Requirements
+**Primary Engine:** {requirements.get("primary_engine", "Unknown")}
+**Fallback Engine:** {requirements.get("fallback_engine", "Unknown")}
+**Resource Intensity:** {requirements.get("resource_intensity", "Unknown")}
+**Special Libraries:** {', '.join(requirements.get("required_libraries", ["None"]))}
+
+## Recommended Engines
+{recommended_engines}
+
+## Success Criteria
+{success_criteria}
+
+## Computational Approach
+**Method:** {requirements.get("recommended_method", "Standard computational approach")}
+**Verification:** {requirements.get("verification_approach", "Result validation against known properties")}
+**Integration:** {requirements.get("integration_strategy", "Direct integration with workflow")}
+
+*Note: This analysis maps appropriate computational engines to your task requirements.*"""
+            else:
+                result = f"""# ❌ Computational Analysis Error
+
+Unable to identify appropriate computational engines for:
+- Task: {task_description}
+- Domain: {domain_context or "Unspecified"}
+- Complexity: {complexity_assessment}
+
+Please provide more specific computational requirements or task description.
 """
             
-            active_engines = {k: v for k, v in available_engines.items() if v["status"] == "active"}
-            for engine_id, engine_info in active_engines.items():
-                response += f"""
-#### {engine_info["name"]} v{engine_info["version"]}
-- **Domain**: {engine_id}
-- **Capabilities**: {', '.join(engine_info["supported_calculations"])}
-- **Access via**: `maestro_iae` with `engine_domain: "{engine_id}"`
-"""
-            
-            response += f"""
-### Planned Engines (Under Development)
-"""
-            planned_engines = {k: v for k, v in available_engines.items() if v["status"] == "planned"}
-            for engine_id, engine_info in planned_engines.items():
-                response += f"- **{engine_info['name']}**: {engine_id}\n"
-            
-            # Provide task-specific recommendations
-            recommendations = self._get_engine_recommendations(task_type, domain_context)
-            
-            response += f"""
-## Task-Specific Recommendations
-
-### For "{task_type}" tasks:
-{recommendations}
-
-## Usage Pattern
-To access any computational engine:
-```
-Tool: maestro_iae
-Parameters:
-  engine_domain: [select from available engines]
-  computation_type: [specific calculation needed]
-  parameters: {{computation-specific data}}
-```
-
-## Integration Benefits
-- **Single Gateway**: All computational engines accessible through `maestro_iae`
-- **Standardized Interface**: Consistent MIA protocol across all engines
-- **Precise Results**: Machine-precision calculations, not token predictions
-- **Modular Growth**: New engines added without changing interface
-
-*The MIA protocol ensures computational amplification through standardized engine interfaces.*"""
-            
-            return [TextContent(type="text", text=response)]
-            
+            return [TextContent(type="text", text=result)]
         except Exception as e:
-            # Import TextContent here to ensure lazy loading
-            from mcp.types import TextContent
-            logger.error(f"❌ IAE discovery failed: {str(e)}")
+            logger.error(f"Error in IAE discovery: {str(e)}")
             return [TextContent(type="text", text=f"❌ **Discovery Failed**\n\nError: {str(e)}")]
 
     # Continue with the rest of the class, ensuring imports are inside methods
     
     def _analyze_computational_requirements(self, task_description: str, context: dict) -> dict:
-        """Analyze if a task requires computational engines or strategic tools."""
-        # Implementation that doesn't require heavy imports
-        # Default result with minimal assumptions
-        result = {
+        """Analyze task description to identify computational requirements."""
+        # Extract context information
+        domain_context = context.get("domain_context", "")
+        complexity_assessment = context.get("complexity_assessment", "auto")
+        
+        # Initialize default requirements
+        requirements = {
             "requires_computation": False,
+            "computation_type": "unknown",
+            "complexity_level": "moderate",
+            "primary_engine": "None",
             "primary_domain": "general",
+            "fallback_engine": "None",
+            "resource_intensity": "low",
+            "required_libraries": [],
             "computation_types": [],
             "workflow_steps": [],
+            "recommended_method": "Standard computational approach",
+            "verification_approach": "Result validation against known properties",
+            "integration_strategy": "Direct integration with workflow",
             "engine_recommendations": "No specialized engines required for this task."
         }
         
-        # Simple keyword-based analysis without heavy imports
-        computation_keywords = [
-            "calculate", "compute", "solve", "equation", "formula", 
-            "optimization", "statistics", "probability", "quantum",
-            "simulation", "numerical", "matrix", "vector", "algorithm"
-        ]
+        # Analyze task description for computational needs
+        task_lower = task_description.lower()
+        context_lower = domain_context.lower() if domain_context else ""
+        
+        # Comprehensive keyword analysis for computational needs
+        quantum_keywords = ["quantum", "entanglement", "superposition", "qubit", "quantum gate", "quantum circuit", "quantum state"]
+        intelligence_keywords = ["knowledge network", "cognitive", "concept", "intelligence", "neural network", "clustering", "graph analysis"]
+        molecular_keywords = ["molecule", "chemistry", "reaction", "protein", "molecular dynamics", "chemical bond", "molecular structure"]
+        statistics_keywords = ["statistics", "probability", "distribution", "hypothesis", "regression", "correlation", "p-value", "confidence interval"]
+        mathematics_keywords = ["calculus", "differential equation", "integral", "matrix", "vector", "eigenvalue", "optimization", "linear algebra"]
+        
+        computation_keywords = (quantum_keywords + intelligence_keywords + molecular_keywords + 
+                             statistics_keywords + mathematics_keywords + 
+                             ["calculate", "compute", "solve", "equation", "formula", "algorithm", "numerical", "simulation"])
         
         # Check if any computation keywords are present
-        if any(keyword in task_description.lower() for keyword in computation_keywords):
-            result["requires_computation"] = True
-            result["primary_domain"] = "advanced_mathematics"
-            result["computation_types"] = ["optimization", "statistical_analysis"]
-            result["workflow_steps"] = [
+        if any(kw in task_lower or (context_lower and kw in context_lower) for kw in computation_keywords):
+            requirements["requires_computation"] = True
+            
+            # Identify computation type and engine
+            if any(kw in task_lower or (context_lower and kw in context_lower) for kw in quantum_keywords):
+                requirements["computation_type"] = "quantum_physics"
+                requirements["primary_engine"] = "quantum_physics"
+                requirements["primary_domain"] = "quantum_physics"
+                requirements["fallback_engine"] = "classical_simulation"
+                requirements["required_libraries"] = ["numpy", "scipy"]
+                requirements["recommended_method"] = "Quantum state analysis with density matrices"
+                requirements["computation_types"] = ["entanglement_entropy", "bell_inequality_violation", "quantum_fidelity", "pauli_decomposition"]
+                
+                # Further analyze quantum computation type
+                if "entanglement" in task_lower:
+                    requirements["computation_type"] = "entanglement_entropy"
+                elif "bell" in task_lower:
+                    requirements["computation_type"] = "bell_inequality_violation"
+                elif "fidelity" in task_lower:
+                    requirements["computation_type"] = "quantum_fidelity"
+                elif "pauli" in task_lower:
+                    requirements["computation_type"] = "pauli_decomposition"
+                    
+            elif any(kw in task_lower or (context_lower and kw in context_lower) for kw in intelligence_keywords):
+                requirements["computation_type"] = "intelligence_amplification"
+                requirements["primary_engine"] = "intelligence_amplification"
+                requirements["primary_domain"] = "intelligence_amplification"
+                requirements["fallback_engine"] = "knowledge_graph"
+                requirements["required_libraries"] = ["networkx", "scipy", "sklearn"]
+                requirements["recommended_method"] = "Network analysis with graph algorithms"
+                requirements["computation_types"] = ["knowledge_network_analysis", "cognitive_load_optimization", "concept_clustering"]
+                
+                # Further analyze intelligence computation type
+                if "network" in task_lower:
+                    requirements["computation_type"] = "knowledge_network_analysis"
+                elif "cognitive load" in task_lower:
+                    requirements["computation_type"] = "cognitive_load_optimization"
+                elif "cluster" in task_lower:
+                    requirements["computation_type"] = "concept_clustering"
+                    
+            elif any(kw in task_lower or (context_lower and kw in context_lower) for kw in molecular_keywords):
+                requirements["computation_type"] = "molecular_modeling"
+                requirements["primary_engine"] = "molecular_modeling"
+                requirements["primary_domain"] = "molecular_modeling"
+                requirements["fallback_engine"] = "statistics"
+                requirements["required_libraries"] = ["rdkit", "numpy", "scipy"]
+                requirements["recommended_method"] = "Molecular dynamics simulation"
+                requirements["computation_types"] = ["molecular_dynamics", "property_prediction", "reaction_analysis"]
+                
+            elif any(kw in task_lower or (context_lower and kw in context_lower) for kw in statistics_keywords):
+                requirements["computation_type"] = "statistical_analysis"
+                requirements["primary_engine"] = "statistical_analysis"
+                requirements["primary_domain"] = "statistical_analysis"
+                requirements["fallback_engine"] = "numerical_computation"
+                requirements["required_libraries"] = ["scipy", "statsmodels", "pandas"]
+                requirements["recommended_method"] = "Statistical hypothesis testing"
+                requirements["computation_types"] = ["hypothesis_testing", "regression_analysis", "distribution_fitting"]
+                
+            elif any(kw in task_lower or (context_lower and kw in context_lower) for kw in mathematics_keywords):
+                requirements["computation_type"] = "advanced_mathematics"
+                requirements["primary_engine"] = "mathematics"
+                requirements["primary_domain"] = "mathematics"
+                requirements["fallback_engine"] = "numerical_computation"
+                requirements["required_libraries"] = ["numpy", "scipy", "sympy"]
+                requirements["recommended_method"] = "Symbolic and numerical mathematics"
+                requirements["computation_types"] = ["optimization", "equation_solving", "numerical_analysis"]
+            
+            # Standard workflow steps for computational tasks
+            requirements["workflow_steps"] = [
                 "Define computational parameters",
                 "Select appropriate engine domain",
                 "Execute computation",
                 "Interpret results"
             ]
-            result["engine_recommendations"] = """
-- **Mathematics Engine**: For optimization, statistics, and symbolic math
-- **Quantum Physics Engine**: For quantum simulations and calculations
-- **Data Analysis Engine**: For statistical analysis and modeling
+            
+            # Generate engine recommendations based on primary domain
+            requirements["engine_recommendations"] = f"""
+- **{requirements["primary_engine"].replace('_', ' ').title()} Engine**: For {', '.join(requirements["computation_types"])}
+- **Fallback**: {requirements["fallback_engine"].replace('_', ' ').title()} if primary engine unavailable
+- **Required Libraries**: {', '.join(requirements["required_libraries"])}
 """
-        
-        return result
+                
+        # Determine complexity level
+        if complexity_assessment == "auto":
+            if any(term in task_lower for term in ["advanced", "complex", "detailed", "comprehensive"]):
+                requirements["complexity_level"] = "high"
+                requirements["resource_intensity"] = "high"
+            elif any(term in task_lower for term in ["basic", "simple", "elementary", "introductory"]):
+                requirements["complexity_level"] = "low"
+                requirements["resource_intensity"] = "low"
+            else:
+                requirements["complexity_level"] = "moderate"
+                requirements["resource_intensity"] = "moderate"
+        else:
+            requirements["complexity_level"] = complexity_assessment
+            
+        # Map complexity to resource intensity if not already set
+        if requirements["resource_intensity"] == "low" and requirements["complexity_level"] in ["high", "extreme"]:
+            requirements["resource_intensity"] = requirements["complexity_level"]
+            
+        return requirements
     
     def _format_success_criteria(self, criteria: dict) -> str:
-        """Format success criteria for output."""
-        if not criteria:
-            return "- Task completed according to requirements\n- Results verified for accuracy\n- Documentation provided"
+        """Format success criteria for computational results."""
+        # Build success criteria based on computation type
+        computation_type = criteria.get("computation_type", "unknown")
         
-        result = ""
-        for key, value in criteria.items():
-            result += f"- **{key}**: {value}\n"
-        
-        return result
+        if computation_type == "entanglement_entropy":
+            return """1. **Accuracy**: Von Neumann entropy calculation correct to 6 decimal places
+2. **Validity**: Eigenvalues should sum to 1.0 (trace preservation)
+3. **Completeness**: Include entropy value, eigenvalues, and physical interpretation
+4. **Verification**: Confirm entropy bounds (0 to log₂(d) where d is subsystem dimension)"""
+            
+        elif computation_type == "bell_inequality_violation":
+            return """1. **Accuracy**: CHSH parameter calculated with proper quantum correlations
+2. **Validity**: Classical bound (2.0) and quantum bound (2√2) correctly identified
+3. **Completeness**: Include correlation values for all measurement settings
+4. **Verification**: Ensure violation amount correctly calculated as difference from classical bound"""
+            
+        elif computation_type == "quantum_fidelity":
+            return """1. **Accuracy**: Fidelity calculation correct to 6 decimal places
+2. **Validity**: Fidelity bounded between 0 and 1
+3. **Completeness**: Include fidelity value, trace distance, and state comparison
+4. **Verification**: Verify symmetry property F(ρ,σ) = F(σ,ρ)"""
+            
+        elif computation_type == "pauli_decomposition":
+            return """1. **Accuracy**: Pauli coefficients calculated with proper normalization
+2. **Validity**: Reconstruction matches original operator
+3. **Completeness**: Include all non-zero Pauli terms with coefficients
+4. **Verification**: Verify completeness of Pauli basis expansion"""
+            
+        elif computation_type == "knowledge_network_analysis":
+            return """1. **Accuracy**: Centrality measures calculated using proper graph algorithms
+2. **Validity**: Network metrics reflect actual graph properties
+3. **Completeness**: Include centrality, clustering, and path analysis
+4. **Verification**: Confirm results match theoretical network properties"""
+            
+        elif computation_type == "cognitive_load_optimization":
+            return """1. **Accuracy**: Optimization solution within constraints
+2. **Validity**: Solution maximizes objective function
+3. **Completeness**: Include selected tasks, load distribution, and efficiency metrics
+4. **Verification**: Verify constraint satisfaction and optimality"""
+            
+        elif computation_type == "concept_clustering":
+            return """1. **Accuracy**: Clusters formed using appropriate distance metrics
+2. **Validity**: Silhouette score validates cluster quality
+3. **Completeness**: Include cluster assignments, centers, and interpretation
+4. **Verification**: Ensure clusters maximize internal similarity and external distance"""
+            
+        # Generic success criteria for unknown computation types
+        else:
+            return """1. **Accuracy**: Results match theoretical expectations to appropriate precision
+2. **Validity**: Computation uses correct algorithms and methods
+3. **Completeness**: Full result set includes all relevant metrics and interpretations
+4. **Verification**: Results validated against known principles and properties"""
     
     def _get_engine_recommendations(self, task_type: str, domain_context: str) -> str:
-        """Get engine recommendations based on task type."""
-        recommendations = {
-            "mathematics": "Use the advanced_mathematics engine for symbolic computation, optimization, and numerical analysis.",
-            "physics": "The quantum_physics engine provides quantum simulation and physical modeling capabilities.",
-            "data_analysis": "Statistical engines can process datasets, perform statistical tests, and generate models.",
-            "general": "Start with the mathematics engine for general computational needs."
-        }
+        """Generate engine recommendations based on task type and domain."""
+        # Enhanced recommendation logic with more specific guidance
+        task_lower = task_type.lower()
+        domain_lower = domain_context.lower() if domain_context else ""
         
-        return recommendations.get(task_type.lower(), recommendations["general"])
+        if task_lower == "quantum_physics" or "quantum" in task_lower or "quantum" in domain_lower:
+            return """### Quantum Physics Engine
+- **Primary Calculations**: Entanglement entropy, Bell inequality tests, quantum fidelity
+- **Capabilities**: Density matrix operations, state vector analysis, operator decomposition
+- **Required Parameters**: For entanglement calculations, provide density_matrix parameter
+- **Access Pattern**: `maestro_iae` with `engine_domain: "quantum_physics"`
+- **Alternative**: For simple cases, use numerical simulation with numpy"""
+            
+        elif task_lower == "intelligence_amplification" or any(kw in task_lower or kw in domain_lower for kw in ["cognitive", "intelligence", "knowledge", "concept"]):
+            return """### Intelligence Amplification Engine
+- **Primary Calculations**: Knowledge network analysis, cognitive load optimization, concept clustering
+- **Capabilities**: Graph analysis, optimization algorithms, clustering techniques
+- **Required Parameters**: For network analysis, provide concepts and relationships
+- **Access Pattern**: `maestro_iae` with `engine_domain: "intelligence_amplification"`
+- **Alternative**: For basic analysis, use simpler graph algorithms or clustering"""
+            
+        elif task_lower == "molecular_modeling" or any(kw in task_lower or kw in domain_lower for kw in ["molecular", "chemistry", "protein", "molecule"]):
+            return """### Molecular Modeling Engine (Planned)
+- **Status**: In development, not yet available
+- **Future Capabilities**: Molecular dynamics, property prediction, reaction analysis
+- **Current Alternative**: Use statistical analysis engine for data analysis or quantum physics for quantum chemistry
+- **Access Pattern**: Currently, use `maestro_execute` with appropriate chemical libraries"""
+            
+        elif task_lower == "statistical_analysis" or any(kw in task_lower or kw in domain_lower for kw in ["statistics", "probability", "regression", "hypothesis"]):
+            return """### Statistical Analysis Engine (Planned)
+- **Status**: In development, not yet available
+- **Future Capabilities**: Hypothesis testing, distribution fitting, regression analysis
+- **Current Alternative**: Use code execution for statistical analysis with scipy.stats
+- **Access Pattern**: Currently, use `maestro_execute` with scipy and pandas libraries"""
+            
+        elif task_lower == "advanced_mathematics" or any(kw in task_lower or kw in domain_lower for kw in ["mathematics", "calculus", "algebra", "equation"]):
+            return """### Mathematics Engine (Planned)
+- **Status**: In development, not yet available
+- **Future Capabilities**: Symbolic mathematics, calculus, differential equations
+- **Current Alternative**: Use code execution with sympy for symbolic math
+- **Access Pattern**: Currently, use `maestro_execute` with sympy and numpy libraries"""
+            
+        else:
+            return """### General Purpose Analysis
+- **Recommendation**: No specialized computational engine required
+- **Approach**: Use standard LLM capabilities for reasoning and general analysis
+- **Alternative**: For numerical calculations, use code execution with Python libraries
+- **Access Pattern**: For any computations, use `maestro_execute` with appropriate libraries"""
 
     def _parse_engines_from_string(self, engines_string: str) -> Dict[str, Dict]:
         """Parse engine information from the string result."""
@@ -2563,223 +2754,113 @@ The search results have been analyzed for relevance, credibility, and temporal a
             )]
     
     async def _handle_maestro_execute(self, arguments: dict) -> List[TextContent]:
-        """Handle maestro_execute tool - Secure code and workflow execution"""
+        """
+        Handles the maestro_execute tool call by executing code in a subprocess.
+        This implementation provides real code execution.
+        """
+        code = arguments.get("content")
+        language = arguments.get("language", "python")
+        timeout = arguments.get("timeout", 30)
+
+        if language != "python":
+            return [TextContent(text=f"Error: Language '{language}' is not supported for execution.")]
+
+        if not code:
+            return [TextContent(text="Error: No code provided to execute.")]
+
         try:
-            execution_type = arguments.get("execution_type", "code")
-            content = arguments.get("content", "")
-            language = arguments.get("language", "auto")
-            environment = arguments.get("environment", {})
-            timeout = arguments.get("timeout", 30)
-            validation_level = arguments.get("validation_level", "basic")
-            
-            if not content:
-                return [TextContent(
-                    type="text",
-                    text="❌ **Execution Error**\n\nContent parameter is required for execution."
-                )]
-            
-            # Simulate secure code execution with validation
-            execution_results = {
-                "execution_type": execution_type,
-                "language": language,
-                "validation_level": validation_level,
-                "timestamp": datetime.now().isoformat(),
-                "status": "success",
-                "output": "",
-                "errors": [],
-                "warnings": [],
-                "execution_time": 0.5,
-                "security_checks": []
-            }
-            
-            # Perform validation based on level
-            if validation_level in ["basic", "strict"]:
-                security_checks = [
-                    {"check": "syntax_validation", "status": "passed"},
-                    {"check": "dangerous_imports", "status": "passed"},
-                    {"check": "file_system_access", "status": "restricted"}
-                ]
-                execution_results["security_checks"] = security_checks
-            
-            # Simulate execution based on type and language
-            if execution_type == "code":
-                if language in ["python", "auto"]:
-                    # Simulate Python code execution
-                    if "print" in content:
-                        execution_results["output"] = "Hello from TanukiMCP Maestro!\nCode executed successfully."
-                    elif "import" in content:
-                        execution_results["warnings"].append("Import statements detected - restricted in sandbox")
-                        execution_results["output"] = "Import restricted in secure environment"
-                    else:
-                        execution_results["output"] = f"Code executed: {content[:50]}..."
-                        
-                elif language == "javascript":
-                    execution_results["output"] = "JavaScript execution completed in secure sandbox"
-                    
-                elif language == "bash":
-                    execution_results["output"] = "Bash command executed with restricted permissions"
-                    execution_results["warnings"].append("Shell access is limited in secure environment")
-                    
-            elif execution_type == "workflow":
-                execution_results["output"] = "Workflow executed successfully with all steps completed"
-                execution_results["workflow_steps"] = [
-                    {"step": 1, "status": "completed", "duration": 0.1},
-                    {"step": 2, "status": "completed", "duration": 0.2},
-                    {"step": 3, "status": "completed", "duration": 0.2}
-                ]
-                
-            elif execution_type == "plan":
-                execution_results["output"] = "Execution plan validated and ready for implementation"
-                execution_results["plan_analysis"] = {
-                    "feasibility": "high",
-                    "estimated_duration": "5 minutes",
-                    "resource_requirements": "minimal"
-                }
-            
-            response = f"""# ⚡ Secure Code Execution Results
+            # Execute the python code in a separate process
+            # We use sys.executable to ensure we're using the same python interpreter
+            # that is running the server.
+            result = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False  # We check the returncode manually
+            )
 
-**Execution Type**: {execution_type}
-**Language**: {language}
-**Validation Level**: {validation_level}
-**Timestamp**: {execution_results['timestamp']}
-**Status**: ✅ {execution_results['status']}
-**Execution Time**: {execution_results['execution_time']}s
+            output = "# ✅ Code Execution Result\n\n"
+            if result.stdout:
+                output += "## Output (stdout):\n```\n"
+                output += result.stdout.strip()
+                output += "\n```\n"
+            
+            if result.stderr:
+                output += "## Errors (stderr):\n```\n"
+                output += result.stderr.strip()
+                output += "\n```\n"
 
-## 🔒 Security Validation
-"""
-            
-            for check in execution_results.get("security_checks", []):
-                status_icon = "✅" if check["status"] == "passed" else "⚠️"
-                response += f"- {status_icon} {check['check']}: {check['status']}\n"
-            
-            response += f"""
-## 📤 Output
-```
-{execution_results['output']}
-```
-"""
-            
-            if execution_results.get("warnings"):
-                response += "\n## ⚠️ Warnings\n"
-                for warning in execution_results["warnings"]:
-                    response += f"- {warning}\n"
-            
-            if execution_results.get("workflow_steps"):
-                response += "\n## 📋 Workflow Steps\n"
-                for step in execution_results["workflow_steps"]:
-                    response += f"- Step {step['step']}: {step['status']} ({step['duration']}s)\n"
-            
-            response += "\n*Note: This is a simulated execution environment. In production, this would use secure sandboxing technologies like Docker or WebAssembly.*"
-            
-            return [TextContent(type="text", text=response)]
-            
-        except Exception as e:
-            logger.error(f"Execution tool error: {e}")
-            return [TextContent(
-                type="text",
-                text=f"❌ **Execution Error**\n\nFailed to execute content: {str(e)}"
-            )]
+            if result.returncode != 0:
+                output += f"\n**⚠️ Process exited with non-zero status:** `{result.returncode}`"
+            else:
+                output += f"\n**✅ Process exited successfully (status code: {result.returncode})**"
+
+
+        except subprocess.TimeoutExpired:
+            output = f"# ❌ Error: Code execution timed out after {timeout} seconds."
+        except Exception:
+            output = f"# ❌ Error: An unexpected error occurred during execution.\n\n```{traceback.format_exc()}```"
+
+        return [TextContent(type="text", text=output)]
     
     async def _handle_maestro_temporal_context(self, arguments: dict) -> List[TextContent]:
         """Handle maestro_temporal_context tool - Time-aware reasoning and context analysis"""
         try:
-            context_request = arguments.get("context_request", "")
-            time_frame = arguments.get("time_frame", "current")
-            temporal_factors = arguments.get("temporal_factors", [])
+            # Extract parameters with fallbacks for backward compatibility
+            query = arguments.get("query", "")
+            context_request = arguments.get("context_request", query)  # Backward compatibility
+            time_scope = arguments.get("time_scope", "current") 
+            time_frame = arguments.get("time_frame", time_scope)  # Backward compatibility
+            context_depth = arguments.get("context_depth", "moderate")
+            currency_check = arguments.get("currency_check", True)
             
-            if not context_request:
+            # If query is empty, return error
+            if not query and not context_request:
                 return [TextContent(
                     type="text",
-                    text="❌ **Temporal Context Error**\n\nContext request parameter is required."
+                    text="❌ **Temporal Context Error**\n\nQuery parameter is required."
                 )]
             
-            # Simulate temporal context analysis
+            # Use the query parameter or fall back to context_request
+            query_text = query or context_request
+            
+            # Use simple implementation that doesn't depend on external context
             current_time = datetime.now()
-            temporal_analysis = {
-                "request": context_request,
-                "time_frame": time_frame,
-                "analysis_timestamp": current_time.isoformat(),
-                "temporal_relevance": {},
-                "context_currency": {},
-                "recommendations": []
-            }
             
-            # Analyze temporal relevance
-            if "2024" in context_request or "current" in time_frame:
-                temporal_analysis["temporal_relevance"] = {
-                    "currency_score": 0.95,
-                    "relevance_period": "highly_current",
-                    "last_update_needed": "within_6_months",
-                    "trend_direction": "evolving_rapidly"
-                }
-            elif "historical" in context_request or time_frame == "year":
-                temporal_analysis["temporal_relevance"] = {
-                    "currency_score": 0.7,
-                    "relevance_period": "historical_context",
-                    "last_update_needed": "annual_review",
-                    "trend_direction": "stable_patterns"
-                }
-            else:
-                temporal_analysis["temporal_relevance"] = {
-                    "currency_score": 0.8,
-                    "relevance_period": "moderately_current",
-                    "last_update_needed": "quarterly_review",
-                    "trend_direction": "gradual_evolution"
-                }
+            # Generate temporal analysis based on query text
+            temporal_relevance = self._analyze_query_temporal_relevance(query_text, time_scope or time_frame)
             
-            # Context currency assessment
-            temporal_analysis["context_currency"] = {
-                "information_age": "recent" if time_frame == "current" else "moderate",
-                "verification_status": "verified_current",
-                "source_reliability": "high",
-                "update_frequency": "real_time" if "current" in time_frame else "periodic"
-            }
-            
-            # Generate recommendations
-            recommendations = [
-                f"Information is {temporal_analysis['temporal_relevance']['currency_score']*100:.0f}% temporally relevant",
-                f"Recommended update frequency: {temporal_analysis['context_currency']['update_frequency']}",
-                f"Trend analysis suggests: {temporal_analysis['temporal_relevance']['trend_direction']}"
-            ]
-            
-            if temporal_factors:
-                recommendations.append(f"Consider additional factors: {', '.join(temporal_factors)}")
-            
-            temporal_analysis["recommendations"] = recommendations
-            
+            # Generate a simple but useful temporal analysis
             response = f"""# ⏰ Temporal Context Analysis
 
-**Request**: {context_request}
-**Time Frame**: {time_frame}
-**Analysis Timestamp**: {temporal_analysis['analysis_timestamp']}
+**Query**: {query_text}
+**Analysis Timestamp**: {current_time.strftime('%Y-%m-%d %H:%M:%S')}
+**Time Scope**: {time_scope or time_frame}
+**Context Depth**: {context_depth}
 
 ## 📊 Temporal Relevance Assessment
 
-**Currency Score**: {temporal_analysis['temporal_relevance']['currency_score']:.2f}/1.0
-**Relevance Period**: {temporal_analysis['temporal_relevance']['relevance_period']}
-**Update Frequency**: {temporal_analysis['temporal_relevance']['last_update_needed']}
-**Trend Direction**: {temporal_analysis['temporal_relevance']['trend_direction']}
+**Currency Score**: {temporal_relevance.get('currency_score', '0.95')}/1.0
+**Relevance Period**: {temporal_relevance.get('relevance_period', 'highly_current')}
+**Update Frequency**: {temporal_relevance.get('update_frequency', 'within_6_months')}
+**Trend Direction**: {temporal_relevance.get('trend_direction', 'evolving_rapidly')}
 
 ## 🔍 Context Currency Analysis
 
-**Information Age**: {temporal_analysis['context_currency']['information_age']}
-**Verification Status**: {temporal_analysis['context_currency']['verification_status']}
-**Source Reliability**: {temporal_analysis['context_currency']['source_reliability']}
-**Update Frequency**: {temporal_analysis['context_currency']['update_frequency']}
+**Information Age**: {temporal_relevance.get('information_age', 'recent')}
+**Verification Status**: {temporal_relevance.get('verification_status', 'verified_current')}
+**Source Reliability**: {temporal_relevance.get('source_reliability', 'high')}
+**Update Frequency**: {temporal_relevance.get('update_frequency', 'real_time')}
 
 ## 💡 Recommendations
 
+1. Information is {int(float(temporal_relevance.get('currency_score', '0.95'))*100)}% temporally relevant
+2. Recommended update frequency: {temporal_relevance.get('update_frequency', 'real_time')}
+3. Trend analysis suggests: {temporal_relevance.get('trend_direction', 'evolving_rapidly')}
+
+*Note: This temporal analysis is based on current timestamp and contextual indicators. In production, this would integrate with real-time data sources and temporal databases.*
 """
-            
-            for i, rec in enumerate(temporal_analysis['recommendations'], 1):
-                response += f"{i}. {rec}\n"
-            
-            if temporal_factors:
-                response += f"\n## 🎯 Considered Temporal Factors\n"
-                for factor in temporal_factors:
-                    response += f"- {factor}\n"
-            
-            response += "\n*Note: This temporal analysis is based on current timestamp and contextual indicators. In production, this would integrate with real-time data sources and temporal databases.*"
             
             return [TextContent(type="text", text=response)]
             
@@ -2789,6 +2870,48 @@ The search results have been analyzed for relevance, credibility, and temporal a
                 type="text",
                 text=f"❌ **Temporal Context Error**\n\nFailed to analyze temporal context: {str(e)}"
             )]
+    
+    def _analyze_query_temporal_relevance(self, query: str, time_scope: str) -> Dict[str, str]:
+        """Simple analysis of query temporal relevance based on keywords and time scope."""
+        # Default values
+        result = {
+            'currency_score': '0.95',
+            'relevance_period': 'highly_current',
+            'update_frequency': 'real_time',
+            'trend_direction': 'evolving_rapidly',
+            'information_age': 'recent',
+            'verification_status': 'verified_current',
+            'source_reliability': 'high'
+        }
+        
+        # Check for historical keywords
+        historical_keywords = ['history', 'ancient', 'past', 'previously', 'traditionally', 'origins']
+        if any(keyword in query.lower() for keyword in historical_keywords):
+            result['currency_score'] = '0.6'
+            result['relevance_period'] = 'historical'
+            result['update_frequency'] = 'static'
+            result['trend_direction'] = 'stable'
+            result['information_age'] = 'established'
+        
+        # Check for future/prediction keywords
+        future_keywords = ['future', 'predict', 'forecast', 'upcoming', 'expected', 'anticipate']
+        if any(keyword in query.lower() for keyword in future_keywords):
+            result['currency_score'] = '0.75'
+            result['relevance_period'] = 'future_oriented'
+            result['update_frequency'] = 'ongoing'
+            result['trend_direction'] = 'evolving_rapidly'
+            result['verification_status'] = 'speculative'
+        
+        # Adjust based on time_scope
+        if time_scope == 'historical':
+            result['currency_score'] = '0.5'
+            result['relevance_period'] = 'historical'
+        elif time_scope == 'future':
+            result['currency_score'] = '0.7'
+            result['relevance_period'] = 'future_oriented'
+            result['verification_status'] = 'speculative'
+        
+        return result
     
     async def _handle_maestro_error_handler(self, arguments: dict) -> List[TextContent]:
         """Handle maestro_error_handler tool - Intelligent error analysis and recovery"""

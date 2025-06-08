@@ -501,6 +501,8 @@ class LLMWebTools:
     async def _download_page_content(self, url: str) -> str:
         """Download page content with proper headers and error handling"""
         try:
+            import aiohttp
+            
             # Create request with proper headers
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -511,21 +513,44 @@ class LLMWebTools:
                 'Upgrade-Insecure-Requests': '1'
             }
             
-            request = urllib.request.Request(url, headers=headers)
-            
-            # Download with timeout
-            with urllib.request.urlopen(request, timeout=30, context=self.ssl_context) as response:
-                content = response.read()
+            # Use aiohttp for async requests
+            timeout = aiohttp.ClientTimeout(total=30)
+            async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+                async with session.get(url, ssl=False) as response:
+                    content = await response.text()
+                    return content
+                    
+        except ImportError:
+            # Fallback to synchronous urllib if aiohttp not available
+            logger.warning("aiohttp not available, using synchronous urllib")
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                }
                 
-                # Handle gzip compression
-                content_encoding = response.headers.get('Content-Encoding', '')
-                if 'gzip' in content_encoding.lower():
-                    import gzip
-                    content = gzip.decompress(content)
+                request = urllib.request.Request(url, headers=headers)
                 
-                # Handle encoding
-                encoding = response.headers.get_content_charset() or 'utf-8'
-                return content.decode(encoding, errors='ignore')
+                # Download with timeout
+                with urllib.request.urlopen(request, timeout=30, context=self.ssl_context) as response:
+                    content = response.read()
+                    
+                    # Handle gzip compression
+                    content_encoding = response.headers.get('Content-Encoding', '')
+                    if 'gzip' in content_encoding.lower():
+                        import gzip
+                        content = gzip.decompress(content)
+                    
+                    # Handle encoding
+                    encoding = response.headers.get_content_charset() or 'utf-8'
+                    return content.decode(encoding, errors='ignore')
+            except Exception as e:
+                logger.error(f"Synchronous fallback failed for {url}: {e}")
+                raise
                 
         except Exception as e:
             logger.error(f"Failed to download {url}: {e}")

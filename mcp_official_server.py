@@ -36,20 +36,10 @@ def get_computational_tools():
         _computational_tools = ComputationalTools()
     return _computational_tools
 
-# Create a simple mock context for tools that need it
-class MockContext:
-    async def sample(self, prompt: str, **kwargs):
-        """Mock sample method for Context"""
-        if "2+2" in prompt or "factorial" in prompt:
-            return type('Response', (), {'text': 'The answer is 4. This is calculated by adding 2 + 2 = 4.'})()
-        elif "json" in kwargs.get('response_format', {}).get('type', ''):
-            return type('Response', (), {'json': lambda: {"score": 0.8, "issues": [], "recommendations": []}})()
-        else:
-            return type('Response', (), {'text': f'This is a mock response for: {prompt[:100]}...'})()
-
 # Register Maestro Tools
 @mcp.tool(description="Orchestrate complex tasks with intelligent decomposition and multi-agent validation")
 async def maestro_orchestrate(
+    ctx: Context,
     task_description: str,
     context: Dict[str, Any] = None,
     complexity_level: str = "moderate",
@@ -63,7 +53,6 @@ async def maestro_orchestrate(
 ) -> str:
     """Orchestrate complex tasks with intelligent decomposition and multi-agent validation."""
     tools = get_maestro_tools()
-    ctx = MockContext()
     return await tools.orchestrate_task(
         ctx=ctx,
         task_description=task_description,
@@ -80,6 +69,7 @@ async def maestro_orchestrate(
 
 @mcp.tool(description="Handle collaboration responses for ongoing orchestration tasks")
 async def maestro_collaboration_response(
+    ctx: Context,
     collaboration_id: str,
     responses: Dict[str, Any],
     additional_context: Dict[str, Any] = None,
@@ -100,6 +90,7 @@ async def maestro_collaboration_response(
 
 @mcp.tool(description="Discover and analyze computational requirements for Intelligence Amplification Engine")
 async def maestro_iae_discovery(
+    ctx: Context,
     task_description: str,
     domain_context: str = "",
     complexity_assessment: str = "auto",
@@ -118,6 +109,7 @@ async def maestro_iae_discovery(
 
 @mcp.tool(description="Intelligent tool selection based on task requirements and constraints")
 async def maestro_tool_selection(
+    ctx: Context,
     task_description: str,
     available_tools: List[str] = None,
     constraints: Dict[str, Any] = None
@@ -134,6 +126,7 @@ async def maestro_tool_selection(
 
 @mcp.tool(description="Enhanced search with intelligent query processing and result synthesis")
 async def maestro_search(
+    ctx: Context,
     query: str,
     max_results: int = 10,
     search_type: str = "comprehensive",
@@ -154,6 +147,7 @@ async def maestro_search(
 
 @mcp.tool(description="Intelligent web scraping with content extraction and filtering")
 async def maestro_scrape(
+    ctx: Context,
     url: str,
     extraction_type: str = "text",
     content_filter: str = "relevant",
@@ -172,6 +166,7 @@ async def maestro_scrape(
 
 @mcp.tool(description="Secure code execution with safety checks and sandboxing")
 async def maestro_execute(
+    ctx: Context,
     execution_type: str = "code",
     content: str = "",
     language: str = "python",
@@ -192,6 +187,7 @@ async def maestro_execute(
 
 @mcp.tool(description="Temporal reasoning and context analysis for time-sensitive queries")
 async def maestro_temporal_context(
+    ctx: Context,
     query: str,
     time_scope: str = "current",
     context_depth: str = "moderate",
@@ -201,7 +197,9 @@ async def maestro_temporal_context(
     tools = get_maestro_tools()
     arguments = {
         "query": query,
+        "context_request": query,  # Backward compatibility
         "time_scope": time_scope,
+        "time_frame": time_scope,  # Backward compatibility
         "context_depth": context_depth,
         "currency_check": currency_check
     }
@@ -210,6 +208,7 @@ async def maestro_temporal_context(
 
 @mcp.tool(description="Intelligent error handling with pattern recognition and recovery suggestions")
 async def maestro_error_handler(
+    ctx: Context,
     error_context: str,
     error_type: str = "general",
     recovery_mode: str = "automatic",
@@ -229,6 +228,7 @@ async def maestro_error_handler(
 # Register Computational Tools
 @mcp.tool(description="Intelligence Amplification Engine Gateway - Access to all computational engines for precise numerical calculations")
 async def maestro_iae(
+    ctx: Context,
     engine_domain: str = "quantum_physics",
     computation_type: str = "entanglement_entropy",
     parameters: Dict[str, Any] = None
@@ -244,12 +244,12 @@ async def maestro_iae(
 
 @mcp.tool(description="Get available computational engines and their capabilities")
 async def get_available_engines(
+    ctx: Context,
     detailed: bool = False,
     include_status: bool = True
 ) -> str:
     """Get available computational engines and their capabilities."""
     tools = get_computational_tools()
-    ctx = MockContext()
     return await tools.get_available_engines(ctx, detailed=detailed, include_status=include_status)
 
 if __name__ == "__main__":

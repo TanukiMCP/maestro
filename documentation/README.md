@@ -122,10 +122,9 @@ MAESTRO is a revolutionary AI orchestration protocol that transforms any Languag
 | `maestro_scrape` | Intelligent web scraping | Content extraction, structured data |
 | `maestro_execute` | Code/workflow execution | Secure execution, dual-mode (plans/code) |
 | `maestro_error_handler` | Adaptive error handling | Recovery suggestions, context analysis |
-| `maestro_temporal_context` | Time-aware reasoning | Temporal analysis, context currency |
-| `maestro_iae_discovery` | Engine discovery | Optimal computation selection |
+
+| `maestro_iae_discovery` | Engine discovery & listing | Task-specific discovery + comprehensive engine listing |
 | `maestro_tool_selection` | Tool selection | Intelligent tool recommendation |
-| `get_available_engines` | Engine information | List engines and capabilities |
 
 ## 📊 Performance Metrics
 

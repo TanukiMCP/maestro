@@ -110,8 +110,226 @@ class ComputationalTools:
             logger.warning(f"Failed to initialize Intelligence Amplification Engine: {e}")
             import traceback
             logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add scientific computing engine
+        try:
+            logger.info("🔄 Loading Scientific Computing Engine...")
+            from .engines import get_scientific_computing_engine
             
-        # Future engines will be added here with the same lazy loading pattern
+            ScientificComputingEngine = get_scientific_computing_engine()
+            if ScientificComputingEngine:
+                logger.info("🔄 Instantiating Scientific Computing engine...")
+                scientific_engine = ScientificComputingEngine()
+                self.engines['scientific_computing'] = scientific_engine
+                logger.info("✅ Scientific Computing Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Scientific Computing Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Scientific Computing Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Scientific Computing Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add language arts engine
+        try:
+            logger.info("🔄 Loading Language Arts Engine...")
+            from .engines import get_language_arts_engine
+            
+            LanguageArtsEngine = get_language_arts_engine()
+            if LanguageArtsEngine:
+                logger.info("🔄 Instantiating Language Arts engine...")
+                language_engine = LanguageArtsEngine()
+                self.engines['language_arts'] = language_engine
+                logger.info("✅ Language Arts Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Language Arts Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Language Arts Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Language Arts Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add MedBio engine
+        try:
+            logger.info("🔄 Loading MedBio Engine...")
+            from .engines import get_medbio_engine
+            
+            MedBioEngine = get_medbio_engine()
+            if MedBioEngine:
+                logger.info("🔄 Instantiating MedBio engine...")
+                medbio_engine = MedBioEngine()
+                self.engines['medbio'] = medbio_engine
+                logger.info("✅ MedBio Engine loaded successfully")
+            else:
+                logger.warning("Failed to load MedBio Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading MedBio Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize MedBio Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Genomics engine
+        try:
+            logger.info("🔄 Loading Genomics Engine...")
+            from .engines import get_genomics_engine
+            
+            GenomicsEngine = get_genomics_engine()
+            if GenomicsEngine:
+                logger.info("🔄 Instantiating Genomics engine...")
+                genomics_engine = GenomicsEngine()
+                self.engines['genomics'] = genomics_engine
+                logger.info("✅ Genomics Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Genomics Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Genomics Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Genomics Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Epidemiology engine
+        try:
+            logger.info("🔄 Loading Epidemiology Engine...")
+            from .engines import get_epidemiology_engine
+            
+            EpidemiologyEngine = get_epidemiology_engine()
+            if EpidemiologyEngine:
+                logger.info("🔄 Instantiating Epidemiology engine...")
+                epidemiology_engine = EpidemiologyEngine()
+                self.engines['epidemiology'] = epidemiology_engine
+                logger.info("✅ Epidemiology Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Epidemiology Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Epidemiology Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Epidemiology Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Molecular Dynamics engine
+        try:
+            logger.info("🔄 Loading Molecular Dynamics Engine...")
+            from .engines import get_molecular_dynamics_engine
+            
+            MolecularDynamicsEngine = get_molecular_dynamics_engine()
+            if MolecularDynamicsEngine:
+                logger.info("🔄 Instantiating Molecular Dynamics engine...")
+                md_engine = MolecularDynamicsEngine()
+                self.engines['molecular_dynamics'] = md_engine
+                logger.info("✅ Molecular Dynamics Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Molecular Dynamics Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Molecular Dynamics Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Molecular Dynamics Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Particle Physics engine
+        try:
+            logger.info("🔄 Loading Particle Physics Engine...")
+            from .engines import get_particle_physics_engine
+            
+            ParticlePhysicsEngine = get_particle_physics_engine()
+            if ParticlePhysicsEngine:
+                logger.info("🔄 Instantiating Particle Physics engine...")
+                pp_engine = ParticlePhysicsEngine()
+                self.engines['particle_physics'] = pp_engine
+                logger.info("✅ Particle Physics Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Particle Physics Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Particle Physics Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Particle Physics Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Astrophysics engine
+        try:
+            logger.info("🔄 Loading Astrophysics Engine...")
+            from .engines import get_astrophysics_engine
+            
+            AstrophysicsEngine = get_astrophysics_engine()
+            if AstrophysicsEngine:
+                logger.info("🔄 Instantiating Astrophysics engine...")
+                astro_engine = AstrophysicsEngine()
+                self.engines['astrophysics'] = astro_engine
+                logger.info("✅ Astrophysics Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Astrophysics Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Astrophysics Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Astrophysics Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Scientific Visualization engine
+        try:
+            logger.info("🔄 Loading Scientific Visualization Engine...")
+            from .engines import get_scientific_visualization_engine
+            
+            ScientificVisualizationEngine = get_scientific_visualization_engine()
+            if ScientificVisualizationEngine:
+                logger.info("🔄 Instantiating Scientific Visualization engine...")
+                viz_engine = ScientificVisualizationEngine()
+                self.engines['scientific_visualization'] = viz_engine
+                logger.info("✅ Scientific Visualization Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Scientific Visualization Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Scientific Visualization Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Scientific Visualization Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Veterinary Nutrition RAG engine
+        try:
+            logger.info("🔄 Loading Veterinary Nutrition RAG Engine...")
+            from .engines import get_vet_nutrition_rag_engine
+            
+            VeterinaryNutritionRAGEngine = get_vet_nutrition_rag_engine()
+            if VeterinaryNutritionRAGEngine:
+                logger.info("🔄 Instantiating Veterinary Nutrition RAG engine...")
+                vet_rag_engine = VeterinaryNutritionRAGEngine()
+                self.engines['vet_nutrition_rag'] = vet_rag_engine
+                logger.info("✅ Veterinary Nutrition RAG Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Veterinary Nutrition RAG Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Veterinary Nutrition RAG Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Veterinary Nutrition RAG Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Veterinary Radiation Oncology engine
+        try:
+            logger.info("🔄 Loading Veterinary Radiation Oncology Engine...")
+            from .engines import get_vet_rad_onc_engine
+            
+            VeterinaryRadiationOncologyEngine = get_vet_rad_onc_engine()
+            if VeterinaryRadiationOncologyEngine:
+                logger.info("🔄 Instantiating Veterinary Radiation Oncology engine...")
+                vet_rad_onc_engine = VeterinaryRadiationOncologyEngine()
+                self.engines['vet_rad_onc'] = vet_rad_onc_engine
+                logger.info("✅ Veterinary Radiation Oncology Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Veterinary Radiation Oncology Engine: Class not available")
+        except ImportError as e:
+            logger.warning(f"Import error while loading Veterinary Radiation Oncology Engine: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Veterinary Radiation Oncology Engine: {e}")
+            import traceback
+            logger.warning(f"Full traceback: {traceback.format_exc()}")
         
         logger.info(f"🔧 Computational engines initialized ({len(self.engines)} active)")
     
@@ -134,17 +352,25 @@ class ComputationalTools:
                         "engine_domain": {
                             "type": "string",
                             "description": "Computational domain",
-                            "enum": ["quantum_physics", "intelligence_amplification", "molecular_modeling", "statistical_analysis", 
-                                   "classical_mechanics", "relativity", "chemistry", "biology"],
+                            "enum": ["quantum_physics", "intelligence_amplification", "scientific_computing", "language_arts", "medbio", "genomics", "epidemiology", "molecular_dynamics", "particle_physics", "astrophysics", "scientific_visualization", "vet_nutrition_rag", "vet_rad_onc",
+                                   "classical_mechanics", "chemistry", "biology"],
                             "default": "quantum_physics"
                         },
                         "computation_type": {
                             "type": "string", 
                             "description": "Type of calculation to perform",
                             "enum": ["entanglement_entropy", "bell_violation", "quantum_fidelity", 
-                                   "pauli_decomposition", "molecular_properties", "statistical_test",
-                                   "regression_analysis", "sequence_alignment", "knowledge_network_analysis",
-                                   "cognitive_load_optimization", "concept_clustering"],
+                                   "pauli_decomposition", "knowledge_network_analysis", "cognitive_load_optimization", 
+                                   "concept_clustering", "numerical_integration", "hypothesis_testing", 
+                                   "regression_analysis", "principal_component_analysis", "clustering_analysis",
+                                   "grammar_check", "readability_analysis", "apa_citation_format", "style_analysis",
+                                   "sofa_score", "qsofa_score", "chads_vasc_score", "analyze_lab_values", "check_drug_interactions",
+                                   "transcribe_dna_to_rna", "translate_rna_to_protein", "calculate_gc_content", "fetch_genbank_record", "pairwise_sequence_alignment",
+                                   "sir_model_simulation", "calculate_prevalence", "calculate_incidence_rate", "calculate_basic_reproduction_number",
+                                   "run_basic_simulation", "calculate_invariant_mass", "lorentz_boost", "analyze_particle_collision",
+                                   "convert_celestial_coordinates", "calculate_cosmological_distances", "convert_magnitude_to_luminosity", "calculate_gravitational_force",
+                                   "generate_line_plot", "generate_scatter_plot", "generate_histogram", "generate_heatmap", "query_knowledge_base",
+                                   "calculate_biological_effective_dose", "calculate_radioisotope_decay", "calculate_dose_adjustment_for_gap", "calculate_manual_monitor_units", "estimate_tumor_control_probability"],
                         },
                         "parameters": {
                             "type": "object",
@@ -338,8 +564,93 @@ class ComputationalTools:
                     # Add more IAE computation types as needed
                     else:
                         return [types.TextContent(type="text", text=f"# ❌ Unknown IAE Computation\n\n'{computation_type}' is not supported.\n\nSupported types: knowledge_network_analysis, cognitive_load_optimization, concept_clustering")]
+                
+                elif engine_domain == "scientific_computing":
+                    engine = self.engines.get("scientific_computing")
+                    if not engine:
+                        return [types.TextContent(type="text", text="# ❌ Scientific Computing Engine not available.")]
+                    
+                    if computation_type == "numerical_integration":
+                        function_expr = parameters.get("function_expr", "x**2")
+                        bounds = parameters.get("bounds", [0, 1])
+                        method = parameters.get("method", "quad")
+                        result = engine.numerical_integration(function_expr, tuple(bounds), method)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Numerical Integration", result))]
+                    elif computation_type == "hypothesis_testing":
+                        data1 = parameters.get("data1", [])
+                        data2 = parameters.get("data2", None)
+                        test_type = parameters.get("test_type", "ttest")
+                        alpha = parameters.get("alpha", 0.05)
+                        result = engine.hypothesis_testing(data1, data2, test_type, alpha)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Hypothesis Testing", result))]
+                    elif computation_type == "regression_analysis":
+                        x_data = parameters.get("x_data", [])
+                        y_data = parameters.get("y_data", [])
+                        model_type = parameters.get("model_type", "linear")
+                        result = engine.regression_analysis(x_data, y_data, model_type)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Regression Analysis", result))]
+                    elif computation_type == "principal_component_analysis":
+                        data = parameters.get("data", [])
+                        n_components = parameters.get("n_components", None)
+                        result = engine.principal_component_analysis(data, n_components)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Principal Component Analysis", result))]
+                    elif computation_type == "clustering_analysis":
+                        data = parameters.get("data", [])
+                        n_clusters = parameters.get("n_clusters", 3)
+                        method = parameters.get("method", "kmeans")
+                        result = engine.clustering_analysis(data, n_clusters, method)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Clustering Analysis", result))]
+                    else:
+                        return [types.TextContent(type="text", text=f"# ❌ Unknown Scientific Computing Computation\n\n'{computation_type}' is not supported.\n\nSupported types: numerical_integration, hypothesis_testing, regression_analysis, principal_component_analysis, clustering_analysis")]
+                
+                elif engine_domain == "language_arts":
+                    engine = self.engines.get("language_arts")
+                    if not engine:
+                        return [types.TextContent(type="text", text="# ❌ Language Arts Engine not available.")]
+                    
+                    if computation_type == "grammar_check":
+                        text = parameters.get("text", "")
+                        language = parameters.get("language", "en-US")
+                        result = engine.grammar_check(text, language)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Grammar Check", result))]
+                    elif computation_type == "readability_analysis":
+                        text = parameters.get("text", "")
+                        result = engine.readability_analysis(text)
+                        return [types.TextContent(type="text", text=self._format_iae_result("Readability Analysis", result))]
+                    elif computation_type == "apa_citation_format":
+                        citation_data = parameters.get("citation_data", {})
+                        citation_type = parameters.get("citation_type", "journal")
+                        result = engine.apa_citation_format(citation_data, citation_type)
+                        return [types.TextContent(type="text", text=self._format_iae_result("APA Citation Format", result))]
+                    elif computation_type == "style_analysis":
+                        text = parameters.get("text", "")
+                        style_guide = parameters.get("style_guide", "academic")
+                        # Note: style_analysis not yet implemented in LanguageArtsEngine, use basic analysis
+                        result = {"analysis": "Style analysis feature coming soon", "text_length": len(text)}
+                        return [types.TextContent(type="text", text=self._format_iae_result("Style Analysis", result))]
+                    else:
+                        return [types.TextContent(type="text", text=f"# ❌ Unknown Language Arts Computation\n\n'{computation_type}' is not supported.\n\nSupported types: grammar_check, readability_analysis, apa_citation_format, style_analysis")]
+                elif engine_domain == "medbio":
+                    return await self._handle_medbio_computation(computation_type, parameters)
+                elif engine_domain == "genomics":
+                    return await self._handle_genomics_computation(computation_type, parameters)
+                elif engine_domain == "epidemiology":
+                    return await self._handle_epidemiology_computation(computation_type, parameters)
+                elif engine_domain == "molecular_dynamics":
+                    return await self._handle_molecular_dynamics_computation(computation_type, parameters)
+                elif engine_domain == "particle_physics":
+                    return await self._handle_particle_physics_computation(computation_type, parameters)
+                elif engine_domain == "astrophysics":
+                    return await self._handle_astrophysics_computation(computation_type, parameters)
+                elif engine_domain == "scientific_visualization":
+                    return await self._handle_scientific_visualization_computation(computation_type, parameters)
+                elif engine_domain == "vet_nutrition_rag":
+                    return await self._handle_vet_nutrition_rag_computation(computation_type, parameters)
+                elif engine_domain == "vet_rad_onc":
+                    return await self._handle_vet_rad_onc_computation(computation_type, parameters)
                 else:
                     # Fallback: Use maestro_evaluate to generate and show a temporary computational engine
+                    logger.warning(f"Domain '{engine_domain}' not found, falling back to dynamic evaluation.")
                     from mcp.types import TextContent
                     code = f"# Temporary computational engine for domain: {engine_domain}\n# Computation type: {computation_type}\n# Parameters: {json.dumps(parameters, indent=2)}\n\n# (Insert generated code here)\nresult = ... # Compute result based on parameters\nprint(result)"
                     explanation = f"## Fallback: No native engine for domain '{engine_domain}'.\n\nA temporary computational engine was generated. Please review the code and results below."
@@ -668,7 +979,9 @@ class ComputationalTools:
         """Get detailed description for an engine."""
         descriptions = {
             "quantum_physics": "Advanced quantum mechanics computations including entanglement analysis, Bell inequality tests, and quantum state operations",
-            "intelligence_amplification": "Cognitive and knowledge analysis using network theory, optimization algorithms, and machine learning clustering"
+            "intelligence_amplification": "Cognitive and knowledge analysis using network theory, optimization algorithms, and machine learning clustering",
+            "scientific_computing": "Mathematical computations, statistical analysis, and data science using SciPy, NumPy, and scikit-learn",
+            "language_arts": "Grammar checking, writing analysis, citation formatting, and text processing using computational linguistics"
         }
         return descriptions.get(engine_id, f"Computational engine for {engine_id.replace('_', ' ')}")
 
@@ -686,6 +999,20 @@ class ComputationalTools:
                 "Cognitive load optimization",
                 "Concept clustering and classification",
                 "Information flow analysis"
+            ],
+            "scientific_computing": [
+                "Numerical integration (quad, simpson, trapz)",
+                "Statistical hypothesis testing (t-test, wilcoxon, KS test)",
+                "Regression analysis (linear, logistic, random forest)",
+                "Principal component analysis",
+                "Clustering analysis (k-means)"
+            ],
+            "language_arts": [
+                "Grammar and spell checking",
+                "Readability analysis (Flesch-Kincaid metrics)",
+                "APA citation formatting",
+                "Writing style analysis",
+                "Text processing and validation"
             ]
         }
         return capabilities.get(engine_id, ["General computational capabilities"])
@@ -1001,3 +1328,258 @@ class ComputationalTools:
             return f"🧠 {title}: {len(set(result['cluster_assignments']))} clusters identified, silhouette score: {result.get('silhouette_score', 'N/A')}"
         else:
             return f"🧠 {title}: Analysis completed successfully"
+
+    async def _handle_medbio_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all MedBio engine computations."""
+        logger.info(f"🧬 Handling MedBio computation: {computation_type}")
+        engine = self.engines.get("medbio")
+        if not engine:
+            return [types.TextContent(text="Error: MedBio Engine not available")]
+
+        # Ensure the requested computation is supported by this engine
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for MedBio engine.")]
+
+        try:
+            # Dynamically call the method on the engine instance
+            computation_method = getattr(engine, computation_type, None)
+            
+            if not computation_method:
+                return [types.TextContent(text=f"Error: MedBio engine has no method '{computation_type}'")]
+
+            # The engine methods for medbio expect the parameters directly
+            if computation_type in ["analyze_lab_values", "check_drug_interactions"]:
+                 # These functions expect a specific argument name
+                if computation_type == "analyze_lab_values":
+                    result = computation_method(lab_results=parameters)
+                elif computation_type == "check_drug_interactions":
+                    result = computation_method(drugs=parameters.get("drugs", []))
+                else: # Should not happen given the if statement
+                    result = computation_method(parameters)
+            else:
+                result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"MedBio Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during MedBio computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_genomics_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Genomics engine computations."""
+        logger.info(f"🔬 Handling Genomics computation: {computation_type}")
+        engine = self.engines.get("genomics")
+        if not engine:
+            return [types.TextContent(text="Error: Genomics Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Genomics engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            # All genomics methods expect the 'parameters' dictionary
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Genomics Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Genomics computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_epidemiology_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Epidemiology engine computations."""
+        logger.info(f"📈 Handling Epidemiology computation: {computation_type}")
+        engine = self.engines.get("epidemiology")
+        if not engine:
+            return [types.TextContent(text="Error: Epidemiology Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Epidemiology engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Epidemiology Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Epidemiology computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_molecular_dynamics_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Molecular Dynamics engine computations."""
+        logger.info(f"⚛️ Handling Molecular Dynamics computation: {computation_type}")
+        engine = self.engines.get("molecular_dynamics")
+        if not engine:
+            return [types.TextContent(text="Error: Molecular Dynamics Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Molecular Dynamics engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Molecular Dynamics Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Molecular Dynamics computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_particle_physics_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Particle Physics engine computations."""
+        logger.info(f"💥 Handling Particle Physics computation: {computation_type}")
+        engine = self.engines.get("particle_physics")
+        if not engine:
+            return [types.TextContent(text="Error: Particle Physics Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Particle Physics engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Particle Physics Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Particle Physics computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_astrophysics_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Astrophysics engine computations."""
+        logger.info(f"🌌 Handling Astrophysics computation: {computation_type}")
+        engine = self.engines.get("astrophysics")
+        if not engine:
+            return [types.TextContent(text="Error: Astrophysics Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Astrophysics engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Astrophysics Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Astrophysics computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_scientific_visualization_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Scientific Visualization engine computations."""
+        logger.info(f"📊 Handling Scientific Visualization computation: {computation_type}")
+        engine = self.engines.get("scientific_visualization")
+        if not engine:
+            return [types.TextContent(text="Error: Scientific Visualization Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Scientific Visualization engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            # The result is code, so we format it nicely
+            title = f"Scientific Visualization Engine: {computation_type}"
+            code_to_execute = result.get("plot_code", "# No code generated.")
+            output_file = result.get("output_filename", "plot.png")
+            
+            formatted_result = (
+                f"🎨 {title}\n"
+                f"--------------------------------------------------\n"
+                f"Below is the Python code to generate the visualization. "
+                f"You can execute this code to produce the '{output_file}' file.\n"
+                f"--------------------------------------------------\n"
+                f"```python\n"
+                f"{code_to_execute}\n"
+                f"```"
+            )
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Scientific Visualization computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]
+
+    async def _handle_vet_nutrition_rag_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Veterinary Nutrition RAG engine computations."""
+        logger.info(f"🐾 Handling Veterinary Nutrition RAG computation: {computation_type}")
+        engine = self.engines.get("vet_nutrition_rag")
+        if not engine:
+            return [types.TextContent(text="Error: Veterinary Nutrition RAG Engine not available")]
+
+        if computation_type != "query_knowledge_base":
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Veterinary Nutrition RAG engine.")]
+
+        try:
+            result = engine.query_knowledge_base(parameters)
+            
+            if "error" in result:
+                return [types.TextContent(text=f"Error from engine: {result['error']}")]
+
+            # Format the retrieved chunks for clear output
+            title = f"Veterinary Nutrition KB Results for: \"{result['query']}\""
+            chunks_text = []
+            for i, chunk in enumerate(result['retrieved_chunks']):
+                chunks_text.append(
+                    f"📄 Chunk {i+1} (Source: {chunk['source']})\n"
+                    f"Relevance Score: {chunk['relevance_score']:.4f}\n\n"
+                    f"{chunk['content']}"
+                )
+            
+            formatted_result = (
+                f"🧠 {title}\n"
+                f"--------------------------------------------------\n"
+                f"The following information was retrieved from the knowledge base:\n\n"
+                + "\n\n---\n\n".join(chunks_text)
+            )
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Veterinary Nutrition RAG computation: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during RAG computation: {e}")]
+
+    async def _handle_vet_rad_onc_computation(self, computation_type: str, parameters: dict) -> List[types.TextContent]:
+        """Handles routing for all Veterinary Radiation Oncology engine computations."""
+        logger.info(f"⚕️ Handling Veterinary Radiation Oncology computation: {computation_type}")
+        engine = self.engines.get("vet_rad_onc")
+        if not engine:
+            return [types.TextContent(text="Error: Veterinary Radiation Oncology Engine not available")]
+
+        if computation_type not in engine.supported_calculations:
+            return [types.TextContent(text=f"Error: Unsupported computation '{computation_type}' for Veterinary Radiation Oncology engine.")]
+
+        try:
+            computation_method = getattr(engine, computation_type)
+            result = computation_method(parameters)
+            
+            formatted_result = self._format_iae_result(f"Veterinary Radiation Oncology Engine: {computation_type}", result)
+            return [types.TextContent(text=formatted_result)]
+
+        except Exception as e:
+            logger.error(f"❌ Error during Veterinary Radiation Oncology computation '{computation_type}': {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return [types.TextContent(text=f"An error occurred during {computation_type}: {e}")]

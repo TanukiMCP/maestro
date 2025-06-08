@@ -200,47 +200,6 @@ result = await tools.handle_tool_call("maestro_search", {
 
 ---
 
-## 📑 maestro_scrape
-
-**Purpose**: Web scraping functionality with intelligent content extraction
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `url` | string | ✅ | - | URL to scrape |
-| `output_format` | string | ❌ | `"markdown"` | Format: `markdown`, `text`, `html`, `json` |
-| `selectors` | array | ❌ | `[]` | CSS selectors for specific elements |
-| `wait_time` | number | ❌ | `3` | Time to wait for page load (seconds) |
-| `extract_links` | boolean | ❌ | `false` | Whether to extract links |
-
-### Example Usage
-
-```python
-# Basic scraping
-result = await tools.handle_tool_call("maestro_scrape", {
-    "url": "https://example.com/article",
-    "output_format": "markdown"
-})
-
-# Targeted scraping with selectors
-result = await tools.handle_tool_call("maestro_scrape", {
-    "url": "https://news.site.com/tech",
-    "selectors": [".article-content", ".headline", ".author"],
-    "extract_links": true,
-    "wait_time": 5
-})
-
-# Structured data extraction
-result = await tools.handle_tool_call("maestro_scrape", {
-    "url": "https://research.site.com/papers",
-    "output_format": "json",
-    "extract_links": true
-})
-```
-
----
-
 ## ⚙️ maestro_execute
 
 **Purpose**: Execute computational tasks with enhanced error handling
@@ -341,60 +300,106 @@ result = await tools.handle_tool_call("maestro_error_handler", {
 })
 ```
 
+
+
 ---
 
-## 📅 maestro_temporal_context
+## 🔍 maestro_iae_discovery
 
-**Purpose**: Temporal context awareness and time-based reasoning
+**Purpose**: Integrated Analysis Engine discovery for optimal computation selection and comprehensive engine listing
 
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `temporal_query` | string | ✅ | - | Query requiring temporal reasoning |
-| `time_range` | object | ❌ | `{}` | Time range with `start` and `end` |
-| `temporal_precision` | string | ❌ | `"day"` | Precision: `year`, `month`, `day`, `hour`, `minute` |
+| `task_type` | string | ✅ | `"general"` | Type of task for engine discovery |
+| `domain_context` | string | ❌ | - | Domain context for the task |
+| `complexity_requirements` | object | ❌ | `{}` | Complexity requirements |
+| `list_all_engines` | boolean | ❌ | `false` | List all available engines instead of task-specific discovery |
+| `engine_type_filter` | string | ❌ | `"all"` | Filter engines by type: `all`, `statistical`, `mathematical`, `quantum`, `enhanced` |
+| `include_capabilities` | boolean | ❌ | `true` | Include detailed engine capabilities |
 
 ### Example Usage
 
 ```python
-# Time-aware analysis
-result = await tools.handle_tool_call("maestro_temporal_context", {
-    "temporal_query": "What were the major AI developments in Q1 2024?",
-    "time_range": {
-        "start": "2024-01-01",
-        "end": "2024-03-31"
-    },
-    "temporal_precision": "month"
+# Task-specific engine discovery (original functionality)
+result = await tools.handle_tool_call("maestro_iae_discovery", {
+    "task_type": "mathematical",
+    "domain_context": "statistical analysis"
 })
-```
 
----
-
-## 🔧 get_available_engines
-
-**Purpose**: Get list of available computational engines and their capabilities
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `engine_type` | string | ❌ | `"all"` | Filter: `all`, `statistical`, `mathematical`, `quantum`, `enhanced` |
-| `include_capabilities` | boolean | ❌ | `true` | Include detailed capabilities |
-
-### Example Usage
-
-```python
-# List all engines
-result = await tools.handle_tool_call("get_available_engines", {
-    "engine_type": "all",
+# List all available engines (replaces get_available_engines)
+result = await tools.handle_tool_call("maestro_iae_discovery", {
+    "task_type": "general",
+    "list_all_engines": true,
     "include_capabilities": true
 })
 
-# List only mathematical engines
-result = await tools.handle_tool_call("get_available_engines", {
-    "engine_type": "mathematical"
+# List filtered engines
+result = await tools.handle_tool_call("maestro_iae_discovery", {
+    "task_type": "general", 
+    "list_all_engines": true,
+    "engine_type_filter": "mathematical"
 })
+
+# Complex discovery with requirements
+result = await tools.handle_tool_call("maestro_iae_discovery", {
+    "task_type": "research",
+    "domain_context": "machine learning optimization",
+    "complexity_requirements": {
+        "precision": "high",
+        "computational_intensity": "medium"
+    }
+})
+```
+
+**Features:**
+- **Dual Mode**: Task-specific discovery OR comprehensive engine listing
+- **Intelligent Matching**: Optimal engine recommendation based on task requirements
+- **Filtering**: Filter engines by type (statistical, mathematical, quantum, enhanced)
+- **Capabilities**: Detailed capability information for each engine
+- **Context-Aware**: Domain and complexity-based recommendations
+
+---
+
+## ⏰ Built-in Temporal Awareness
+
+**All MAESTRO tools automatically include real-time temporal context!**
+
+Every tool execution automatically receives comprehensive date/time information, eliminating the need for separate temporal analysis:
+
+### Automatic Temporal Context Injection
+
+- **Current UTC Time**: Real-time UTC timestamp
+- **Local Time**: User's local time and timezone
+- **Date Information**: Formatted dates, day of week, season
+- **Calendar Context**: Week number, quarter, day of year
+- **Temporal Flags**: Weekend status, time-based context
+
+### Usage Benefits
+
+```python
+# All tools automatically know the current time context
+result = await tools.handle_tool_call("maestro_search", {
+    "query": "latest news today"  # Tool knows what "today" means
+})
+
+# Time-aware calculations
+result = await tools.handle_tool_call("maestro_iae", {
+    "analysis_request": "quarterly performance analysis"  # Tool knows current quarter
+})
+
+# Context-aware orchestration
+result = await tools.handle_tool_call("maestro_orchestrate", {
+    "task_description": "end-of-week report"  # Tool knows current week status
+})
+```
+
+### Temporal Footer
+
+All tool responses include an automatic timestamp footer:
+```
+⏰ *Response generated on Tuesday, January 14, 2025 at 02:30 PM UTC*
 ```
 
 ---
@@ -405,17 +410,16 @@ result = await tools.handle_tool_call("get_available_engines", {
 
 1. **Complex Tasks**: Use `maestro_orchestrate` for multi-step workflows
 2. **Calculations**: Use `maestro_iae` for mathematical/scientific computations
-3. **Research**: Use `maestro_search` for information gathering
-4. **Data Extraction**: Use `maestro_scrape` for web content
-5. **Code Tasks**: Use `maestro_execute` for script execution
-6. **Error Recovery**: Use `maestro_error_handler` for troubleshooting
+3. **Research**: Use `maestro_search` for information gathering and web content
+4. **Code Tasks**: Use `maestro_execute` for script execution
+5. **Error Recovery**: Use `maestro_error_handler` for troubleshooting
 
 ### Performance Optimization
 
 - Set appropriate `timeout` values for long-running operations
 - Use `precision_level` wisely (higher precision = longer execution time)
 - Leverage `temporal_filter` in searches for relevant results
-- Use specific `selectors` in scraping for faster extraction
+- Use specific search terms and filters for relevant results
 
 ### Error Handling
 
@@ -431,11 +435,13 @@ result = await tools.handle_tool_call("get_available_engines", {
 | Tool | Python | JavaScript | Bash | Web | MCP | HTTP |
 |------|--------|------------|------|-----|-----|------|
 | `maestro_orchestrate` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `maestro_iae_discovery` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `maestro_tool_selection` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `maestro_iae` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | `maestro_search` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `maestro_scrape` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `maestro_execute` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `maestro_error_handler` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `maestro_collaboration_response` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ---
 

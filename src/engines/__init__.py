@@ -73,6 +73,39 @@ def get_intelligence_amplifier():
 def get_quantum_physics_engine():
     return _lazy_import("quantum_physics_engine", "QuantumPhysicsEngine")
 
+def get_scientific_computing_engine():
+    return _lazy_import("scientific_computing_engine", "ScientificComputingEngine")
+
+def get_language_arts_engine():
+    return _lazy_import("language_arts_engine", "LanguageArtsEngine")
+
+def get_medbio_engine():
+    return _lazy_import("medbio_engine", "MedBioEngine")
+
+def get_genomics_engine():
+    return _lazy_import("genomics_engine", "GenomicsEngine")
+
+def get_epidemiology_engine():
+    return _lazy_import("epidemiology_engine", "EpidemiologyEngine")
+
+def get_molecular_dynamics_engine():
+    return _lazy_import("molecular_dynamics_engine", "MolecularDynamicsEngine")
+
+def get_particle_physics_engine():
+    return _lazy_import("particle_physics_engine", "ParticlePhysicsEngine")
+
+def get_astrophysics_engine():
+    return _lazy_import("astrophysics_engine", "AstrophysicsEngine")
+
+def get_scientific_visualization_engine():
+    return _lazy_import("scientific_visualization_engine", "ScientificVisualizationEngine")
+
+def get_vet_nutrition_rag_engine():
+    return _lazy_import("vet_nutrition_rag_engine", "VeterinaryNutritionRAGEngine")
+
+def get_vet_rad_onc_engine():
+    return _lazy_import("vet_rad_onc_engine", "VeterinaryRadiationOncologyEngine")
+
 # Define the IntelligenceAmplifier as a property for backward compatibility
 class LazyEngineLoader:
     @property
@@ -94,5 +127,16 @@ __all__ = [
     'get_apa_citation_engine',
     'get_intelligence_amplifier',
     'get_quantum_physics_engine',
+    'get_scientific_computing_engine',
+    'get_language_arts_engine',
+    'get_medbio_engine',
+    'get_genomics_engine',
+    'get_epidemiology_engine',
+    'get_molecular_dynamics_engine',
+    'get_particle_physics_engine',
+    'get_astrophysics_engine',
+    'get_scientific_visualization_engine',
+    'get_vet_nutrition_rag_engine',
+    'get_vet_rad_onc_engine',
     'IntelligenceAmplifier'
 ] 

@@ -36,14 +36,14 @@ STATIC_TOOLS = [
             "type": "object",
             "properties": {
                 "task_description": {"type": "string", "description": "Complex task requiring systematic reasoning"},
-                "context": {"type": "object", "description": "Relevant background information and constraints", "additionalProperties": True},
-                "success_criteria": {"type": "object", "description": "Success criteria for the task", "additionalProperties": True},
+                "context": {"type": "object", "description": "Relevant background information and constraints"},
+                "success_criteria": {"type": "object", "description": "Success criteria for the task"},
                 "complexity_level": {"type": "string", "enum": ["simple", "moderate", "complex", "expert"], "description": "Complexity level", "default": "moderate"},
-                "quality_threshold": {"type": "number", "minimum": 0.7, "maximum": 0.95, "description": "Minimum acceptable quality (0.7-0.95, default 0.85)", "default": 0.85},
+                "quality_threshold": {"type": "number", "description": "Minimum acceptable quality (0.7-0.95, default 0.85)", "default": 0.85},
                 "resource_level": {"type": "string", "enum": ["limited", "moderate", "abundant"], "description": "Available computational resources", "default": "moderate"},
                 "reasoning_focus": {"type": "string", "enum": ["logical", "creative", "analytical", "research", "synthesis", "auto"], "description": "Primary reasoning approach to emphasize", "default": "auto"},
                 "validation_rigor": {"type": "string", "enum": ["basic", "standard", "thorough", "rigorous"], "description": "Validation thoroughness level", "default": "standard"},
-                "max_iterations": {"type": "integer", "minimum": 1, "maximum": 5, "description": "Maximum refinement cycles", "default": 3},
+                "max_iterations": {"type": "integer", "description": "Maximum refinement cycles", "default": 3},
                 "domain_specialization": {"type": "string", "description": "Preferred domain expertise to emphasize"},
                 "enable_collaboration_fallback": {"type": "boolean", "description": "Enable collaborative fallback when ambiguity or insufficient context is detected", "default": True}
             },
@@ -51,7 +51,7 @@ STATIC_TOOLS = [
         },
         "annotations": {
             "title": "Enhanced Orchestrate Complex Task",
-            "readOnlyHint": False,
+            "readOnlyHint": True,
             "destructiveHint": False,
             "idempotentHint": False,
             "openWorldHint": True
@@ -59,18 +59,21 @@ STATIC_TOOLS = [
     },
     {
         "name": "maestro_iae_discovery",
-        "description": "🔍 Integrated Analysis Engine discovery for optimal computation selection",
+        "description": "🔍 Integrated Analysis Engine discovery for optimal computation selection and engine listing",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "task_type": {"type": "string", "description": "Type of task for engine discovery", "default": "general"},
                 "domain_context": {"type": "string", "description": "Domain context for the task"},
-                "complexity_requirements": {"type": "object", "description": "Complexity requirements", "additionalProperties": True}
+                "complexity_requirements": {"type": "object", "description": "Complexity requirements"},
+                "list_all_engines": {"type": "boolean", "description": "List all available engines instead of task-specific discovery", "default": False},
+                "engine_type_filter": {"type": "string", "enum": ["all", "statistical", "mathematical", "quantum", "enhanced"], "description": "Filter engines by type when listing", "default": "all"},
+                "include_capabilities": {"type": "boolean", "description": "Include detailed engine capabilities", "default": True}
             },
             "required": ["task_type"]
         },
         "annotations": {
-            "title": "Discover Optimal Engines",
+            "title": "Discover Engines or List Available Engines",
             "readOnlyHint": True,
             "destructiveHint": False,
             "idempotentHint": True,
@@ -84,8 +87,8 @@ STATIC_TOOLS = [
             "type": "object",
             "properties": {
                 "request_description": {"type": "string", "description": "Description of the request for tool selection"},
-                "available_context": {"type": "object", "description": "Available context", "additionalProperties": True},
-                "precision_requirements": {"type": "object", "description": "Precision requirements", "additionalProperties": True}
+                "available_context": {"type": "object", "description": "Available context"},
+                "precision_requirements": {"type": "object", "description": "Precision requirements"}
             },
             "required": ["request_description"]
         },
@@ -106,7 +109,7 @@ STATIC_TOOLS = [
                 "analysis_request": {"type": "string", "description": "The analysis or computation request"},
                 "engine_type": {"type": "string", "enum": ["statistical", "mathematical", "quantum", "auto"], "description": "Type of analysis engine", "default": "auto"},
                 "precision_level": {"type": "string", "enum": ["standard", "high", "ultra"], "description": "Required precision level", "default": "standard"},
-                "computational_context": {"type": "object", "description": "Additional computational context", "additionalProperties": True}
+                "computational_context": {"type": "object", "description": "Additional computational context"}
             },
             "required": ["analysis_request"]
         },
@@ -128,7 +131,10 @@ STATIC_TOOLS = [
                 "max_results": {"type": "integer", "description": "Maximum number of results", "default": 10},
                 "search_engine": {"type": "string", "enum": ["duckduckgo", "google", "bing"], "description": "Search engine to use", "default": "duckduckgo"},
                 "temporal_filter": {"type": "string", "enum": ["any", "recent", "week", "month", "year"], "description": "Time filter", "default": "any"},
-                "result_format": {"type": "string", "enum": ["structured", "summary", "detailed"], "description": "Format of results", "default": "structured"}
+                "result_format": {"type": "string", "enum": ["structured", "summary", "detailed"], "description": "Format of results", "default": "structured"},
+                "timeout": {"type": "number", "description": "Request timeout in seconds", "default": 60},
+                "retry_attempts": {"type": "number", "description": "Number of retry attempts on failure", "default": 3},
+                "wait_time": {"type": "number", "description": "Wait time between requests (seconds)", "default": 2.0}
             },
             "required": ["query"]
         },
@@ -140,28 +146,7 @@ STATIC_TOOLS = [
             "openWorldHint": True
         }
     },
-    {
-        "name": "maestro_scrape",
-        "description": "📑 Web scraping functionality with content extraction",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "url": {"type": "string", "description": "URL to scrape"},
-                "output_format": {"type": "string", "enum": ["markdown", "text", "html", "json"], "description": "Output format", "default": "markdown"},
-                "selectors": {"type": "array", "items": {"type": "string"}, "description": "CSS selectors for specific elements"},
-                "wait_time": {"type": "number", "description": "Time to wait for page load (seconds)", "default": 3},
-                "extract_links": {"type": "boolean", "description": "Whether to extract links", "default": False}
-            },
-            "required": ["url"]
-        },
-        "annotations": {
-            "title": "Scrape Web Content",
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "idempotentHint": False,
-            "openWorldHint": True
-        }
-    },
+
     {
         "name": "maestro_execute",
         "description": "⚙️ Execute computational tasks with enhanced error handling",
@@ -169,7 +154,7 @@ STATIC_TOOLS = [
             "type": "object",
             "properties": {
                 "command": {"type": "string", "description": "Command or code to execute"},
-                "execution_context": {"type": "object", "description": "Execution context", "additionalProperties": True},
+                "execution_context": {"type": "object", "description": "Execution context"},
                 "timeout_seconds": {"type": "number", "description": "Execution timeout in seconds", "default": 30},
                 "safe_mode": {"type": "boolean", "description": "Enable safe execution mode", "default": True}
             },
@@ -190,7 +175,7 @@ STATIC_TOOLS = [
             "type": "object",
             "properties": {
                 "error_message": {"type": "string", "description": "The error message to analyze"},
-                "error_context": {"type": "object", "description": "Context where the error occurred", "additionalProperties": True},
+                "error_context": {"type": "object", "description": "Context where the error occurred"},
                 "recovery_suggestions": {"type": "boolean", "description": "Whether to provide recovery suggestions", "default": True}
             },
             "required": ["error_message"]
@@ -203,44 +188,8 @@ STATIC_TOOLS = [
             "openWorldHint": False
         }
     },
-    {
-        "name": "maestro_temporal_context",
-        "description": "📅 Temporal context awareness and time-based reasoning",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "temporal_query": {"type": "string", "description": "Query requiring temporal reasoning"},
-                "time_range": {"type": "object", "properties": {"start": {"type": "string"}, "end": {"type": "string"}}, "description": "Time range for the query"},
-                "temporal_precision": {"type": "string", "enum": ["year", "month", "day", "hour", "minute"], "description": "Required temporal precision", "default": "day"}
-            },
-            "required": ["temporal_query"]
-        },
-        "annotations": {
-            "title": "Analyze Time-Based Context",
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "idempotentHint": True,
-            "openWorldHint": False
-        }
-    },
-    {
-        "name": "get_available_engines",
-        "description": "🔧 Get list of available computational engines and their capabilities",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "engine_type": {"type": "string", "enum": ["all", "statistical", "mathematical", "quantum", "enhanced"], "description": "Filter by engine type", "default": "all"},
-                "include_capabilities": {"type": "boolean", "description": "Include detailed capabilities", "default": True}
-            }
-        },
-        "annotations": {
-            "title": "List Available Engines",
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "idempotentHint": True,
-            "openWorldHint": False
-        }
-    },
+
+
     {
         "name": "maestro_collaboration_response",
         "description": "🤝 Handle user responses to collaboration requests from orchestration workflows",
@@ -248,11 +197,11 @@ STATIC_TOOLS = [
             "type": "object",
             "properties": {
                 "collaboration_id": {"type": "string", "description": "The collaboration request ID from the original request"},
-                "responses": {"type": "object", "description": "User responses to the specific questions", "additionalProperties": True},
-                "additional_context": {"type": "object", "description": "Additional context provided by the user", "additionalProperties": True},
-                "user_preferences": {"type": "object", "description": "User preferences for workflow execution", "additionalProperties": True},
+                "responses": {"type": "object", "description": "User responses to the specific questions"},
+                "additional_context": {"type": "object", "description": "Additional context provided by the user"},
+                "user_preferences": {"type": "object", "description": "User preferences for workflow execution"},
                 "approval_status": {"type": "string", "enum": ["approved", "needs_revision", "rejected"], "description": "User's approval status for continuing", "default": "approved"},
-                "confidence_level": {"type": "number", "minimum": 0.0, "maximum": 1.0, "description": "User confidence in the provided information", "default": 0.8}
+                "confidence_level": {"type": "number", "description": "User confidence in the provided information", "default": 0.8}
             },
             "required": ["collaboration_id", "responses"]
         },
@@ -271,7 +220,7 @@ STATIC_TOOLS = [
 async def handle_mcp_get():
     """Handle MCP GET requests - return tool list for Smithery scanning"""
     logger.info("Handling MCP GET request for tool scanning")
-    return {"tools": STATIC_TOOLS}
+    return JSONResponse(content={"tools": STATIC_TOOLS}, media_type="application/json; charset=utf-8")
 
 @app.post("/mcp")
 async def handle_mcp_post(request: Request):
@@ -284,7 +233,7 @@ async def handle_mcp_post(request: Request):
         
         if method == "initialize":
             logger.info("Handling initialize request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {
@@ -299,46 +248,46 @@ async def handle_mcp_post(request: Request):
                         "version": "1.0.0"
                     }
                 }
-            }
+            }, media_type="application/json; charset=utf-8")
         elif method == "notifications/initialized":
             logger.info("Handling initialized notification")
             # This is a notification, no response needed
             return JSONResponse(content=None, status_code=204)
         elif method == "ping":
             logger.info("Handling ping request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {}
-            }
+            })
         elif method == "tools/list":
             logger.info("Handling tools/list request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {"tools": STATIC_TOOLS}
-            }
+            }, media_type="application/json; charset=utf-8")
         elif method == "prompts/list":
             logger.info("Handling prompts/list request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {"prompts": []}
-            }
+            })
         elif method == "resources/list":
             logger.info("Handling resources/list request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {"resources": []}
-            }
+            })
         elif method == "resourceTemplates/list":
             logger.info("Handling resourceTemplates/list request")
-            return {
+            return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "result": {"templates": []}
-            }
+            })
         elif method == "tools/call":
             tool_name = params.get("name")
             arguments = params.get("arguments", {})
@@ -355,7 +304,8 @@ async def handle_mcp_post(request: Request):
                             "message": "Missing required parameter: name"
                         }
                     },
-                    status_code=400
+                    status_code=400,
+                    media_type="application/json; charset=utf-8"
                 )
             
             try:
@@ -378,17 +328,36 @@ async def handle_mcp_post(request: Request):
                                         "data": error_data["error"]
                                     }
                                 },
-                                status_code=400
+                                status_code=400,
+                                media_type="application/json; charset=utf-8"
                             )
                     except (json.JSONDecodeError, KeyError):
                         # If not parseable as JSON error, return as normal content
                         pass
                 
-                return {
+                # Truncate very large responses to prevent Content-Length issues
+                for item in result:
+                    if item.get("type") == "text" and len(item.get("text", "")) > 50000:
+                        item["text"] = item["text"][:50000] + "\n\n... [Response truncated due to size limit]"
+                
+                # Add temporal context footer to all text responses
+                temporal_context = arguments.get("_temporal_context", {})
+                if temporal_context:
+                    temporal_footer = f"\n\n---\n⏰ *Response generated on {temporal_context.get('formatted_date', 'Unknown date')} at {temporal_context.get('formatted_time', 'Unknown time')}*"
+                    for item in result:
+                        if item.get("type") == "text":
+                            item["text"] += temporal_footer
+                
+                response_content = {
                     "jsonrpc": "2.0", 
                     "id": request_id,
                     "result": {"content": result}
                 }
+                
+                return JSONResponse(
+                    content=response_content,
+                    media_type="application/json; charset=utf-8"
+                )
             except Exception as e:
                 logger.error(f"Error executing tool {tool_name}: {str(e)}")
                 return JSONResponse(
@@ -400,23 +369,59 @@ async def handle_mcp_post(request: Request):
                             "message": f"Error executing tool: {str(e)}"
                         }
                     },
-                    status_code=500
+                    status_code=500,
+                    media_type="application/json; charset=utf-8"
                 )
         else:
             return JSONResponse(
                 content={"jsonrpc": "2.0", "id": request_id, "error": {"code": -32601, "message": f"Method not found: {method}"}},
-                status_code=400
+                status_code=400,
+                media_type="application/json; charset=utf-8"
             )
     except Exception as e:
         logger.error(f"Error in MCP POST: {e}")
         return JSONResponse(
             content={"jsonrpc": "2.0", "error": {"code": -32603, "message": f"Internal error: {str(e)}"}},
-            status_code=500
+            status_code=500,
+            media_type="application/json; charset=utf-8"
         )
 
 async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Execute a tool with lazy loading and return standardized MCP response content"""
     try:
+        # Universal temporal context injection - all tools get current date/time awareness
+        from datetime import datetime, timezone
+        import platform
+        
+        current_time = datetime.now(timezone.utc)
+        local_time = datetime.now()
+        
+        # Inject temporal context into all tool arguments
+        temporal_context = {
+            "current_utc_time": current_time.isoformat(),
+            "current_local_time": local_time.isoformat(),
+            "current_timestamp": current_time.timestamp(),
+            "timezone_info": str(local_time.astimezone().tzinfo),
+            "system_timezone": platform.system(),
+            "formatted_date": current_time.strftime("%A, %B %d, %Y"),
+            "formatted_time": current_time.strftime("%I:%M %p UTC"),
+            "day_of_week": current_time.strftime("%A"),
+            "day_of_year": current_time.timetuple().tm_yday,
+            "week_number": current_time.isocalendar()[1],
+            "quarter": f"Q{(current_time.month - 1) // 3 + 1}",
+            "is_weekend": current_time.weekday() >= 5,
+            "season": ["Winter", "Winter", "Spring", "Spring", "Spring", "Summer", 
+                      "Summer", "Summer", "Fall", "Fall", "Fall", "Winter"][current_time.month - 1]
+        }
+        
+        # Add temporal context to arguments (LLM will have this context automatically)
+        arguments["_temporal_context"] = temporal_context
+        
+        logger.info(f"🕐 Executing {tool_name} with temporal context: {current_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        
+        # Create a clean copy of arguments without temporal context for tool execution
+        clean_arguments = {k: v for k, v in arguments.items() if k != "_temporal_context"}
+        
         # Validate tool name exists in STATIC_TOOLS
         tool_exists = any(tool["name"] == tool_name for tool in STATIC_TOOLS)
         if not tool_exists:
@@ -443,7 +448,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
             required_list = input_schema.get("required", [])
             
             # Check for missing required fields
-            missing_fields = [field for field in required_list if field not in arguments]
+            missing_fields = [field for field in required_list if field not in clean_arguments]
             if missing_fields:
                 return [
                     {
@@ -463,7 +468,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
         # Execute the appropriate tool based on name
         if tool_name == "maestro_orchestrate":
             try:
-                from .maestro_tools import MaestroTools
+                from .maestro.enhanced_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
                 # Create real Context with LLM sampling capabilities
@@ -484,7 +489,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                         "type": "tool_call",
                                         "tool_name": "maestro_search",
                                         "arguments": {
-                                            "query": arguments.get("task_description", ""),
+                                            "query": clean_arguments.get("task_description", ""),
                                             "max_results": 5
                                         }
                                     })
@@ -494,7 +499,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                         "type": "tool_call",
                                         "tool_name": "maestro_iae",
                                         "arguments": {
-                                            "analysis_request": arguments.get("task_description", ""),
+                                            "analysis_request": clean_arguments.get("task_description", ""),
                                             "engine_type": "auto"
                                         }
                                     })
@@ -502,7 +507,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                 # Always add reasoning step
                                 steps.append({
                                     "type": "reasoning",
-                                    "description": f"Analyzing the results to address: {arguments.get('task_description', '')}"
+                                    "description": f"Analyzing the results to address: {clean_arguments.get('task_description', '')}"
                                 })
                                 
                                 # Default steps if none were added
@@ -510,13 +515,13 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                     steps = [
                                         {
                                             "type": "reasoning",
-                                            "description": f"Breaking down the problem: {arguments.get('task_description', '')}"
+                                            "description": f"Breaking down the problem: {clean_arguments.get('task_description', '')}"
                                         },
                                         {
                                             "type": "tool_call",
                                             "tool_name": "maestro_iae",
                                             "arguments": {
-                                                "analysis_request": arguments.get("task_description", ""),
+                                                "analysis_request": clean_arguments.get("task_description", ""),
                                                 "engine_type": "auto"
                                             }
                                         }
@@ -536,7 +541,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                 class TextResponse:
                                     @property
                                     def text(self):
-                                        return f"Analysis of: {arguments.get('task_description', 'Unknown task')}\n\nThis task requires a structured approach combining multiple analysis techniques and tools to achieve the specified success criteria."
+                                        return f"Analysis of: {clean_arguments.get('task_description', 'Unknown task')}\n\nThis task requires a structured approach combining multiple analysis techniques and tools to achieve the specified success criteria."
                                 return TextResponse()
                         except Exception as e:
                             logger.error(f"Context sampling error: {str(e)}")
@@ -549,7 +554,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                             return ErrorResponse()
                 
                 # Execute orchestration with our real context
-                result = await maestro_tools.orchestrate_task(RealContext(), **arguments)
+                result = await maestro_tools.orchestrate_task(RealContext(), **clean_arguments)
                 
                 # Return standardized MCP content format
                 return [{"type": "text", "text": result}]
@@ -587,18 +592,72 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_iae_discovery":
             try:
-                from .maestro_tools import MaestroTools
+                from .maestro.enhanced_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
-                # Call the actual implementation
-                result = await maestro_tools._handle_iae_discovery(arguments)
-                
-                # Convert TextContent objects to standard format
-                if isinstance(result, list) and all(hasattr(item, 'type') and hasattr(item, 'text') for item in result):
-                    return [{"type": item.type, "text": item.text} for item in result]
+                # Check if this is an engine listing request
+                if clean_arguments.get("list_all_engines", False):
+                    # Handle engine listing functionality (formerly get_available_engines)
+                    try:
+                        from .computational_tools import ComputationalTools
+                        comp_tools = ComputationalTools()
+                        
+                        # Get available engines with filtering
+                        available_engines = await comp_tools.get_available_engines(None)
+                        
+                        # Apply filtering based on engine_type_filter if needed
+                        engine_filter = clean_arguments.get("engine_type_filter", "all")
+                        include_capabilities = clean_arguments.get("include_capabilities", True)
+                        
+                        # For now, return the basic engine list (the filtering logic can be enhanced later)
+                        response_text = available_engines
+                        
+                        # Add filtering note if not "all"
+                        if engine_filter != "all":
+                            response_text += f"\n\n**Note**: Filtered for engine type: {engine_filter}"
+                        
+                        return [{"type": "text", "text": response_text}]
+                        
+                    except ImportError as e:
+                        logger.error(f"Failed to import ComputationalTools: {str(e)}")
+                        return [
+                            {
+                                "type": "text", 
+                                "text": json.dumps({
+                                    "error": {
+                                        "type": "dependency_error",
+                                        "message": f"Server configuration error: {str(e)}",
+                                        "recoverable": False,
+                                        "suggestions": ["Contact server administrator"]
+                                    }
+                                }, indent=2)
+                            }
+                        ]
+                    except Exception as e:
+                        logger.error(f"Error getting available engines: {str(e)}")
+                        return [
+                            {
+                                "type": "text", 
+                                "text": json.dumps({
+                                    "error": {
+                                        "type": "engine_listing_error",
+                                        "message": f"Error retrieving engine information: {str(e)}",
+                                        "recoverable": True,
+                                        "suggestions": ["Try with a specific engine_type_filter"]
+                                    }
+                                }, indent=2)
+                            }
+                        ]
                 else:
-                    # Handle unexpected return type
-                    return [{"type": "text", "text": str(result)}]
+                    # Handle task-specific engine discovery (original functionality)
+                    result = await maestro_tools._handle_iae_discovery(clean_arguments)
+                    
+                    # Convert TextContent objects to standard format
+                    if isinstance(result, list) and all(hasattr(item, 'type') and hasattr(item, 'text') for item in result):
+                        return [{"type": item.type, "text": item.text} for item in result]
+                    else:
+                        # Handle unexpected return type
+                        return [{"type": "text", "text": str(result)}]
                 
             except Exception as e:
                 logger.error(f"Error in IAE discovery: {str(e)}")
@@ -610,7 +669,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                                 "type": "discovery_error",
                                 "message": f"Error during engine discovery: {str(e)}",
                                 "recoverable": True,
-                                "suggestions": ["Try different task type", "Check domain context"]
+                                "suggestions": ["Try different task type", "Check domain context", "Set list_all_engines=true for engine listing"]
                             }
                         }, indent=2)
                     }
@@ -618,11 +677,11 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_tool_selection":
             try:
-                from .maestro_tools import MaestroTools
+                from .maestro.enhanced_tools import MaestroTools
                 maestro_tools = MaestroTools()
                 
                 # Call the actual implementation
-                result = await maestro_tools._handle_tool_selection(arguments)
+                result = await maestro_tools._handle_tool_selection(clean_arguments)
                 
                 # Convert TextContent objects to standard format
                 if isinstance(result, list) and all(hasattr(item, 'type') and hasattr(item, 'text') for item in result):
@@ -653,7 +712,7 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 comp_tools = ComputationalTools()
                 
                 # Call the computational engine
-                result = await comp_tools.intelligence_amplification_engine(None, **arguments)
+                result = await comp_tools.intelligence_amplification_engine(None, **clean_arguments)
                 
                 # Return in standardized format
                 return [{"type": "text", "text": result}]
@@ -691,11 +750,11 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
         elif tool_name == "maestro_search":
             try:
-                from .maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tools = EnhancedToolHandlers()
+                from .maestro.enhanced_tools import MaestroTools
+                enhanced_tools = MaestroTools()
                 
                 # Call the search implementation
-                result = await enhanced_tools.search(**arguments)
+                result = await enhanced_tools.search(**clean_arguments)
                 
                 # Return in standardized format
                 return [{"type": "text", "text": result}]
@@ -731,105 +790,36 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                     }
                 ]
                 
-        elif tool_name == "maestro_scrape":
-            try:
-                from .maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tools = EnhancedToolHandlers()
-                
-                # Call the scrape implementation
-                result = await enhanced_tools.scrape(**arguments)
-                
-                # Return in standardized format
-                return [{"type": "text", "text": result}]
-                
-            except ImportError as e:
-                logger.error(f"Failed to import EnhancedToolHandlers: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "dependency_error",
-                                "message": f"Server configuration error: {str(e)}",
-                                "recoverable": False,
-                                "suggestions": ["Contact server administrator"]
-                            }
-                        }, indent=2)
-                    }
-                ]
-            except Exception as e:
-                logger.error(f"Error in scrape: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "scrape_error",
-                                "message": f"Error during web scraping: {str(e)}",
-                                "recoverable": True,
-                                "suggestions": [
-                                    "Check URL format and accessibility", 
-                                    "Ensure the website allows scraping",
-                                    "Try increasing wait_time"
-                                ]
-                            }
-                        }, indent=2)
-                    }
-                ]
-                
         elif tool_name == "maestro_execute":
             try:
-                from .maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tools = EnhancedToolHandlers()
+                from .maestro.enhanced_tools import MaestroTools
+                enhanced_tools = MaestroTools()
+                
+                # Map command parameter to code for direct code execution
+                if "command" in clean_arguments and "code" not in clean_arguments:
+                    clean_arguments["code"] = clean_arguments.pop("command")
+                
+                # Map timeout_seconds to timeout for consistency
+                if "timeout_seconds" in clean_arguments and "timeout" not in clean_arguments:
+                    clean_arguments["timeout"] = clean_arguments.pop("timeout_seconds")
                 
                 # Call the execute implementation
-                result = await enhanced_tools.execute(**arguments)
+                result_list = await enhanced_tools.handle_maestro_execute(clean_arguments)
                 
                 # Return in standardized format
-                return [{"type": "text", "text": result}]
+                return [{"type": "text", "text": result_list[0].text}]
                 
-            except ImportError as e:
-                logger.error(f"Failed to import EnhancedToolHandlers: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "dependency_error",
-                                "message": f"Server configuration error: {str(e)}",
-                                "recoverable": False,
-                                "suggestions": ["Contact server administrator"]
-                            }
-                        }, indent=2)
-                    }
-                ]
             except Exception as e:
                 logger.error(f"Error in execute: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "execution_error",
-                                "message": f"Error during execution: {str(e)}",
-                                "recoverable": True,
-                                "suggestions": [
-                                    "Check command syntax", 
-                                    "Try with safe_mode=True",
-                                    "Ensure command is permitted in this environment"
-                                ]
-                            }
-                        }, indent=2)
-                    }
-                ]
+                return [{"type": "text", "text": f"❌ **Execution Error**: {str(e)}"}]
                 
         elif tool_name == "maestro_error_handler":
             try:
-                from .maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tools = EnhancedToolHandlers()
+                from .maestro.enhanced_tools import MaestroTools
+                enhanced_tools = MaestroTools()
                 
                 # Call the error handler implementation
-                result_list = await enhanced_tools.handle_maestro_error_handler(arguments)
+                result_list = await enhanced_tools.handle_maestro_error_handler(clean_arguments)
                 
                 # Return in standardized format
                 return [{"type": "text", "text": result_list[0].text}]
@@ -865,95 +855,6 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                     }
                 ]
                 
-        elif tool_name == "maestro_temporal_context":
-            try:
-                from .maestro.enhanced_tools import EnhancedToolHandlers
-                enhanced_tools = EnhancedToolHandlers()
-                
-                # Call the temporal context implementation
-                result = await enhanced_tools.temporal_context(**arguments)
-                
-                # Return in standardized format
-                return [{"type": "text", "text": result}]
-                
-            except ImportError as e:
-                logger.error(f"Failed to import EnhancedToolHandlers: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "dependency_error",
-                                "message": f"Server configuration error: {str(e)}",
-                                "recoverable": False,
-                                "suggestions": ["Contact server administrator"]
-                            }
-                        }, indent=2)
-                    }
-                ]
-            except Exception as e:
-                logger.error(f"Error in temporal context: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "temporal_error",
-                                "message": f"Error during temporal analysis: {str(e)}",
-                                "recoverable": True,
-                                "suggestions": [
-                                    "Check time_range format (use ISO 8601)",
-                                    "Ensure temporal_query is clear and specific"
-                                ]
-                            }
-                        }, indent=2)
-                    }
-                ]
-                
-        elif tool_name == "get_available_engines":
-            try:
-                from .computational_tools import ComputationalTools
-                comp_tools = ComputationalTools()
-                
-                # Get available engines
-                available_engines = await comp_tools.get_available_engines(None)
-                
-                # Get capabilities if requested
-                response_text = available_engines  # get_available_engines already returns formatted text
-                
-                # Return in standardized format
-                return [{"type": "text", "text": response_text}]
-                
-            except ImportError as e:
-                logger.error(f"Failed to import ComputationalTools: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "dependency_error",
-                                "message": f"Server configuration error: {str(e)}",
-                                "recoverable": False,
-                                "suggestions": ["Contact server administrator"]
-                            }
-                        }, indent=2)
-                    }
-                ]
-            except Exception as e:
-                logger.error(f"Error getting available engines: {str(e)}")
-                return [
-                    {
-                        "type": "text", 
-                        "text": json.dumps({
-                            "error": {
-                                "type": "engine_listing_error",
-                                "message": f"Error retrieving engine information: {str(e)}",
-                                "recoverable": True,
-                                "suggestions": ["Try with a specific engine_type"]
-                            }
-                        }, indent=2)
-                    }
-                ]
         elif tool_name == "maestro_collaboration_response":
             try:
                 from .maestro_tools import MaestroTools
@@ -961,12 +862,12 @@ async def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> List[Dict[s
                 
                 # Call the collaboration response handler
                 result = await maestro_tools.handle_collaboration_response(
-                    collaboration_id=arguments.get("collaboration_id"),
-                    responses=arguments.get("responses", {}),
-                    additional_context=arguments.get("additional_context", {}),
-                    user_preferences=arguments.get("user_preferences", {}),
-                    approval_status=arguments.get("approval_status", "approved"),
-                    confidence_level=arguments.get("confidence_level", 0.8)
+                    collaboration_id=clean_arguments.get("collaboration_id"),
+                    responses=clean_arguments.get("responses", {}),
+                    additional_context=clean_arguments.get("additional_context", {}),
+                    user_preferences=clean_arguments.get("user_preferences", {}),
+                    approval_status=clean_arguments.get("approval_status", "approved"),
+                    confidence_level=clean_arguments.get("confidence_level", 0.8)
                 )
                 
                 # Return in standardized format

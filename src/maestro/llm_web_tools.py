@@ -166,7 +166,10 @@ class LLMWebTools:
         temporal_filter: Optional[str] = None,
         result_format: str = 'structured',
         llm_analysis: bool = True,
-        context: Optional[Any] = None
+        context: Optional[Any] = None,
+        timeout: int = 60,
+        retry_attempts: int = 3,
+        wait_time: float = 2.0
     ) -> Dict[str, Any]:
         """
         Advanced LLM-driven multi-engine search with intelligent result synthesis
@@ -183,7 +186,7 @@ class LLMWebTools:
             for engine in engines:
                 if engine in self.search_engines:
                     logger.info(f"🔍 Adding search task for engine: {engine}")
-                    task = self._search_single_engine(enhanced_query, engine, max_results)
+                    task = self._search_single_engine(enhanced_query, engine, max_results, timeout, retry_attempts, wait_time)
                     search_tasks.append(task)
                 else:
                     logger.warning(f"🔍 Unknown search engine: {engine}")
@@ -252,10 +255,25 @@ class LLMWebTools:
         extract_structured: bool = True,
         take_screenshot: bool = False,
         interact_before_scrape: Optional[List[Dict]] = None,
-        context: Optional[Any] = None
+        context: Optional[Any] = None,
+        timeout: int = 45,
+        wait_time: float = 2.0,
+        retry_attempts: int = 3
     ) -> Dict[str, Any]:
         """
         Advanced LLM-driven web scraping with intelligent content extraction
+        
+        Args:
+            url: Target URL to scrape
+            output_format: Format for output content
+            target_content: Specific content to extract
+            extract_structured: Whether to extract structured data
+            take_screenshot: Whether to take a screenshot
+            interact_before_scrape: Pre-scrape interactions
+            context: LLM context for intelligent extraction
+            timeout: Request timeout in seconds (default: 45)
+            wait_time: Wait time between requests in seconds (default: 2.0)
+            retry_attempts: Number of retry attempts (default: 3)
         """
         logger.info(f"🕷️ LLM-driven scrape: {url}")
         
@@ -266,8 +284,14 @@ class LLMWebTools:
                 if not interaction_result['success']:
                     logger.warning(f"Pre-scrape interactions failed: {interaction_result.get('error')}")
             
-            # Download and analyze page content
-            page_content = await self._download_page_content(url)
+            # Add initial wait time for page stability
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            
+            # Download and analyze page content with retry logic
+            page_content = await self._download_page_content_with_retry(
+                url, timeout, retry_attempts, wait_time
+            )
             
             # Parse HTML intelligently
             extractor = HTMLContentExtractor()
@@ -464,7 +488,7 @@ class LLMWebTools:
             logger.warning(f"Query enhancement failed: {e}")
             return query
     
-    async def _search_single_engine(self, query: str, engine: str, max_results: int) -> List[WebSearchResult]:
+    async def _search_single_engine(self, query: str, engine: str, max_results: int, timeout: int = 60, retry_attempts: int = 3, wait_time: float = 2.0) -> List[WebSearchResult]:
         """Search a single engine and return structured results"""
         logger.info(f"🔍 Searching engine {engine} for query: '{query}'")
         engine_config = self.search_engines.get(engine, {})
@@ -477,8 +501,10 @@ class LLMWebTools:
             search_url = f"{engine_config['url']}?{engine_config['query_param']}={urllib.parse.quote(query)}"
             logger.info(f"🔍 Search URL: {search_url}")
             
-            # Download search results page
-            page_content = await self._download_page_content(search_url)
+            # Download search results page with retry logic
+            page_content = await self._download_page_content_with_retry(
+                search_url, timeout=timeout, retry_attempts=retry_attempts, wait_time=wait_time
+            )
             logger.info(f"🔍 Downloaded {len(page_content)} characters from {engine}")
             
             # Parse results based on engine
@@ -498,8 +524,39 @@ class LLMWebTools:
             logger.error(f"Search engine {engine} traceback: {traceback.format_exc()}")
             return []
     
-    async def _download_page_content(self, url: str) -> str:
+    async def _download_page_content_with_retry(self, url: str, timeout: int = 45, retry_attempts: int = 3, wait_time: float = 2.0) -> str:
+        """Download page content with retry logic and configurable timeout"""
+        last_exception = None
+        
+        for attempt in range(retry_attempts):
+            try:
+                logger.info(f"📥 Downloading {url} (attempt {attempt + 1}/{retry_attempts}, timeout: {timeout}s)")
+                content = await self._download_page_content(url, timeout)
+                return content
+            except Exception as e:
+                last_exception = e
+                logger.warning(f"⚠️ Download attempt {attempt + 1} failed: {str(e)}")
+                
+                if attempt < retry_attempts - 1:
+                    # Exponential backoff with jitter
+                    delay = wait_time * (2 ** attempt) + (wait_time * 0.1)
+                    logger.info(f"⏳ Retrying in {delay:.1f}s...")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"❌ All {retry_attempts} download attempts failed")
+        
+        # If all attempts failed, raise the last exception
+        raise last_exception
+
+    async def _download_page_content(self, url: str, timeout: int = 45) -> str:
         """Download page content with proper headers and error handling"""
+        import platform
+        
+        # On Windows, skip aiohttp entirely due to DNS resolver issues
+        if platform.system() == "Windows":
+            logger.info("🪟 Windows detected, using urllib directly to avoid aiohttp DNS issues")
+            return await self._download_with_urllib(url, timeout)
+        
         try:
             import aiohttp
             
@@ -513,48 +570,63 @@ class LLMWebTools:
                 'Upgrade-Insecure-Requests': '1'
             }
             
-            # Use aiohttp for async requests
-            timeout = aiohttp.ClientTimeout(total=30)
-            async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
-                async with session.get(url, ssl=False) as response:
-                    content = await response.text()
-                    return content
+            # Use aiohttp for async requests with proper resolver configuration
+            try:
+                client_timeout = aiohttp.ClientTimeout(total=timeout)
+                # Use TCPConnector with no resolver to avoid aiodns issues
+                connector = aiohttp.TCPConnector(
+                    resolver=aiohttp.resolver.DefaultResolver(),
+                    use_dns_cache=False,
+                    ttl_dns_cache=None
+                )
+                async with aiohttp.ClientSession(timeout=client_timeout, headers=headers, connector=connector) as session:
+                    async with session.get(url, ssl=False) as response:
+                        content = await response.text()
+                        return content
+            except Exception as aiohttp_error:
+                logger.warning(f"aiohttp failed ({aiohttp_error}), falling back to urllib")
+                return await self._download_with_urllib(url, timeout)
                     
         except ImportError:
-            # Fallback to synchronous urllib if aiohttp not available
-            logger.warning("aiohttp not available, using synchronous urllib")
-            try:
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1'
-                }
-                
-                request = urllib.request.Request(url, headers=headers)
-                
-                # Download with timeout
-                with urllib.request.urlopen(request, timeout=30, context=self.ssl_context) as response:
-                    content = response.read()
-                    
-                    # Handle gzip compression
-                    content_encoding = response.headers.get('Content-Encoding', '')
-                    if 'gzip' in content_encoding.lower():
-                        import gzip
-                        content = gzip.decompress(content)
-                    
-                    # Handle encoding
-                    encoding = response.headers.get_content_charset() or 'utf-8'
-                    return content.decode(encoding, errors='ignore')
-            except Exception as e:
-                logger.error(f"Synchronous fallback failed for {url}: {e}")
-                raise
-                
+            logger.warning("aiohttp not available, using urllib")
+            return await self._download_with_urllib(url, timeout)
         except Exception as e:
-            logger.error(f"Failed to download {url}: {e}")
-            raise
+            logger.error(f"Unexpected error with aiohttp: {e}, falling back to urllib")
+            return await self._download_with_urllib(url, timeout)
+
+    async def _download_with_urllib(self, url: str, timeout: int = 45) -> str:
+        """Download content using urllib as a reliable fallback"""
+        import asyncio
+        
+        def sync_download():
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            request = urllib.request.Request(url, headers=headers)
+            
+            # Download with configurable timeout
+            with urllib.request.urlopen(request, timeout=timeout, context=self.ssl_context) as response:
+                content = response.read()
+                
+                # Handle gzip compression
+                content_encoding = response.headers.get('Content-Encoding', '')
+                if 'gzip' in content_encoding.lower():
+                    import gzip
+                    content = gzip.decompress(content)
+                
+                # Handle encoding
+                encoding = response.headers.get_content_charset() or 'utf-8'
+                return content.decode(encoding, errors='ignore')
+        
+        # Run synchronous urllib in thread pool to make it async
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, sync_download)
     
     async def _parse_duckduckgo_results(self, content: str, query: str, max_results: int) -> List[WebSearchResult]:
         """Parse DuckDuckGo search results"""

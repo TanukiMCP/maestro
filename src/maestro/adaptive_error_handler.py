@@ -103,6 +103,8 @@ class AdaptiveErrorHandler:
         self.version = "1.0.0"
         self.error_history: List[ErrorContext] = []
         self.reconsideration_patterns = self._initialize_reconsideration_patterns()
+        self.max_recovery_attempts = 3  # Maximum number of recovery attempts
+        self.current_recovery_attempts = 0  # Counter for recovery attempts
         
     def _initialize_reconsideration_patterns(self) -> Dict[str, Dict[str, Any]]:
         """Initialize patterns for approach reconsideration"""
@@ -150,6 +152,25 @@ class AdaptiveErrorHandler:
         """
         logger.info("🔍 Analyzing error context for adaptive handling...")
         
+        # Check if we've exceeded max recovery attempts
+        self.current_recovery_attempts += 1
+        if self.current_recovery_attempts > self.max_recovery_attempts:
+            logger.error(f"❌ Exceeded maximum recovery attempts ({self.max_recovery_attempts})")
+            error_context = ErrorContext(
+                error_id=f"error_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                severity=ErrorSeverity.CRITICAL,
+                trigger=ReconsiderationTrigger.QUALITY_THRESHOLD_UNMET,
+                error_message="Maximum recovery attempts exceeded - forcing workflow termination",
+                failed_component=error_details.get("component", "Unknown"),
+                temporal_context=temporal_context,
+                available_tools=available_tools,
+                attempted_approaches=error_details.get("attempted_approaches", []),
+                success_criteria=success_criteria,
+                metadata={"max_attempts_exceeded": True}
+            )
+            self.error_history.append(error_context)
+            return error_context
+            
         # Determine error severity and trigger
         severity = self._assess_error_severity(error_details)
         trigger = self._identify_reconsideration_trigger(error_details)

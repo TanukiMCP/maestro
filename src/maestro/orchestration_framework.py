@@ -788,12 +788,7 @@ class EnhancedOrchestrationEngine:
                 "command_template": "maestro_search(query='{query}')",
                 "fallback_tools": ["manual_search"]
             },
-            "maestro_scrape": {
-                "server": "maestro",
-                "usage_context": "Extract content from web pages",
-                "command_template": "maestro_scrape(url='{url}')",
-                "fallback_tools": ["manual_extraction"]
-            },
+
             "maestro_iae": {
                 "server": "maestro",
                 "usage_context": "Intelligence amplification analysis",

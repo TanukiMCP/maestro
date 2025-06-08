@@ -48,7 +48,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application source code
 COPY src/ ./src/
-COPY server.py .
 COPY static_tools_dict.py .
 COPY README.md .
 COPY LICENSE .
@@ -65,8 +64,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Use HTTP transport endpoint (NOT stdio)
-CMD ["python", "mcp_http_transport.py"]
+# Use HTTP transport endpoint - run the FastAPI server
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # Metadata labels for Smithery.ai and container registries
 LABEL org.opencontainers.image.title="TanukiMCP Maestro" \

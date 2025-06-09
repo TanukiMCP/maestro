@@ -2,7 +2,7 @@
 
 > **Turn any LLM into a superintelligent AI assistant with advanced reasoning, web search, code execution, and multi-step workflows**
 
-[![Deploy to Smithery](https://img.shields.io/badge/Deploy-Smithery.ai-blue)](https://smithery.ai) [![Docker Ready](https://img.shields.io/badge/Docker-Ready-green)](Dockerfile) [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--5-orange)](https://modelcontextprotocol.io)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-green)](Dockerfile) [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--5-orange)](https://modelcontextprotocol.io)
 
 ## 🚀 What is Maestro?
 
@@ -20,9 +20,9 @@ Maestro is an **MCP server** that supercharges any LLM with powerful capabilitie
 
 ### Option 1: Use with Claude Desktop (Recommended)
 
-1. **Install the server:**
+1. **Clone and install:**
    ```bash
-   git clone https://github.com/your-repo/maestro-mcp
+   git clone <this-repo-url>
    cd maestro-mcp
    pip install -r requirements.txt
    ```
@@ -52,11 +52,13 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000
 curl http://localhost:8000/health
 ```
 
-### Option 3: Deploy to Smithery.ai
+### Option 3: Docker
 
-1. Push this repo to GitHub
-2. Connect to [Smithery.ai](https://smithery.ai)
-3. Deploy with one click!
+```bash
+# Build and run with Docker
+docker build -t maestro .
+docker run -p 8000:8000 maestro
+```
 
 ## 🛠️ What Can You Do?
 
@@ -91,13 +93,12 @@ Most users won't need to change anything, but you can customize:
 - **Debug Mode**: Set `MAESTRO_MODE=development`  
 - **Log Level**: Set `MAESTRO_LOG_LEVEL=INFO`
 
-## 📦 Docker Deployment
+## 📦 Advanced Configuration
 
-```bash
-# Build and run with Docker
-docker build -t maestro .
-docker run -p 8000:8000 maestro
-```
+Environment variables you can set:
+- `MAESTRO_PORT=8000` - Change the port
+- `MAESTRO_MODE=development` - Enable debug mode  
+- `MAESTRO_LOG_LEVEL=INFO` - Set logging level
 
 ## 🤝 Contributing
 

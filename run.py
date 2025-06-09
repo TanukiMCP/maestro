@@ -11,17 +11,16 @@ def main():
     """
     Run the MAESTRO MCP server using Uvicorn.
     
-    This simplified entrypoint delegates all configuration loading to the
-    application factory, making the server's startup behavior more
-    consistent and robust. Uvicorn is configured here to match the settings
-    expected by the application's internal configuration.
+    This entrypoint handles both local development and Smithery deployment
+    by properly reading the PORT environment variable.
     """
     logger = logging.getLogger(__name__)
 
-    # Sensible defaults, but can be overridden by environment variables
-    # that MAESTROConfig inside the app will read.
+    # Get port from environment (Smithery sets this)
+    port = int(os.getenv("PORT", "8000"))
     host = os.getenv("MAESTRO_HOST", "0.0.0.0")
-    port = int(os.getenv("MAESTRO_PORT", "8000"))
+    
+    logger.info(f"🎭 Starting MAESTRO MCP server on {host}:{port}")
     
     # The application path 'src.main:app' tells Uvicorn where to find the app.
     # Uvicorn will import `src/main.py` and look for the `app` variable.
@@ -32,7 +31,6 @@ def main():
     # or command-line arguments to uvicorn directly.
     # For development, `uvicorn src.main:app --reload` is recommended.
 
-    logger.info("🎭 Starting MAESTRO MCP server with Uvicorn...")
     uvicorn.run(
         "src.app_factory:create_app",
         host=host,

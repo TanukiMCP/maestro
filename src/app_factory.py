@@ -57,6 +57,9 @@ def create_app():
     This factory function handles the configuration loading and application
     setup, ensuring that expensive operations are not performed at module
     import time.
+    
+    For Smithery deployments, it also ensures the server binds to the
+    correct PORT environment variable.
     """
     # --- Minimal Startup Configuration ---
     # Only load the engine mode from env vars for initial server setup.
@@ -71,6 +74,10 @@ def create_app():
     )
     
     logger.info(f"✅ Starting server in '{mode_str}' mode.")
+    
+    # Handle PORT environment variable for Smithery deployment
+    port = int(os.getenv("PORT", "8000"))
+    logger.info(f"✅ Server will bind to port {port}")
     
     # --- Application Instance ---
     mcp = FastMCP(

@@ -193,18 +193,28 @@ class MAESTROConfig:
     def from_dict(cls, data: Dict[str, Any]) -> 'MAESTROConfig':
         """Create configuration from a dictionary."""
         server_data = data.get("server", {})
+        # Handle cors_origins as either string or list
+        cors_origins = server_data.get("cors_origins", "*")
+        if isinstance(cors_origins, str):
+            cors_origins = cors_origins.split(",") if cors_origins != "*" else ["*"]
+        
         server = ServerConfig(
             host=server_data.get("host", "0.0.0.0"),
             port=int(server_data.get("port", 8000)),
             workers=int(server_data.get("workers", 4)),
             timeout=int(server_data.get("timeout", 30)),
-            cors_origins=server_data.get("cors_origins", "*"),
+            cors_origins=cors_origins,
         )
 
         security_data = data.get("security", {})
+        # Handle allowed_origins as either string or list
+        allowed_origins = security_data.get("allowed_origins", "*")
+        if isinstance(allowed_origins, str):
+            allowed_origins = allowed_origins.split(",") if allowed_origins != "*" else ["*"]
+            
         security = SecurityConfig(
             api_key_required=str(security_data.get("api_key_required", "false")).lower() == "true",
-            allowed_origins=security_data.get("allowed_origins", "*"),
+            allowed_origins=allowed_origins,
             rate_limit_enabled=str(security_data.get("rate_limit_enabled", "true")).lower() == "true",
             rate_limit_requests=int(security_data.get("rate_limit_requests", 100)),
             rate_limit_window=int(security_data.get("rate_limit_window", 60)),

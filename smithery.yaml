@@ -7,17 +7,124 @@ startCommand:
   configSchema:
     type: "object"
     properties:
-      apiKey:
-        type: "string"
-        description: "Optional API key for enhanced search capabilities"
-      debugMode:
-        type: "boolean"
-        default: false
-        description: "Enable debug mode for additional logging"
+      server:
+        type: "object"
+        properties:
+          host:
+            type: "string"
+            default: "0.0.0.0"
+            description: "Server host address"
+          port:
+            type: "integer"
+            default: 8000
+            description: "Server port number"
+          workers:
+            type: "integer"
+            default: 4
+            description: "Number of worker processes"
+          timeout:
+            type: "integer"
+            default: 30
+            description: "Request timeout in seconds"
+          cors_origins:
+            type: "string"
+            default: "*"
+            description: "CORS allowed origins"
+      security:
+        type: "object"
+        properties:
+          api_key_required:
+            type: "boolean"
+            default: false
+            description: "Whether API key authentication is required"
+          allowed_origins:
+            type: "string"
+            default: "*"
+            description: "Allowed origins for requests"
+          rate_limit_enabled:
+            type: "boolean"
+            default: true
+            description: "Enable rate limiting"
+          rate_limit_requests:
+            type: "integer"
+            default: 100
+            description: "Rate limit requests per window"
+          rate_limit_window:
+            type: "integer"
+            default: 60
+            description: "Rate limit window in seconds"
+      engine:
+        type: "object"
+        properties:
+          mode:
+            type: "string"
+            enum: ["development", "production", "testing"]
+            default: "production"
+            description: "Engine operation mode"
+          max_concurrent_tasks:
+            type: "integer"
+            default: 10
+            description: "Maximum concurrent tasks"
+          task_timeout:
+            type: "integer"
+            default: 300
+            description: "Task timeout in seconds"
+          memory_limit:
+            type: "integer"
+            default: 1024
+            description: "Memory limit in MB"
+          enable_gpu:
+            type: "boolean"
+            default: false
+            description: "Enable GPU acceleration"
+      logging:
+        type: "object"
+        properties:
+          level:
+            type: "string"
+            enum: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+            default: "INFO"
+            description: "Logging level"
+          file_enabled:
+            type: "boolean"
+            default: false
+            description: "Enable file logging"
+          file_path:
+            type: "string"
+            description: "Log file path"
+          rotation_size:
+            type: "integer"
+            default: 100
+            description: "Log rotation size in MB"
+          retention_days:
+            type: "integer"
+            default: 30
+            description: "Log retention days"
     required: []
   exampleConfig:
-    apiKey: "optional-api-key"
-    debugMode: false
+    server:
+      host: "0.0.0.0"
+      port: 8000
+      workers: 4
+      timeout: 30
+      cors_origins: "*"
+    security:
+      api_key_required: false
+      allowed_origins: "*"
+      rate_limit_enabled: true
+      rate_limit_requests: 100
+      rate_limit_window: 60
+    engine:
+      mode: "production"
+      max_concurrent_tasks: 10
+      task_timeout: 300
+      memory_limit: 1024
+      enable_gpu: false
+    logging:
+      level: "INFO"
+      file_enabled: false
+      rotation_size: 100
+      retention_days: 30
 resources:
   memory: "512Mi"
   cpu: "0.5"

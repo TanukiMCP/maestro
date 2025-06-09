@@ -32,30 +32,73 @@ def get_config(request: Optional[Request] = None) -> MAESTROConfig:
     """
     Dependency to provide MAESTROConfig.
     
-    It first checks for a base64-encoded config in the request's query
-    parameters ('config'). If found, it decodes and uses it.
+    For Smithery deployments, it parses dot-notation query parameters
+    (e.g., server.host=localhost&server.port=8080) into a nested config object.
     
-    If not found or if the request object is not available (e.g., in a
-    non-request context), it falls back to loading the config from
-    environment variables.
+    For the legacy base64 config format, it decodes the 'config' parameter.
     
-    This approach provides flexibility for both Smithery's per-request
-    config model and local environment-based configuration.
+    If no request config is found, it falls back to loading from environment variables.
+    
+    This approach provides flexibility for Smithery's deployment model,
+    legacy configurations, and local environment-based development.
     """
-    if request and "config" in request.query_params:
-        config_b64 = request.query_params["config"]
-        logger.debug("Found 'config' in query parameters.")
-        try:
-            config_json = base64.b64decode(config_b64).decode('utf-8')
-            config_data = json.loads(config_json)
-            logger.info("Successfully decoded configuration from query parameters.")
+    if request:
+        # Check for Smithery's dot-notation query parameters first
+        config_data = {}
+        has_config_params = False
+        
+        for key, value in request.query_params.items():
+            if '.' in key:
+                # Parse dot-notation (e.g., "server.host" -> {"server": {"host": value}})
+                parts = key.split('.')
+                current = config_data
+                for part in parts[:-1]:
+                    if part not in current:
+                        current[part] = {}
+                    current = current[part]
+                
+                # Type conversion for known parameter types
+                final_value = value
+                if key.endswith('.port') or key.endswith('.workers') or key.endswith('.timeout') or \
+                   key.endswith('.rate_limit_requests') or key.endswith('.rate_limit_window') or \
+                   key.endswith('.max_concurrent_tasks') or key.endswith('.task_timeout') or \
+                   key.endswith('.memory_limit') or key.endswith('.rotation_size') or key.endswith('.retention_days'):
+                    try:
+                        final_value = int(value)
+                    except ValueError:
+                        logger.warning(f"Could not convert {key}={value} to integer, using string")
+                elif key.endswith('.api_key_required') or key.endswith('.rate_limit_enabled') or \
+                     key.endswith('.file_enabled') or key.endswith('.enable_gpu'):
+                    final_value = str(value).lower() in ('true', '1', 'yes', 'on')
+                elif key.endswith('.cors_origins') or key.endswith('.allowed_origins'):
+                    # Handle comma-separated lists
+                    if isinstance(value, str) and ',' in value:
+                        final_value = value.split(',')
+                    else:
+                        final_value = value
+                
+                current[parts[-1]] = final_value
+                has_config_params = True
+                
+        if has_config_params:
+            logger.info("Successfully parsed configuration from Smithery dot-notation query parameters.")
             return MAESTROConfig.from_dict(config_data)
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as e:
-            logger.error(
-                f"Failed to decode/parse config from query parameter: {e}. "
-                "Falling back to environment configuration."
-            )
-            return get_config_from_env()
+            
+        # Check for legacy base64-encoded config parameter
+        if "config" in request.query_params:
+            config_b64 = request.query_params["config"]
+            logger.debug("Found legacy 'config' in query parameters.")
+            try:
+                config_json = base64.b64decode(config_b64).decode('utf-8')
+                config_data = json.loads(config_json)
+                logger.info("Successfully decoded legacy configuration from query parameters.")
+                return MAESTROConfig.from_dict(config_data)
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as e:
+                logger.error(
+                    f"Failed to decode/parse legacy config from query parameter: {e}. "
+                    "Falling back to environment configuration."
+                )
+                return get_config_from_env()
 
     # Fallback for local development or non-request contexts
     return get_config_from_env() 

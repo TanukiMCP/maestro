@@ -35,8 +35,8 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
-    DEBUG_MODE=false \
-    API_KEY="" \
+    MAESTRO_MODE=production \
+    MAESTRO_LOG_LEVEL=INFO \
     PYTHONPATH=/app
 
 # Set work directory
@@ -57,15 +57,16 @@ RUN useradd --create-home --shell /bin/bash --uid 1000 maestro && \
     chown -R maestro:maestro /app
 USER maestro
 
-# Expose the port
-EXPOSE 8000
+# Expose the port (this will be dynamic based on PORT env var)
+EXPOSE $PORT
 
 # Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.getenv(\"PORT\", \"8000\")}/health')"
 
-# Use HTTP transport endpoint - run the FastAPI server
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use HTTP transport endpoint - run the FastAPI server with dynamic port
+# Smithery will set the PORT environment variable
+CMD python -m uvicorn src.app_factory:create_app --factory --host 0.0.0.0 --port $PORT
 
 # Metadata labels for Smithery.ai and container registries
 LABEL org.opencontainers.image.title="TanukiMCP Maestro" \

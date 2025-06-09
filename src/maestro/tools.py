@@ -19,6 +19,11 @@ import os
 # The Context object is part of the server's context submodule.
 from fastmcp.server.context import Context
 
+# Import for type annotation
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .config import MAESTROConfig
+
 logger = logging.getLogger(__name__)
 
 async def maestro_orchestrate(

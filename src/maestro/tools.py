@@ -26,6 +26,7 @@ async def maestro_orchestrate(
     available_tools: List[Dict[str, Any]],
     context_info: Optional[Dict[str, Any]] = None,
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Dict[str, Any]:
     """
     Orchestrates a complex task by generating and executing a dynamic workflow using a suite of available tools.
@@ -33,6 +34,8 @@ async def maestro_orchestrate(
     """
     if ctx:
         ctx.info(f"[Maestro] Orchestration requested: {task_description}")
+        if config:
+            ctx.info(f"[Maestro] Operating in {config.engine.mode.value} mode.")
     try:
         from .orchestration_framework import EnhancedOrchestrationEngine, OrchestrationResult, ContextSurvey
         engine = EnhancedOrchestrationEngine()
@@ -138,6 +141,7 @@ async def maestro_web(
     search_engine: str = "duckduckgo",
     num_results: int = 5,
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Dict[str, Any]:
     """
     Unified web tool for LLM-driven research. Supports only web search (no scraping).
@@ -156,6 +160,8 @@ async def maestro_web(
         raise ValueError("maestro_web only supports 'search' operation. Scraping is not supported.")
     if ctx:
         ctx.info(f"[MaestroWeb] Performing web search for '{query_or_url}' using {search_engine}")
+        if config:
+            ctx.info(f"[MaestroWeb] Rate limiting enabled: {config.security.rate_limit_enabled}")
     try:
         from .web import SearchEngine
         engine = SearchEngine(engine=search_engine)
@@ -178,6 +184,7 @@ async def maestro_execute(
     language: str,
     timeout: int = 60,
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Dict[str, Any]:
     """
     Executes a block of code in a specified language within a secure sandbox.
@@ -193,6 +200,8 @@ async def maestro_execute(
     """
     if ctx:
         await ctx.info(f"Executing {language} code...")
+        if config:
+            await ctx.info(f"Task timeout for execution is {config.engine.task_timeout}s.")
     from .number_formatter import clean_output
     cmd = []
     if language == 'python':
@@ -244,6 +253,7 @@ async def maestro_error_handler(
     error_message: str,
     context: Dict[str, Any],
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Dict[str, Any]:
     """
     Analyzes an error and provides a structured response for recovery.
@@ -258,6 +268,8 @@ async def maestro_error_handler(
     """
     if ctx:
         ctx.warning(f"Analyzing error: {error_message}")
+        if config:
+            ctx.info(f"Error handling in {config.engine.mode.value} mode.")
     analysis = {
         "error_type": "GenericError",
         "severity": "High",
@@ -282,6 +294,7 @@ async def maestro_collaboration_response(
     user_response: Any,
     original_request: Dict[str, Any],
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Dict[str, Any]:
     """
     Handles a response from a user during a collaborative workflow step.
@@ -296,6 +309,8 @@ async def maestro_collaboration_response(
     """
     if ctx:
         ctx.info(f"Received user collaboration response: {user_response}")
+        if config:
+            ctx.info(f"Processing response in {config.engine.mode.value} mode.")
     return {
         "status": "processed",
         "user_response": user_response,
@@ -307,12 +322,15 @@ async def maestro_iae(
     method_name: str,
     parameters: Dict[str, Any],
     ctx: Context = None,
+    config: "MAESTROConfig" = None,
 ) -> Any:
     """
     Invokes a specific capability from an Intelligence Amplification Engine (IAE) using the MCP-native registry and meta-reasoning logic.
     """
     if ctx:
         await ctx.info(f"[MaestroIAE] Invoking {method_name} on {engine_name} IAE...")
+        if config:
+            await ctx.info(f"[MaestroIAE] Using GPU: {config.engine.enable_gpu}")
     try:
         import sys
         from pathlib import Path

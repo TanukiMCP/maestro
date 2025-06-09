@@ -187,4 +187,50 @@ class MAESTROConfig:
                 "rotation_size": self.logging.rotation_size,
                 "retention_days": self.logging.retention_days
             }
-        } 
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'MAESTROConfig':
+        """Create configuration from a dictionary."""
+        server_data = data.get("server", {})
+        server = ServerConfig(
+            host=server_data.get("host", "0.0.0.0"),
+            port=int(server_data.get("port", 8000)),
+            workers=int(server_data.get("workers", 4)),
+            timeout=int(server_data.get("timeout", 30)),
+            cors_origins=server_data.get("cors_origins", "*"),
+        )
+
+        security_data = data.get("security", {})
+        security = SecurityConfig(
+            api_key_required=str(security_data.get("api_key_required", "false")).lower() == "true",
+            allowed_origins=security_data.get("allowed_origins", "*"),
+            rate_limit_enabled=str(security_data.get("rate_limit_enabled", "true")).lower() == "true",
+            rate_limit_requests=int(security_data.get("rate_limit_requests", 100)),
+            rate_limit_window=int(security_data.get("rate_limit_window", 60)),
+        )
+
+        engine_data = data.get("engine", {})
+        engine = EngineConfig(
+            mode=EngineMode(str(engine_data.get("mode", "production")).lower()),
+            max_concurrent_tasks=int(engine_data.get("max_concurrent_tasks", 10)),
+            task_timeout=int(engine_data.get("task_timeout", 300)),
+            memory_limit=int(engine_data.get("memory_limit", 1024)),
+            enable_gpu=str(engine_data.get("enable_gpu", "false")).lower() == "true",
+        )
+
+        logging_data = data.get("logging", {})
+        logging = LoggingConfig(
+            level=LogLevel(str(logging_data.get("level", "INFO")).upper()),
+            file_enabled=str(logging_data.get("file_enabled", "false")).lower() == "true",
+            file_path=logging_data.get("file_path"),
+            rotation_size=int(logging_data.get("rotation_size", 100)),
+            retention_days=int(logging_data.get("retention_days", 30)),
+        )
+
+        return cls(
+            server=server,
+            security=security,
+            engine=engine,
+            logging=logging
+        ) 

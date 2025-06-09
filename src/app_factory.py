@@ -12,8 +12,9 @@ import logging
 from fastmcp.server import FastMCP
 from starlette.responses import JSONResponse
 from starlette.routing import Route
+import os
 
-from maestro.config import MAESTROConfig
+from maestro.dependencies import get_config
 from maestro.tools import (
     maestro_orchestrate,
     maestro_iae,
@@ -57,17 +58,19 @@ def create_app():
     setup, ensuring that expensive operations are not performed at module
     import time.
     """
-    # --- Configuration & Logging ---
-    # Configuration is loaded here, inside the factory, not at the global scope.
-    config = MAESTROConfig.from_env()
-    config.validate()
-
+    # --- Minimal Startup Configuration ---
+    # Only load the engine mode from env vars for initial server setup.
+    # The full config will be loaded per-request by the dependency injector.
+    mode_str = os.getenv("MAESTRO_MODE", "production").lower()
+    is_dev_mode = (mode_str == "development")
+    
+    log_level_str = os.getenv("MAESTRO_LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=config.logging.level.value,
+        level=log_level_str,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    logger.info("✅ Maestro MCP Server configuration loaded.")
+    logger.info(f"✅ Starting server in '{mode_str}' mode.")
     
     # --- Application Instance ---
     mcp = FastMCP(
@@ -75,7 +78,9 @@ def create_app():
         name="Maestro",
         instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification.",
         on_duplicate_tools="warn",
-        mask_error_details=config.engine.mode.value != "development",
+        mask_error_details=not is_dev_mode,
+        # Provide the dependency to FastMCP
+        dependencies={'config': get_config}
     )
 
     app = mcp.streamable_http_app()

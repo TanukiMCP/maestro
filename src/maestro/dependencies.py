@@ -41,7 +41,19 @@ def get_config(request: Optional[Request] = None) -> MAESTROConfig:
     
     This approach provides flexibility for Smithery's deployment model,
     legacy configurations, and local environment-based development.
+    
+    Returns a minimal default config if called during tool scanning to prevent timeouts.
     """
+    # Fast path for tool scanning - return minimal config to prevent timeout
+    if request is None:
+        try:
+            return get_config_from_env()
+        except Exception:
+            # If environment config fails, return minimal default for tool scanning
+            logger.warning("Using minimal default configuration for tool scanning compatibility")
+            return get_minimal_config()
+    
+    # Rest of existing logic for actual requests...
     if request:
         # Check for Smithery's dot-notation query parameters first
         config_data = {}
@@ -101,4 +113,43 @@ def get_config(request: Optional[Request] = None) -> MAESTROConfig:
                 return get_config_from_env()
 
     # Fallback for local development or non-request contexts
-    return get_config_from_env() 
+    return get_config_from_env()
+
+def get_minimal_config() -> MAESTROConfig:
+    """
+    Provides a minimal default configuration for tool scanning compatibility.
+    This prevents timeouts during Smithery tool discovery.
+    """
+    from .config import ServerConfig, SecurityConfig, EngineConfig, LoggingConfig, MAESTROConfig
+    from .config import EngineMode, LogLevel
+    
+    return MAESTROConfig(
+        server=ServerConfig(
+            host="0.0.0.0",
+            port=8000,
+            workers=1,
+            timeout=30,
+            cors_origins=["*"]
+        ),
+        security=SecurityConfig(
+            api_key_required=False,
+            allowed_origins=["*"],
+            rate_limit_enabled=False,
+            rate_limit_requests=100,
+            rate_limit_window=60
+        ),
+        engine=EngineConfig(
+            mode=EngineMode.PRODUCTION,
+            max_concurrent_tasks=1,
+            task_timeout=60,
+            memory_limit=512,
+            enable_gpu=False
+        ),
+        logging=LoggingConfig(
+            level=LogLevel.INFO,
+            file_enabled=False,
+            file_path=None,
+            rotation_size=100,
+            retention_days=30
+        )
+    ) 

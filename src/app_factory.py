@@ -86,8 +86,8 @@ def create_app():
         instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification.",
         on_duplicate_tools="warn",
         mask_error_details=not is_dev_mode,
-        # Provide the dependency to FastMCP
-        dependencies={'config': get_config}
+        # Remove dependencies to prevent configuration loading during tool scanning
+        # dependencies={'config': get_config}
     )
 
     app = mcp.streamable_http_app()

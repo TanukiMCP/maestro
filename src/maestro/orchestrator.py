@@ -12,9 +12,10 @@ LLM-driven OrchestrationEngine to generate dynamic, multi-agent workflows.
 import logging
 from typing import Dict, Any, Optional
 
-# Import the new engine and schemas
+# Import the new engine, schemas, and IAE discovery
 from .orchestration_engine import OrchestrationEngine, LLMClient
 from .schemas import Workflow, Task
+from .iae_discovery import IAEDiscovery
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +26,19 @@ class MAESTROOrchestrator:
     This class serves as the primary entry point for the `maestro_orchestrate` tool.
     It initializes the core `OrchestrationEngine` and delegates the complex task
     of workflow generation to it.
+
+    **IMPORTANT:** This orchestrator is backend-only, headless, and must be called by an external agentic IDE or LLM client. It must NOT instantiate or assume any built-in LLM client or UI. The LLM client (or orchestration context) must be provided by the external caller at runtime.
     """
     
-    def __init__(self):
+    def __init__(self, llm_client: "LLMClient"):
         """
         Initializes the MAESTROOrchestrator and its underlying engine.
+        Args:
+            llm_client: An LLM client or orchestration context provided by the external agentic IDE or LLM client. This must NOT be instantiated internally.
         """
-        # In a real application, the LLMClient would be configured and
-        # passed here, likely using dependency injection.
-        llm_client = LLMClient()  # Using the placeholder client for now
-        
         self.engine = OrchestrationEngine(llm_client=llm_client)
-        logger.info("🎭 MAESTRO Unified Orchestrator initialized with LLM-driven engine.")
+        self.iae_discovery = IAEDiscovery()
+        logger.info("🎭 MAESTRO Unified Orchestrator initialized with externally provided LLM-driven engine.")
     
     async def orchestrate_task(
         self, 
@@ -60,17 +62,31 @@ class MAESTROOrchestrator:
         logger.info(f"🎭 Orchestrating task: {task_description[:100]}...")
         
         try:
-            # Step 1: Delegate workflow generation to the new engine
-            workflow_plan = await self.engine.orchestrate(
-                task_description=task_description,
-                user_context=context
+            # Step 1: Discover relevant engines for the task
+            task_type = await self.engine.infer_task_type(task_description)
+            domain_context = await self.engine.infer_domain_context(task_description)
+            
+            engine_discovery = await self.iae_discovery.discover_engines_for_task(
+                task_type=task_type,
+                domain_context=domain_context
             )
             
-            # Step 2: Format the successful response
+            if engine_discovery["status"] != "success":
+                raise Exception(f"Engine discovery failed: {engine_discovery.get('message')}")
+                
+            # Step 2: Delegate workflow generation to the orchestration engine
+            workflow_plan = await self.engine.orchestrate(
+                task_description=task_description,
+                user_context=context,
+                available_engines=engine_discovery["discovered_engines"]
+            )
+            
+            # Step 3: Format the successful response
             logger.info(f"✅ Successfully orchestrated workflow {workflow_plan.workflow_id}")
             return {
                 "status": "orchestration_complete",
-                "workflow": self._format_workflow_for_response(workflow_plan)
+                "workflow": self._format_workflow_for_response(workflow_plan),
+                "available_engines": engine_discovery["discovered_engines"]
             }
             
         except Exception as e:

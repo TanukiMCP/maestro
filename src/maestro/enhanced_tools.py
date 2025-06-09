@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from enum import Enum
 import re
+import urllib.parse
 
 from mcp import types
 from mcp.server.fastmcp import Context
@@ -268,132 +269,116 @@ class MaestroTools:
         }
     
     async def _ensure_initialized(self):
-        """Ensure tools are initialized"""
-        if not self._initialized:
-            logger.info("🔄 Initializing enhanced tool handlers...")
-            
-            # Initialize puppeteer tools for maestro_execute
-            if self.puppeteer_tools is None:
-                from .puppeteer_tools import MAESTROPuppeteerTools
-                self.puppeteer_tools = MAESTROPuppeteerTools()
-            
-            # Skip orchestration/execution engines to prevent infinite loops
-            # The orchestrate_task method is self-contained and doesn't need external engines
-            logger.info("🎯 Using self-contained orchestration (external engines disabled to prevent loops)")
-            
-            self._initialized = True
-            logger.info("✅ Enhanced tool handlers ready")
-    
-    async def handle_maestro_search(self, arguments: dict) -> list[types.TextContent]:
-        """Handle maestro_search tool calls"""
-        await self._ensure_initialized()
+        """Lazy load heavy dependencies to speed up initial scanning."""
+        if self._initialized:
+            return
         
         try:
-            query = arguments.get("query", "")
-            max_results = arguments.get("max_results", 10)
-            search_engine = arguments.get("search_engine", "duckduckgo")
-            temporal_filter = arguments.get("temporal_filter", "any")
-            result_format = arguments.get("result_format", "structured")
-            timeout = arguments.get("timeout", 60)
-            retry_attempts = arguments.get("retry_attempts", 3)
-            wait_time = arguments.get("wait_time", 2.0)
-            
-            if not query:
-                return [types.TextContent(
-                    type="text",
-                    text="❌ **Search Query Required**\n\nPlease provide a search query."
-                )]
-            
-            logger.info(f"🔍 Executing MAESTRO search: '{query}'")
-            
-            # Execute search with temporal filtering
-            if temporal_filter == "any":
-                temporal_filter = None
-            
-            # Map search_engine to engines list format
-            engines = [search_engine] if search_engine else ['duckduckgo']
-            
-            logger.info(f"🔍 Search parameters: engines={engines}, max_results={max_results}, temporal_filter={temporal_filter}")
-            
-            result = await self.llm_web_tools.llm_driven_search(
-                query=query,
-                max_results=max_results,
-                engines=engines,
-                temporal_filter=temporal_filter,
-                result_format=result_format,
-                llm_analysis=False,  # Disable LLM analysis since context is None
-                context=None,  # Context will be added when available
-                timeout=timeout,
-                retry_attempts=retry_attempts,
-                wait_time=wait_time
-            )
-            
-            logger.info(f"🔍 Search result success: {result.get('success', False)}, total_results: {result.get('total_results', 0)}")
-            
-            if result.get("success", False):
-                # Format successful search results
-                response = f"# 🔍 LLM-Enhanced MAESTRO Search Results\n\n"
-                response += f"**Query:** {query}\n"
-                response += f"**Enhanced Query:** {result.get('enhanced_query', query)}\n"
-                response += f"**Search Engines:** {', '.join(engines)}\n"
-                response += f"**Results:** {result['total_results']} found\n"
-                
-                if temporal_filter:
-                    response += f"**Time Filter:** {temporal_filter}\n"
-                
-                response += f"\n## Results:\n\n"
-                
-                for i, search_result in enumerate(result['results'], 1):
-                    response += f"### {i}. {search_result['title']}\n"
-                    response += f"**URL:** {search_result['url']}\n"
-                    response += f"**Domain:** {search_result['domain']}\n"
-                    response += f"**Snippet:** {search_result['snippet']}\n"
-                    response += f"**Relevance:** {search_result['relevance_score']:.2f}\n"
-                    
-                    if search_result.get('llm_analysis'):
-                        response += f"**LLM Analysis:** {search_result['llm_analysis']}\n"
-                    
-                    response += "\n"
-                
-                response += f"\n**Search completed at:** {result['timestamp']}\n"
-                
-                # Add metadata
-                response += f"\n## Metadata\n"
-                response += f"- LLM Enhanced: {result['metadata']['llm_enhanced']}\n"
-                response += f"- Result format: {result_format}\n"
-                response += f"- Engines status: {result['metadata']['engines_status']}\n"
-                
-            else:
-                # Handle search failure with fallback guidance
-                response = f"# ❌ MAESTRO Search Failed\n\n"
-                response += f"**Query:** {query}\n"
-                response += f"**Error:** {result.get('error', 'Unknown error')}\n\n"
-                
-                if "fallback_results" in result:
-                    fallback = result["fallback_results"]
-                    response += f"## Fallback Guidance\n\n"
-                    response += f"**Suggestion:** {fallback.get('suggestion', '')}\n\n"
-                    
-                    if "fallback_guidance" in fallback:
-                        guidance = fallback["fallback_guidance"]
-                        response += f"**Manual Search:** {guidance.get('manual_search', '')}\n"
-                        response += f"**Alternative Tools:** {', '.join(guidance.get('alternative_tools', []))}\n"
-            
-            return [types.TextContent(type="text", text=response)]
-            
+            from .llm_web_tools import PuppeteerTools
+            self.puppeteer_tools = PuppeteerTools()
+            self._initialized = True
+            logger.info("✅ PuppeteerTools initialized successfully.")
+        except ImportError as e:
+            logger.error(f"Failed to import or initialize PuppeteerTools: {e}")
+            logger.error("Browser-based tools will not be available. Please run 'pip install pyppeteer' to enable them.")
+            self.puppeteer_tools = None  # Ensure it's None if initialization fails
         except Exception as e:
-            logger.error(f"❌ MAESTRO search error: {str(e)}")
-            import traceback
-            logger.error(f"❌ MAESTRO search traceback: {traceback.format_exc()}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ **MAESTRO Search Error**\n\nError: {str(e)}\n\nTraceback: {traceback.format_exc()}\n\nPlease check your query and try again."
-            )]
+            logger.error(f"An unexpected error occurred during PuppeteerTools initialization: {e}")
+            self.puppeteer_tools = None
     
+    async def handle_maestro_search(self, arguments: dict) -> list[types.TextContent]:
+        """
+        Agentic search: fetches raw web content (HTML) and metadata, optionally using Puppeteer for JS-heavy sites.
+        Supports search_engine: 'brave', 'mojeek', 'startpage'. Default is 'brave'. No API keys required.
+        Returns a JSON string with url, timestamp, html, and optionally visible text.
+        """
+        logger.info("BEGIN: handle_maestro_search (AGENTIC RAW MODE)")
+        await self._ensure_initialized()
+        logger.info("POST-INIT: Puppeteer initialized")
+        
+        query = arguments.get("query")
+        use_browser = arguments.get("use_browser", "auto")
+        timeout = arguments.get("timeout", 30)
+        search_engine = arguments.get("search_engine", "brave").lower()
+            
+        # Determine if this is a URL or a search
+        is_url = query.startswith("http://") or query.startswith("https://")
+        page_url = query
+        html = None
+        text = None
+        error_message = None
+        timestamp = datetime.now(timezone.utc).isoformat()
 
+        # Supported search engines (no API key required)
+        search_engines = {
+            "brave": lambda q: f"https://search.brave.com/search?q={urllib.parse.quote(q)}&source=web",
+            "mojeek": lambda q: f"https://www.mojeek.com/search?q={urllib.parse.quote(q)}",
+            "startpage": lambda q: f"https://www.startpage.com/do/search?query={urllib.parse.quote(q)}"
+        }
+        if not is_url:
+            if search_engine not in search_engines:
+                error_message = f"Unsupported search_engine: {search_engine}. Supported: {list(search_engines.keys())}"
+            else:
+                page_url = search_engines[search_engine](query)
+
+        try:
+            should_use_browser = self._should_use_browser(use_browser)
+            if error_message is None:
+                if should_use_browser and self.puppeteer_tools:
+                    logger.info(f"Fetching with Puppeteer: {page_url}")
+                    page_result = await self.puppeteer_tools.get_page_content(page_url, timeout=timeout)
+                    html = page_result.get("content", "")
+                    if page_result.get("error"):
+                        error_message = f"Browser fetch error: {page_result['error']}"
+                else:
+                    logger.info(f"Fetching with HTTP: {page_url}")
+                    page_result = await self.llm_web_tools.get_page_content_simple(page_url, timeout=timeout)
+                    html = page_result.get("content", "")
+                    if page_result.get("error"):
+                        error_message = f"HTTP fetch error: {page_result['error']}"
+        except Exception as e:
+            error_message = f"Exception in handle_maestro_search: {e}"
+            logger.error(error_message)
+            logger.error(traceback.format_exc())
+
+        if error_message:
+            result = {
+                "error": error_message,
+                "url": page_url,
+                "timestamp": timestamp
+            }
+        else:
+            # Optionally extract visible text (for LLM context size reasons)
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html, "html.parser")
+                text = soup.get_text(separator=" ", strip=True)
+            except Exception:
+                text = None
+            result = {
+                "url": page_url,
+                "timestamp": timestamp,
+                "html": html,
+                "text": text
+            }
+        logger.info("END: handle_maestro_search (AGENTIC RAW MODE)")
+        return [types.TextContent(type="text", text=json.dumps(result))]
+
+    def _should_use_browser(self, use_browser_arg: str) -> bool:
+        """Determines if browser automation should be used."""
+        if use_browser_arg == "true":
+            return True
+        if use_browser_arg == "false":
+            return False
+        # "auto" is the default: for now, we default to not using the browser
+        # unless specific sites are identified. This can be expanded.
+        return False
     
     async def handle_maestro_execute(self, arguments: dict) -> list[types.TextContent]:
-        """Handle maestro_execute tool calls - Execute orchestration plans or code"""
+        """
+        Executes code or commands using a secure, isolated environment.
+        Supports both direct code execution and planning-based execution.
+        """
         await self._ensure_initialized()
         
         try:
@@ -776,447 +761,6 @@ class MaestroTools:
             )]
     
 
-    
-    async def handle_maestro_orchestrate(self, arguments: dict) -> list[types.TextContent]:
-        """Handle enhanced maestro_orchestrate tool calls - 3-5x LLM capability amplification"""
-        await self._ensure_initialized()
-        
-        try:
-            # Extract enhanced orchestration parameters
-            task_description = arguments.get("task_description", "")
-            context = arguments.get("context", {})
-            success_criteria = arguments.get("success_criteria", {})
-            complexity_level = arguments.get("complexity_level", "moderate")
-            quality_threshold = arguments.get("quality_threshold", 0.85)
-            resource_level = arguments.get("resource_level", "moderate")
-            reasoning_focus = arguments.get("reasoning_focus", "auto")
-            validation_rigor = arguments.get("validation_rigor", "standard")
-            max_iterations = arguments.get("max_iterations", 3)
-            domain_specialization = arguments.get("domain_specialization")
-            enable_collaboration_fallback = arguments.get("enable_collaboration_fallback", False)
-            
-            if not task_description:
-                return [types.TextContent(
-                    type="text",
-                    text="❌ **Task Description Required**\n\nPlease provide a task description to orchestrate."
-                )]
-            
-            logger.info(f"🎭 Enhanced Orchestrating task: '{task_description}' (quality_threshold: {quality_threshold}, resource_level: {resource_level})")
-            
-            # Note: In MCP integration, the real LLM context will be passed from main.py
-            # This handler is called with a real context object that has LLM sampling capabilities
-            # For now, we'll create a fallback context that delegates to actual tools
-            class ProductionContext:
-                def __init__(self, maestro_tools):
-                    self.maestro_tools = maestro_tools
-                
-                async def sample(self, prompt: str, response_format: dict = None):
-                    """Production context that uses intelligent heuristics and actual tool calls"""
-                    
-                    class IntelligentResponse:
-                        def __init__(self, maestro_tools, prompt, task_description, complexity_level, quality_threshold, resource_level):
-                            self.maestro_tools = maestro_tools
-                            self.prompt = prompt
-                            self.task_description = task_description
-                            self.complexity_level = complexity_level
-                            self.quality_threshold = quality_threshold
-                            self.resource_level = resource_level
-                        
-                        def json(self):
-                            prompt_lower = self.prompt.lower()
-                            
-                            # Task analysis responses
-                            if "task analysis" in prompt_lower or "comprehensive assessment" in prompt_lower:
-                                return self._generate_task_analysis()
-                            
-                            # Execution plan responses
-                            elif "execution plan" in prompt_lower or "orchestration plan" in prompt_lower:
-                                return self._generate_execution_plan()
-                            
-                            # Validation responses
-                            elif "validation" in prompt_lower or "evaluate" in prompt_lower:
-                                return self._generate_validation_result()
-                            
-                            # Default structured response
-                            else:
-                                return {"analysis": "Structured analysis completed", "confidence": 0.8}
-                        
-                        @property
-                        def text(self):
-                            return self._generate_text_response()
-                        
-                        def _generate_task_analysis(self):
-                            # Intelligent task analysis based on actual task characteristics
-                            task_lower = self.task_description.lower()
-                            
-                            # Analyze complexity indicators
-                            complexity_indicators = [
-                                len(self.task_description.split()) > 50,
-                                any(word in task_lower for word in ["complex", "comprehensive", "detailed", "thorough"]),
-                                any(word in task_lower for word in ["analysis", "research", "investigation"]),
-                                any(word in task_lower for word in ["multiple", "various", "several", "different"]),
-                                "and" in task_lower and task_lower.count("and") > 2
-                            ]
-                            
-                            difficulty = min(0.9, 0.4 + (sum(complexity_indicators) * 0.1))
-                            
-                            # Identify domains
-                            domains = []
-                            domain_keywords = {
-                                "research": ["research", "find", "search", "investigate", "study"],
-                                "analysis": ["analyze", "examine", "evaluate", "assess", "review"],
-                                "creative": ["create", "design", "develop", "build", "generate"],
-                                "technical": ["code", "programming", "software", "technical", "implementation"],
-                                "business": ["business", "market", "strategy", "plan", "commercial"],
-                                "computational": ["calculate", "compute", "math", "statistics", "data"]
-                            }
-                            
-                            for domain, keywords in domain_keywords.items():
-                                if any(keyword in task_lower for keyword in keywords):
-                                    domains.append(domain)
-                            
-                            if not domains:
-                                domains = ["general"]
-                            
-                                return {
-                                "complexity_assessment": self.complexity_level,
-                                "identified_domains": domains,
-                                "reasoning_requirements": ["logical", "systematic", "analytical"],
-                                "estimated_difficulty": difficulty,
-                                    "recommended_agents": ["research_analyst", "domain_specialist", "synthesis_coordinator"],
-                                    "resource_requirements": {
-                                    "research_depth": "comprehensive" if self.resource_level == "abundant" else "focused",
-                                        "computational_intensity": "moderate",
-                                        "time_complexity": "moderate"
-                                    }
-                                }
-                        
-                        def _generate_execution_plan(self):
-                            task_lower = self.task_description.lower()
-                            phases = []
-                            
-                            # Add search phase if research is needed
-                            if any(word in task_lower for word in ["find", "search", "research", "information"]):
-                                phases.append({
-                                    "name": "research_phase",
-                                    "tools": ["maestro_search"],
-                                    "arguments": [{"query": self.task_description, "max_results": 5}],
-                                    "expected_outputs": ["research_data"]
-                                })
-                            
-                            # Add analysis phase
-                            phases.append({
-                                            "name": "analysis_phase",
-                                "tools": ["maestro_iae"],
-                                "arguments": [{"analysis_request": self.task_description, "engine_type": "auto"}],
-                                "expected_outputs": ["analysis_result"]
-                            })
-                            
-                            return {
-                                "phases": phases,
-                                    "synthesis_strategy": "llm_synthesis",
-                                    "quality_gates": ["multi_agent_validation"]
-                                }
-                        
-                        def _generate_validation_result(self):
-                                return {
-                                "quality_score": min(0.95, self.quality_threshold + 0.05),
-                                    "identified_issues": [],
-                                    "improvements": ["Consider additional verification"],
-                                    "confidence_level": 0.85,
-                                    "domain_accuracy": 0.9,
-                                    "completeness": 0.85
-                                }
-                        
-                        def _generate_text_response(self):
-                            return f"""# Enhanced Solution: {self.task_description}
-
-## Executive Summary
-Comprehensive solution developed through systematic 6-phase orchestration process with quality threshold {self.quality_threshold}.
-
-## Methodology Applied
-- **Resource Level**: {self.resource_level.title()}
-- **Complexity Assessment**: {self.complexity_level.title()}
-- **Quality Standard**: {self.quality_threshold:.2f}
-
-## Solution Architecture
-1. **Intelligent Task Decomposition**: Systematic breakdown of requirements
-2. **Strategic Knowledge Acquisition**: Targeted research and information gathering
-3. **Multi-Phase Execution**: Coordinated tool utilization and processing
-4. **Multi-Agent Validation**: Quality assurance through diverse perspectives
-5. **Iterative Refinement**: Continuous improvement to meet quality thresholds
-
-## Quality Assurance
-- Solution validated through multiple analytical perspectives
-- Quality score: {min(0.95, self.quality_threshold + 0.05):.2f}
-- Confidence level: {min(0.9, self.quality_threshold + 0.02):.2f}
-
-## Implementation Notes
-This solution represents enhanced capability amplification through:
-- Structured reasoning frameworks
-- Systematic quality validation
-- Multi-tool coordination
-- Iterative improvement processes
-
-The orchestration framework ensures reliable, high-quality outcomes through systematic methodology and comprehensive validation."""
-                    
-                    return IntelligentResponse(self.maestro_tools, prompt, task_description, complexity_level, quality_threshold, resource_level)
-            
-            # Use production context with direct orchestration (no circular dependency)
-            result = await self.orchestrate_task(
-                ctx=ProductionContext(self),
-                task_description=task_description,
-                context=context,
-                success_criteria=success_criteria,
-                complexity_level=complexity_level,
-                quality_threshold=quality_threshold,
-                resource_level=resource_level,
-                reasoning_focus=reasoning_focus,
-                validation_rigor=validation_rigor,
-                max_iterations=max_iterations,
-                domain_specialization=domain_specialization,
-                enable_collaboration_fallback=enable_collaboration_fallback
-            )
-            
-            return [types.TextContent(type="text", text=result)]
-            
-        except Exception as e:
-            logger.error(f"❌ Enhanced MAESTRO orchestration error: {str(e)}")
-            import traceback
-            logger.error(f"❌ Enhanced MAESTRO orchestration traceback: {traceback.format_exc()}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ **Enhanced MAESTRO Orchestration Error**\n\nError: {str(e)}\n\nThe enhanced orchestration system encountered an issue. This may be due to:\n- Complex task requirements exceeding current capabilities\n- Resource constraints with the specified resource_level\n- Quality threshold set too high for the given task complexity\n\nSuggestions:\n- Try reducing quality_threshold to 0.7-0.8\n- Use 'limited' resource_level for simpler execution\n- Break down complex tasks into smaller components\n\nTraceback: {traceback.format_exc()}"
-            )]
-    
-    async def handle_maestro_iae(self, arguments: dict) -> list[types.TextContent]:
-        """Handle maestro_iae (Integrated Analysis Engine) tool calls"""
-        await self._ensure_initialized()
-        
-        try:
-            analysis_request = arguments.get("analysis_request", "")
-            engine_type = arguments.get("engine_type", "auto")
-            precision_level = arguments.get("precision_level", "standard")
-            computational_context = arguments.get("computational_context", {})
-            
-            if not analysis_request:
-                return [types.TextContent(
-                    type="text",
-                    text="❌ **Analysis Request Required**\n\nPlease provide an analysis request for the IAE."
-                )]
-            
-            logger.info(f"🧠 Running IAE analysis: '{analysis_request}' (engine: {engine_type}, precision: {precision_level})")
-            
-            # Determine analysis approach based on request
-            analysis_lower = analysis_request.lower()
-            
-            if engine_type == "auto":
-                # Auto-detect best engine type
-                if any(word in analysis_lower for word in ["search", "find", "lookup", "research"]):
-                    engine_type = "search"
-                elif any(word in analysis_lower for word in ["scrape", "extract", "download", "fetch"]):
-                    engine_type = "extraction"
-                elif any(word in analysis_lower for word in ["compile", "synthesize", "combine", "merge"]):
-                    engine_type = "synthesis"
-                elif any(word in analysis_lower for word in ["calculate", "compute", "math", "numeric"]):
-                    engine_type = "computational"
-                else:
-                    engine_type = "analysis"
-            
-            # Execute analysis based on engine type
-            if engine_type == "search":
-                # Delegate to search
-                search_result = await self.handle_maestro_search({
-                    "query": analysis_request,
-                    "max_results": 5,
-                    "result_format": "structured"
-                })
-                analysis_output = f"IAE Search Analysis completed. {len(search_result)} search results processed."
-                detailed_output = search_result[0].text if search_result else "No search results"
-                
-            elif engine_type == "extraction":
-                # For extraction, we recommend using search to gather information
-                analysis_output = "IAE Extraction Analysis recommends using maestro_search for data gathering."
-                detailed_output = "For content extraction tasks, use maestro_search with specific queries to gather the needed information."
-                
-            elif engine_type == "synthesis":
-                # Synthesis mode - combine information
-                analysis_output = f"IAE Synthesis Analysis: Processing request '{analysis_request}'"
-                detailed_output = f"""
-## Synthesis Analysis Results
-
-**Request:** {analysis_request}
-
-**Analysis Approach:**
-- Engine Type: {engine_type}
-- Precision Level: {precision_level}
-- Context: {computational_context if computational_context else 'None'}
-
-**Synthesis Process:**
-1. Request interpretation completed
-2. Context analysis performed
-3. Information integration in progress
-4. Results compilation ready
-
-**Output:**
-The analysis request has been processed using the IAE synthesis engine. For complex analysis requiring actual data processing, consider using maestro_orchestrate to create a comprehensive multi-step plan.
-
-**Recommendations:**
-- For research tasks: Use maestro_orchestrate with 'research' complexity
-- For data extraction: Use maestro_orchestrate with 'data_extraction' complexity  
-- For computational analysis: Use maestro_orchestrate with 'analysis' complexity
-"""
-                
-            elif engine_type == "computational":
-                # Computational analysis
-                analysis_output = f"IAE Computational Analysis completed for: '{analysis_request}'"
-                detailed_output = f"""
-## Computational Analysis Results
-
-**Request:** {analysis_request}
-**Engine:** Computational
-**Precision:** {precision_level}
-
-**Analysis Summary:**
-The computational request has been processed. For actual mathematical computations, code execution, or complex data processing, consider using:
-
-1. **maestro_execute** with Python code for calculations
-2. **maestro_orchestrate** for multi-step computational workflows
-3. **Direct tool calls** for specific computational tasks
-
-**Current Capabilities:**
-- Request analysis and interpretation ✅
-- Computational workflow planning ✅
-- Tool recommendation ✅
-- Actual computation execution: Use maestro_execute
-
-**Next Steps:**
-For computational tasks requiring actual execution, use maestro_orchestrate with auto_execute=true or maestro_execute with specific code.
-"""
-                
-            else:
-                # General analysis
-                analysis_output = f"IAE General Analysis completed for: '{analysis_request}'"
-                detailed_output = f"""
-## General Analysis Results
-
-**Request:** {analysis_request}
-**Engine Type:** {engine_type}
-**Precision Level:** {precision_level}
-
-**Analysis Process:**
-1. ✅ Request parsing and interpretation
-2. ✅ Context analysis and classification
-3. ✅ Approach determination
-4. ✅ Resource requirement assessment
-
-**Key Findings:**
-- Analysis complexity: {precision_level}
-- Recommended tools: Based on request content
-- Execution strategy: Sequential processing recommended
-
-**Analysis Breakdown:**
-The request has been analyzed and categorized. The IAE has determined the most appropriate processing approach and identified required resources.
-
-**Recommendations:**
-- For complex multi-step tasks: Use maestro_orchestrate
-- For specific tool operations: Use individual maestro tools
-- For code execution: Use maestro_execute
-- For research: Use maestro_search
-- For web scraping: Use maestro_scrape
-
-**Output Quality:** {precision_level} precision analysis completed
-**Processing Time:** Optimized for {precision_level} level requirements
-"""
-            
-            # Format response
-            response = f"# 🧠 MAESTRO IAE Analysis Results\n\n"
-            response += f"**Analysis Request:** {analysis_request}\n"
-            response += f"**Engine Type:** {engine_type}\n"
-            response += f"**Precision Level:** {precision_level}\n"
-            response += f"**Status:** ✅ COMPLETED\n\n"
-            
-            response += f"## Analysis Output:\n\n"
-            response += f"{analysis_output}\n\n"
-            
-            response += f"## Detailed Results:\n\n"
-            response += detailed_output
-            
-            if computational_context:
-                response += f"\n\n## Computational Context:\n\n"
-                for key, value in computational_context.items():
-                    response += f"- **{key}:** {value}\n"
-            
-            response += f"\n## IAE Metadata:\n\n"
-            response += f"- **Analysis Engine:** {engine_type}\n"
-            response += f"- **Precision Mode:** {precision_level}\n"
-            response += f"- **Request Length:** {len(analysis_request)} characters\n"
-            response += f"- **Processing Time:** < 1s (analysis mode)\n"
-            response += f"- **Recommendations:** See detailed results above\n"
-            
-            return [types.TextContent(type="text", text=response)]
-            
-        except Exception as e:
-            logger.error(f"❌ MAESTRO IAE error: {str(e)}")
-            return [types.TextContent(
-                type="text",
-                text=f"❌ **MAESTRO IAE Error**\n\nError: {str(e)}\n\nPlease check your analysis request and try again."
-            )]
-    
-    # Bridge methods for compatibility with existing interface
-    async def search(self, query: str, max_results: int = 10, search_engine: str = "duckduckgo", 
-                    temporal_filter: str = "any", result_format: str = "structured") -> str:
-        """Bridge method for search functionality"""
-        try:
-            result = await self.handle_maestro_search({
-                'query': query,
-                'max_results': max_results,
-                'search_engine': search_engine,
-                'temporal_filter': temporal_filter,
-                'result_format': result_format
-            })
-            return result[0].text if result else "Search failed"
-        except Exception as e:
-            logger.error(f"❌ Search bridge method failed: {str(e)}")
-            return f"Search failed: {str(e)}"
-    
-
-    
-    async def execute(self, code: str, language: str = "python", 
-                    timeout: int = 30, capture_output: bool = True,
-                    working_directory: str = None, environment_vars: dict = None) -> str:
-        """Bridge method for execute functionality"""
-        try:
-            result = await self.handle_maestro_execute({
-                'code': code,
-                'language': language,
-                'timeout': timeout,
-                'capture_output': capture_output,
-                'working_directory': working_directory,
-                'environment_vars': environment_vars or {}
-            })
-            return result[0].text if result else "Execution failed"
-        except Exception as e:
-            logger.error(f"❌ Execute bridge method failed: {str(e)}")
-            return f"Execution failed: {str(e)}"
-    
-    async def error_handler(self, error_message: str, error_context: dict = None,
-                           recovery_suggestions: bool = True) -> str:
-        """Bridge method for error handler functionality"""
-        try:
-            result = await self.handle_maestro_error_handler({
-                'error_message': error_message,
-                'error_details': error_context or {},
-                'recovery_suggestions': recovery_suggestions,
-                'available_tools': [],  # Will be populated by error handler
-                'success_criteria': []  # Will be populated by error handler
-            })
-            return result[0].text if result else "Error handling failed"
-        except Exception as e:
-            logger.error(f"❌ Error handler bridge method failed: {str(e)}")
-            return f"Error handling failed: {str(e)}"
-    
-
 
     async def orchestrate_task(self, ctx: Context, task_description: str, context: Dict[str, Any] = None, success_criteria: Dict[str, Any] = None, complexity_level: str = "moderate", quality_threshold: float = None, resource_level: str = "moderate", reasoning_focus: str = "auto", validation_rigor: str = "standard", max_iterations: int = None, domain_specialization: str = None, enable_collaboration_fallback: bool = False) -> str:
         """
@@ -1334,7 +878,10 @@ The request has been analyzed and categorized. The IAE has determined the most a
             return f"❌ **Enhanced Orchestration Error**\n\nError: {str(e)}\n\nThe enhanced orchestration system encountered an issue. This may be due to:\n- Complex task requirements exceeding current capabilities\n- Resource constraints with the specified resource_level\n- Quality threshold set too high for the given task complexity\n\nSuggestions:\n- Try reducing quality_threshold to 0.7-0.8\n- Use 'limited' resource_level for simpler execution\n- Break down complex tasks into smaller components\n\nTraceback: {traceback.format_exc()}"
 
     async def cleanup(self):
-        """Cleanup resources"""
+        """Clean up resources, like closing browser instances."""
+        if self._initialized and self.puppeteer_tools:
+            await self.puppeteer_tools.close()
+            logger.info("PuppeteerTools cleaned up.")
         logger.info("🧹 Cleaning up MAESTRO tools...")
         # LLM web tools don't need cleanup like puppeteer
         self._initialized = False
@@ -1543,13 +1090,15 @@ The request has been analyzed and categorized. The IAE has determined the most a
         }
 
     async def _execute_orchestration_plan(self, ctx: Context, orchestration_plan: Dict[str, Any], knowledge_synthesis: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the orchestration plan using actual tools"""
+        """
+        Execute the orchestration plan by synthesizing code from the plan and using actual tools.
+        """
         execution_results = {}
         
         for phase in orchestration_plan.get("phases", []):
             phase_name = phase["name"]
             tools_used = phase["tools"]
-            tool_arguments = phase.get("arguments", [])
+            phase_prompt = phase.get("prompt", "No prompt provided.")
             
             phase_result = {
                 "phase": phase_name,
@@ -1558,28 +1107,34 @@ The request has been analyzed and categorized. The IAE has determined the most a
                 "outputs": {}
             }
             
-            # Execute actual tools
-            for i, tool in enumerate(tools_used):
-                tool_args = tool_arguments[i] if i < len(tool_arguments) else {}
-                
+            # Execute actual tools by synthesizing code/arguments from the plan
+            for tool in tools_used:
                 try:
+                    # Synthesize arguments for each tool based on the phase's prompt and context
+                    tool_args = await self._synthesize_tool_arguments(ctx, tool, phase_prompt, knowledge_synthesis)
+
+                    if not tool_args:
+                        logger.warning(f"Skipping tool {tool} in phase {phase_name} due to lack of synthesized arguments.")
+                        continue
+
                     if tool == "maestro_search":
                         result = await self.handle_maestro_search(tool_args)
                         phase_result["outputs"][tool] = result[0].text if result else "Search completed"
                     elif tool == "maestro_iae":
                         result = await self.handle_maestro_iae(tool_args)
                         phase_result["outputs"][tool] = result[0].text if result else "Analysis completed"
-                    elif tool == "maestro_scrape":
-                        result = await self.handle_maestro_scrape(tool_args)
-                        phase_result["outputs"][tool] = result[0].text if result else "Scraping completed"
                     elif tool == "maestro_execute":
+                        # Ensure 'code' is present for the execute tool
+                        if "code" not in tool_args or not tool_args["code"]:
+                            raise ValueError("Synthesized arguments for maestro_execute must contain a 'code' key.")
                         result = await self.handle_maestro_execute(tool_args)
                         phase_result["outputs"][tool] = result[0].text if result else "Execution completed"
                     else:
-                        phase_result["outputs"][tool] = f"Tool {tool} executed successfully"
+                        # Fallback for generic tools
+                        phase_result["outputs"][tool] = f"Tool {tool} executed successfully with synthesized args."
                         
                 except Exception as e:
-                    logger.error(f"Error executing tool {tool}: {str(e)}")
+                    logger.error(f"Error executing tool {tool} in phase {phase_name}: {str(e)}", exc_info=True)
                     phase_result["outputs"][tool] = f"Tool {tool} failed: {str(e)}"
                     phase_result["status"] = "completed_with_errors"
             
@@ -1591,6 +1146,46 @@ The request has been analyzed and categorized. The IAE has determined the most a
             "tools_executed": [tool for phase in orchestration_plan.get("phases", []) for tool in phase["tools"]],
             "execution_results": execution_results
         }
+
+    async def _synthesize_tool_arguments(self, ctx: Context, tool_name: str, phase_prompt: str, knowledge: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Use the LLM to synthesize concrete arguments for a tool call based on a high-level prompt.
+        """
+        synthesis_prompt = f"""
+        Given the following phase objective and available knowledge, generate the necessary arguments for the tool '{tool_name}'.
+
+        Phase Objective: "{phase_prompt}"
+
+        Available Knowledge:
+        - {len(knowledge.get('sources', []))} sources found.
+        - Key insights: {knowledge.get('synthesis', 'N/A')}
+
+        Tool to call: {tool_name}
+
+        Based on this, what is the exact JSON object of arguments that should be passed to the tool?
+        For `maestro_search`, provide a `query`.
+        For `maestro_iae`, provide an `analysis_request`.
+        For `maestro_execute`, provide a `code` string to execute. The code should be self-contained and print results.
+        Return only the JSON object of arguments, without any surrounding text or markdown.
+        """
+        
+        response = await ctx.sample(synthesis_prompt)
+        
+        try:
+            # The LLM should return a JSON string, which we parse into a dict.
+            # Adding robust parsing to handle markdown code blocks that LLMs often add.
+            json_text = response.text
+            if '```json' in json_text:
+                match = re.search(r'```json\n({.*?})\n```', json_text, re.DOTALL)
+                if match:
+                    json_text = match.group(1)
+
+            args = json.loads(json_text)
+            logger.info(f"Synthesized arguments for tool {tool_name}: {args}")
+            return args
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.error(f"Failed to decode synthesized JSON arguments for {tool_name}: {e}. Response was: {response.text}")
+            return {}
 
     async def _synthesize_initial_solution(self, ctx: Context, task_description: str, execution_results: Dict[str, Any], knowledge_synthesis: Dict[str, Any], context: Dict[str, Any]) -> str:
         """Synthesize initial solution from execution results"""
@@ -2010,51 +1605,112 @@ This solution represents the initial synthesis based on available information an
 
 
     async def _handle_iae_discovery(self, arguments: dict) -> List[types.TextContent]:
-        """Handle IAE discovery tool calls to analyze computational requirements."""
+        """
+        Handle IAE discovery tool calls to analyze computational requirements.
+        This is a backend-only, headless tool designed to be called by external agentic IDEs.
+        """
         try:
+            # Extract arguments
             task_type = arguments.get("task_type", "general")
             domain_context = arguments.get("domain_context", "")
             complexity_requirements = arguments.get("complexity_requirements", {})
+            list_all = arguments.get("list_all_engines", False)
+            engine_type = arguments.get("engine_type_filter", "all")
+            include_capabilities = arguments.get("include_capabilities", True)
             
             logger.info(f"🔍 IAE Discovery: {task_type} in domain {domain_context}")
             
-            # Analyze computational requirements based on task type
-            analysis_result = f"""# 🔬 IAE Discovery Results
+            # Initialize discovery system if needed
+            if not hasattr(self, "_iae_discovery"):
+                from .iae_discovery import IAEDiscovery
+                self._iae_discovery = IAEDiscovery()
+            
+            if list_all:
+                # List all engines with optional filtering
+                engines = await self._iae_discovery.registry.discover_engines()
+                filtered = self._iae_discovery.registry.list_engines(
+                    enhancement_type=engine_type if engine_type != "all" else None
+                )
+                
+                result = {
+                    "discovery_time": datetime.now(timezone.utc).isoformat(),
+                    "total_engines": len(engines),
+                    "filtered_engines": len(filtered),
+                    "filter_type": engine_type,
+                    "engines": [
+                        {
+                            "engine_id": e.engine_id,
+                            "name": e.name,
+                            "version": e.version,
+                            "description": e.description,
+                            "supported_domains": e.supported_domains,
+                            "enhancement_types": e.enhancement_types,
+                            **({"capabilities": [c.__dict__ for c in e.capabilities]} if include_capabilities else {})
+                        }
+                        for e in filtered
+                    ]
+                }
+            else:
+                # Discover engines for specific task
+                result = await self._iae_discovery.discover_engines_for_task(
+                    task_type=task_type,
+                    domain_context=domain_context,
+                    complexity_requirements=complexity_requirements
+                )
+            
+            # Format the result as markdown
+            markdown = f"""# 🔬 IAE Discovery Results
 
 ## Task Analysis
 **Task Type**: {task_type}
 **Domain Context**: {domain_context or "General"}
 **Complexity Level**: {complexity_requirements.get("level", "moderate")}
+**Discovery Time**: {result["discovery_time"]}
 
-## Recommended Engines
-Based on your task type '{task_type}', here are the optimal computational engines:
+## Engine Summary
+- **Total Engines Found**: {result["engines_found" if not list_all else "total_engines"]}
+- **Relevant Engines**: {result["relevant_engines" if not list_all else "filtered_engines"]}
 
-### Primary Recommendations
-1. **Statistical Analysis Engine**: For data analysis and pattern recognition
-2. **Mathematical Engine**: For numerical computations and equation solving
-3. **Intelligence Amplification Engine**: For cognitive enhancement and reasoning
+## {"Available" if list_all else "Recommended"} Engines
+"""
 
-### Engine Selection Guide
-- **For Data Tasks**: Use statistical analysis engine with pandas/scipy
-- **For Math Tasks**: Use mathematical engine with sympy/numpy
-- **For Reasoning Tasks**: Use intelligence amplification engine
-
-### Workflow Integration
-```
-1. Define computational parameters
-2. Select appropriate engine domain
-3. Execute computation via maestro_iae
-4. Interpret and integrate results
-```
-
+            if list_all:
+                for engine in result["engines"]:
+                    markdown += f"""
+### {engine["name"]} (v{engine["version"]})
+- **ID**: `{engine["engine_id"]}`
+- **Description**: {engine["description"]}
+- **Domains**: {", ".join(engine["supported_domains"])}
+- **Enhancement Types**: {", ".join(engine["enhancement_types"])}
+"""
+                    if include_capabilities and "capabilities" in engine:
+                        markdown += "\n#### Capabilities\n"
+                        for cap in engine["capabilities"]:
+                            markdown += f"- **{cap['name']}**: {cap['description']}\n"
+            else:
+                for rec in result["recommendations"]:
+                    markdown += f"""
+### {rec["name"]} (v{rec["version"]})
+- **ID**: `{rec["engine_id"]}`
+- **Description**: {rec["description"]}
+- **Relevance Score**: {rec["relevance_score"]:.2f}
+"""
+                    if include_capabilities:
+                        markdown += "\n#### Capabilities\n"
+                        for cap in rec["capabilities"]:
+                            markdown += f"- **{cap['name']}**: {cap['description']}\n"
+            
+            markdown += """
 ## Next Steps
-Use `maestro_iae` with the appropriate engine type for your specific computational needs.
+1. Select an appropriate engine based on your task requirements
+2. Use `maestro_iae` with the chosen engine's ID
+3. Monitor performance and adjust if needed
 """
             
-            return [types.TextContent(type="text", text=analysis_result)]
+            return [types.TextContent(type="text", text=markdown)]
             
         except Exception as e:
-            logger.error(f"❌ IAE discovery error: {str(e)}")
+            logger.error(f"❌ IAE discovery error: {str(e)}", exc_info=True)
             return [types.TextContent(type="text", text=f"❌ **IAE Discovery Failed**\n\nError: {str(e)}")]
 
     async def _handle_tool_selection(self, arguments: dict) -> List[types.TextContent]:
@@ -2129,6 +1785,170 @@ Use `maestro_iae` with the appropriate engine type for your specific computation
         except Exception as e:
             logger.error(f"❌ Tool selection error: {str(e)}")
             return [types.TextContent(type="text", text=f"❌ **Tool Selection Failed**\n\nError: {str(e)}")]
+
+    async def handle_collaboration_response(self, collaboration_id: str, responses: Dict[str, Any], 
+                                          additional_context: Dict[str, Any] = None, 
+                                          user_preferences: Dict[str, Any] = None,
+                                          approval_status: str = "approved", 
+                                          confidence_level: float = 0.8) -> str:
+        """Handle user responses to collaboration requests from orchestration workflows."""
+        try:
+            logger.info(f"🤝 Processing collaboration response for ID: {collaboration_id}")
+            
+            # Check if the collaboration request exists
+            if collaboration_id not in self._active_collaborations:
+                return f"""# ❌ Collaboration Response Error
+
+**Collaboration ID**: {collaboration_id}
+**Status**: Not Found
+
+## Error Details
+The collaboration request with ID `{collaboration_id}` was not found. This could mean:
+1. The collaboration ID is incorrect
+2. The collaboration has already been processed
+3. The collaboration has expired
+
+## Available Actions
+- Check the collaboration ID and try again
+- Start a new orchestration workflow if needed
+- Contact support if the issue persists
+
+**Suggestion**: Use `maestro_orchestrate` to start a new task workflow.
+"""
+
+            # Get the original collaboration request
+            original_request = self._active_collaborations[collaboration_id]
+            
+            # Process the response based on approval status
+            if approval_status == "rejected":
+                # Remove from active collaborations
+                del self._active_collaborations[collaboration_id]
+                
+                return f"""# 🚫 Collaboration Rejected
+
+**Collaboration ID**: {collaboration_id}
+**Status**: Workflow Terminated
+
+## Summary
+The collaboration request has been rejected by the user. The workflow has been terminated.
+
+## Next Steps
+- Start a new orchestration workflow with revised requirements
+- Use `maestro_orchestrate` with different parameters
+- Refine the task description based on lessons learned
+
+**Note**: This collaboration session is now closed.
+"""
+            
+            elif approval_status == "needs_revision":
+                return f"""# 🔄 Collaboration Needs Revision
+
+**Collaboration ID**: {collaboration_id}
+**Status**: Awaiting Revised Input
+
+## User Feedback Received
+- Additional context provided: {len(additional_context or {})} items
+- Responses received: {len(responses)} items
+- Confidence level: {confidence_level:.1%}
+
+## Current Status
+The workflow is paused pending revisions. Please provide:
+1. Revised responses to the original questions
+2. Additional context as needed
+3. Updated approval status when ready
+
+**Next Steps**: Update your responses and resubmit with approval_status="approved"
+"""
+            
+            else:  # approved
+                # Process successful collaboration response
+                enhanced_context = {
+                    "original_request": original_request,
+                    "user_responses": responses,
+                    "additional_context": additional_context or {},
+                    "user_preferences": user_preferences or {},
+                    "collaboration_metadata": {
+                        "response_timestamp": datetime.now().isoformat(),
+                        "confidence_level": confidence_level,
+                        "approval_status": approval_status
+                    }
+                }
+                
+                # Remove from active collaborations
+                del self._active_collaborations[collaboration_id]
+                
+                return f"""# ✅ Collaboration Response Processed
+
+**Collaboration ID**: {collaboration_id}
+**Status**: Successfully Processed
+**Confidence Level**: {confidence_level:.1%}
+
+## Response Summary
+- **User Responses**: {len(responses)} items provided
+- **Additional Context**: {len(additional_context or {})} items added
+- **User Preferences**: {len(user_preferences or {})} preferences recorded
+
+## Enhanced Context Created
+The workflow can now continue with the enhanced context provided by the user.
+
+### User Responses
+{self._format_user_responses(responses)}
+
+### Additional Context
+{self._format_additional_context(additional_context or {})}
+
+## Next Steps
+1. The original orchestration workflow will resume
+2. Enhanced context will be applied to task execution
+3. User preferences will guide the workflow decisions
+
+**Status**: Ready to continue orchestration with enhanced context.
+
+**Note**: To continue the original workflow, use `maestro_orchestrate` with the original task and this enhanced context.
+"""
+                
+        except Exception as e:
+            logger.error(f"❌ Collaboration response error: {str(e)}")
+            return f"""# ❌ Collaboration Response Error
+
+**Collaboration ID**: {collaboration_id}
+**Error**: {str(e)}
+
+## Error Details
+An error occurred while processing the collaboration response.
+
+## Troubleshooting
+1. Verify the collaboration_id is correct
+2. Ensure responses are properly formatted
+3. Check that the collaboration request is still active
+
+**Contact support if the issue persists.**
+"""
+
+    def _format_user_responses(self, responses: Dict[str, Any]) -> str:
+        """Format user responses for display"""
+        if not responses:
+            return "*No specific responses provided*"
+        
+        formatted = []
+        for key, value in responses.items():
+            formatted.append(f"- **{key}**: {value}")
+        
+        return "\n".join(formatted)
+
+    def _format_additional_context(self, context: Dict[str, Any]) -> str:
+        """Formats additional context provided by the user"""
+        if not context:
+            return "No additional context provided."
+        
+        formatted_context = "### Additional User Context\n"
+        for key, value in context.items():
+            formatted_context += f"- **{key.replace('_', ' ').title()}**: {value}\n"
+        
+        return formatted_context
+
+
+
 
 
 # Alias for backward compatibility

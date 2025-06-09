@@ -6,10 +6,13 @@ Complete reference for all MAESTRO tools with detailed parameters, examples, and
 
 **Purpose**: Intelligent workflow orchestration for complex tasks using Mixture-of-Agents (MoA)
 
+**IMPORTANT**: This tool is backend-only and headless. It must be called by an external agentic IDE (e.g., Cursor, Claude Desktop, Windsurf, Cline) or LLM client. The tool does NOT instantiate its own LLM client or UI.
+
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
+| `llm_client` | LLMClient | ✅ | - | LLM client/context from the agentic IDE |
 | `task_description` | string | ✅ | - | The complex task to orchestrate |
 | `context` | object | ❌ | `{}` | Additional context for the task |
 | `success_criteria` | object | ❌ | `{}` | Success criteria for the task |
@@ -18,27 +21,37 @@ Complete reference for all MAESTRO tools with detailed parameters, examples, and
 ### Example Usage
 
 ```python
+# The orchestrator must be initialized with an LLM client/context from your agentic IDE
+# DO NOT instantiate the LLM client internally
+from your_agentic_ide import get_llm_client  # e.g., from Cursor, Claude Desktop, etc.
+
+# Get the LLM client/context from your agentic IDE
+llm_client = get_llm_client()
+
+# Initialize the orchestrator with the external LLM client
+orchestrator = MAESTROOrchestrator(llm_client=llm_client)
+
 # Basic orchestration
-result = await tools.handle_tool_call("maestro_orchestrate", {
-    "task_description": "Analyze the competitive landscape for AI startups in 2024",
-    "complexity_level": "complex"
-})
+result = await orchestrator.orchestrate_task(
+    task_description="Analyze the competitive landscape for AI startups in 2024",
+    complexity_level="complex"
+)
 
 # With context and success criteria
-result = await tools.handle_tool_call("maestro_orchestrate", {
-    "task_description": "Create a comprehensive marketing strategy",
-    "context": {
+result = await orchestrator.orchestrate_task(
+    task_description="Create a comprehensive marketing strategy",
+    context={
         "industry": "SaaS",
         "target_market": "SMB",
         "budget": "$50k"
     },
-    "success_criteria": {
+    success_criteria={
         "deliverables": ["strategy document", "implementation plan"],
         "timeline": "2 weeks",
         "quality_threshold": 0.9
     },
-    "complexity_level": "expert"
-})
+    complexity_level="expert"
+)
 ```
 
 ### Response Format

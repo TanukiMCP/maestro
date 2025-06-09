@@ -64,6 +64,7 @@ coverage
 # Web & Visual Verification
 playwright
 selenium
+pyppeteer
 pillow
 opencv-python
 

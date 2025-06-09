@@ -298,22 +298,24 @@ class MAESTROPuppeteerTools:
             Execution results with output, errors, and validation data
         """
         logger.info(f"⚡ Executing MAESTRO code: {language} ({len(code)} chars)")
-        
+
+        # Set a default, safe working directory if none is provided.
+        # This resolves the issue of cwd being None and provides a secure default.
+        if working_directory and os.path.isdir(working_directory):
+            cwd = working_directory
+        else:
+            # Use a dedicated, temporary directory for the execution
+            cwd = tempfile.mkdtemp(prefix="maestro_exec_")
+
         try:
-            # Create temporary file for code execution
-            with tempfile.NamedTemporaryFile(mode='w', suffix=f'.{self._get_file_extension(language)}', delete=False) as f:
+            # Create temporary file inside the designated working directory
+            with tempfile.NamedTemporaryFile(mode='w', suffix=f'.{self._get_file_extension(language)}', delete=False, dir=cwd, encoding='utf-8') as f:
                 f.write(code)
                 temp_file = f.name
             
             try:
                 # Prepare execution command
-                command = self._build_execution_command(language, temp_file)
-                
-                # Set working directory
-                if working_directory and os.path.exists(working_directory):
-                    cwd = working_directory
-                else:
-                    cwd = os.path.dirname(temp_file)
+                command = self._build_execution_command(language, os.path.basename(temp_file))
                 
                 # Set environment variables
                 env = os.environ.copy()
@@ -323,28 +325,20 @@ class MAESTROPuppeteerTools:
                 # Execute code
                 start_time = datetime.now()
                 
-                if capture_output:
-                    result = subprocess.run(
-                        command,
-                        cwd=cwd,
-                        env=env,
-                        timeout=timeout,
-                        capture_output=True,
-                        text=True
-                    )
-                    stdout = result.stdout
-                    stderr = result.stderr
-                    return_code = result.returncode
-                else:
-                    result = subprocess.run(
-                        command,
-                        cwd=cwd,
-                        env=env,
-                        timeout=timeout
-                    )
-                    stdout = ""
-                    stderr = ""
-                    return_code = result.returncode
+                # Always capture output and use text mode with UTF-8 encoding
+                result = subprocess.run(
+                    command,
+                    cwd=cwd,
+                    env=env,
+                    timeout=timeout,
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',  # Explicitly set encoding to prevent 'charmap' errors
+                    errors='replace'   # Handle any potential decoding errors gracefully
+                )
+                stdout = result.stdout
+                stderr = result.stderr
+                return_code = result.returncode
                 
                 end_time = datetime.now()
                 execution_time = (end_time - start_time).total_seconds()
@@ -389,22 +383,28 @@ class MAESTROPuppeteerTools:
                 "error": f"Execution timeout after {timeout} seconds",
                 "return_code": -1,
                 "execution_time": timeout,
+                "output": {"stdout": "", "stderr": "Timeout expired."},
+                "validation": {},
                 "metadata": {
                     "language": language,
                     "code_length": len(code),
                     "timeout": timeout,
+                    "working_directory": cwd, # Ensure this key is present on error
                     "error_type": "timeout"
                 }
             }
         except Exception as e:
-            logger.error(f"❌ MAESTRO execute failed: {str(e)}")
+            logger.error(f"❌ MAESTRO execute failed: {str(e)}", exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
                 "return_code": -1,
+                "output": {"stdout": "", "stderr": str(e)},
+                "validation": {},
                 "metadata": {
                     "language": language,
                     "code_length": len(code),
+                    "working_directory": cwd, # Ensure this key is present on error
                     "error_type": "execution_error"
                 }
             }

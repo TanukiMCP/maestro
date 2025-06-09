@@ -11,6 +11,51 @@ ensuring a consistent and predictable format for planning and execution.
 
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
+from datetime import datetime
+from enum import Enum
+
+class TaskComplexity(str, Enum):
+    """Task complexity levels."""
+    SIMPLE = "simple"
+    MODERATE = "moderate"
+    COMPLEX = "complex"
+    EXPERT = "expert"
+
+class ResourceLevel(str, Enum):
+    """Resource availability levels."""
+    LIMITED = "limited"
+    MODERATE = "moderate"
+    ABUNDANT = "abundant"
+
+class ReasoningFocus(str, Enum):
+    """Primary reasoning approaches."""
+    LOGICAL = "logical"
+    CREATIVE = "creative"
+    ANALYTICAL = "analytical"
+    RESEARCH = "research"
+    SYNTHESIS = "synthesis"
+    AUTO = "auto"
+
+class ValidationRigor(str, Enum):
+    """Validation thoroughness levels."""
+    BASIC = "basic"
+    STANDARD = "standard"
+    THOROUGH = "thorough"
+    RIGOROUS = "rigorous"
+
+class OrchestrationRequest(BaseModel):
+    """Request model for task orchestration."""
+    task_description: str = Field(..., description="Complex task requiring systematic reasoning")
+    context: Optional[Dict[str, Any]] = Field(None, description="Relevant background information and constraints")
+    success_criteria: Optional[Dict[str, Any]] = Field(None, description="Success criteria for the task")
+    complexity_level: TaskComplexity = Field(TaskComplexity.MODERATE, description="Complexity level")
+    quality_threshold: float = Field(0.85, ge=0.7, le=0.95, description="Minimum acceptable quality")
+    resource_level: ResourceLevel = Field(ResourceLevel.MODERATE, description="Available computational resources")
+    reasoning_focus: ReasoningFocus = Field(ReasoningFocus.AUTO, description="Primary reasoning approach to emphasize")
+    validation_rigor: ValidationRigor = Field(ValidationRigor.STANDARD, description="Validation thoroughness level")
+    max_iterations: int = Field(3, ge=1, le=10, description="Maximum refinement cycles")
+    domain_specialization: Optional[str] = Field(None, description="Preferred domain expertise to emphasize")
+    enable_collaboration_fallback: bool = Field(True, description="Enable collaborative fallback when ambiguity detected")
 
 class AgentProfile(BaseModel):
     """
@@ -23,6 +68,12 @@ class AgentProfile(BaseModel):
     )
     system_prompt: str = Field(
         description="The domain-specific system prompt that primes the LLM's behavior and thinking for this task."
+    )
+    tools: List[str] = Field(
+        description="A list of specific tools (e.g., 'maestro_search', 'maestro_execute') required to complete this task."
+    )
+    capabilities: List[str] = Field(
+        description="A list of capabilities that the agent can perform."
     )
 
 class Task(BaseModel):
@@ -41,14 +92,14 @@ class Task(BaseModel):
     tools: List[str] = Field(
         description="A list of specific tools (e.g., 'maestro_search', 'maestro_execute') required to complete this task."
     )
-    validation_criteria: str = Field(
+    validation_criteria: List[str] = Field(
         description="Specific, measurable, and objective criteria to validate that the task has been successfully completed."
     )
     user_collaboration_required: bool = Field(
         default=False, 
         description="Set to true if the workflow should pause for user input or confirmation before proceeding to the next task."
     )
-    error_handling_plan: str = Field(
+    error_handling_plan: Dict[str, Any] = Field(
         description="A clear plan to follow if the task fails or its validation criteria cannot be met."
     )
 
@@ -63,9 +114,65 @@ class Workflow(BaseModel):
     overall_goal: str = Field(
         description="The high-level user request or goal that this entire workflow is designed to accomplish."
     )
+    e2e_validation_criteria: List[str] = Field(
+        description="The final, comprehensive validation criteria to confirm that the overall goal has been successfully met after all tasks are complete."
+    )
     tasks: List[Task] = Field(
         description="The ordered sequence of tasks to be executed to achieve the overall goal."
     )
-    e2e_validation_criteria: str = Field(
-        description="The final, comprehensive validation criteria to confirm that the overall goal has been successfully met after all tasks are complete."
-    ) 
+
+class OrchestrationResponse(BaseModel):
+    """Response model for task orchestration."""
+    status: str
+    workflow: Optional[Workflow]
+    error: Optional[str]
+
+class EngineCapability(BaseModel):
+    """Capability of an Intelligence Amplification Engine."""
+    name: str
+    description: str
+    performance_metrics: Dict[str, float]
+    resource_requirements: Dict[str, str]
+
+class DiscoveredEngine(BaseModel):
+    """Discovered engine with relevance score."""
+    engine_id: str
+    name: str
+    relevance_score: float
+    capabilities: List[str]
+
+class DiscoveryRequest(BaseModel):
+    """Request model for engine discovery."""
+    task_type: str = Field(..., description="Type of task needing engine support")
+    domain_context: Optional[str] = Field(None, description="Domain context for better engine matching")
+    complexity_requirements: Optional[Dict[str, Any]] = Field(None, description="Task complexity requirements")
+
+class DiscoveryResponse(BaseModel):
+    """Response model for engine discovery."""
+    status: str
+    discovered_engines: Optional[List[DiscoveredEngine]]
+    error: Optional[str]
+
+class ToolRequest(BaseModel):
+    """Request model for tool execution."""
+    tool_name: str
+    arguments: Dict[str, Any]
+
+class ToolResponse(BaseModel):
+    """Response model for tool execution."""
+    status: str
+    result: Optional[Any]
+    error: Optional[str]
+
+class ComponentStatus(BaseModel):
+    """Status of a server component."""
+    status: str
+    details: Optional[Dict[str, Any]]
+
+class HealthResponse(BaseModel):
+    """Response model for health check."""
+    status: str
+    timestamp: datetime
+    version: str
+    components: Dict[str, str]
+    error: Optional[str] 

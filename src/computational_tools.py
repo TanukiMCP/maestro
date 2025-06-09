@@ -11,6 +11,7 @@ computational engines following the MIA protocol.
 
 import json
 import logging
+import re
 from typing import Dict, List, Any, Union
 # Import MCP types at module level is acceptable since it's lightweight
 from mcp import types
@@ -74,7 +75,7 @@ class ComputationalTools:
         # Add quantum physics engine
         try:
             logger.info("🔄 Loading Quantum Physics Engine...")
-            from .engines import get_quantum_physics_engine
+            from src.maestro.engines import get_quantum_physics_engine
             
             QuantumPhysicsEngine = get_quantum_physics_engine()
             if QuantumPhysicsEngine:
@@ -94,7 +95,7 @@ class ComputationalTools:
         # Add intelligence amplification engine
         try:
             logger.info("🔄 Loading Intelligence Amplification Engine...")
-            from .engines import get_intelligence_amplifier
+            from src.maestro.engines import get_intelligence_amplifier
             
             IntelligenceAmplificationEngine = get_intelligence_amplifier()
             if IntelligenceAmplificationEngine:
@@ -114,7 +115,7 @@ class ComputationalTools:
         # Add scientific computing engine
         try:
             logger.info("🔄 Loading Scientific Computing Engine...")
-            from .engines import get_scientific_computing_engine
+            from src.maestro.engines import get_scientific_computing_engine
             
             ScientificComputingEngine = get_scientific_computing_engine()
             if ScientificComputingEngine:
@@ -134,7 +135,7 @@ class ComputationalTools:
         # Add language arts engine
         try:
             logger.info("🔄 Loading Language Arts Engine...")
-            from .engines import get_language_arts_engine
+            from src.maestro.engines import get_language_arts_engine
             
             LanguageArtsEngine = get_language_arts_engine()
             if LanguageArtsEngine:
@@ -154,7 +155,7 @@ class ComputationalTools:
         # Add MedBio engine
         try:
             logger.info("🔄 Loading MedBio Engine...")
-            from .engines import get_medbio_engine
+            from src.maestro.engines import get_medbio_engine
             
             MedBioEngine = get_medbio_engine()
             if MedBioEngine:
@@ -174,7 +175,7 @@ class ComputationalTools:
         # Add Genomics engine
         try:
             logger.info("🔄 Loading Genomics Engine...")
-            from .engines import get_genomics_engine
+            from src.maestro.engines import get_genomics_engine
             
             GenomicsEngine = get_genomics_engine()
             if GenomicsEngine:
@@ -194,7 +195,7 @@ class ComputationalTools:
         # Add Epidemiology engine
         try:
             logger.info("🔄 Loading Epidemiology Engine...")
-            from .engines import get_epidemiology_engine
+            from src.maestro.engines import get_epidemiology_engine
             
             EpidemiologyEngine = get_epidemiology_engine()
             if EpidemiologyEngine:
@@ -214,7 +215,7 @@ class ComputationalTools:
         # Add Molecular Dynamics engine
         try:
             logger.info("🔄 Loading Molecular Dynamics Engine...")
-            from .engines import get_molecular_dynamics_engine
+            from src.maestro.engines import get_molecular_dynamics_engine
             
             MolecularDynamicsEngine = get_molecular_dynamics_engine()
             if MolecularDynamicsEngine:
@@ -234,7 +235,7 @@ class ComputationalTools:
         # Add Particle Physics engine
         try:
             logger.info("🔄 Loading Particle Physics Engine...")
-            from .engines import get_particle_physics_engine
+            from src.maestro.engines import get_particle_physics_engine
             
             ParticlePhysicsEngine = get_particle_physics_engine()
             if ParticlePhysicsEngine:
@@ -254,7 +255,7 @@ class ComputationalTools:
         # Add Astrophysics engine
         try:
             logger.info("🔄 Loading Astrophysics Engine...")
-            from .engines import get_astrophysics_engine
+            from src.maestro.engines import get_astrophysics_engine
             
             AstrophysicsEngine = get_astrophysics_engine()
             if AstrophysicsEngine:
@@ -274,13 +275,13 @@ class ComputationalTools:
         # Add Scientific Visualization engine
         try:
             logger.info("🔄 Loading Scientific Visualization Engine...")
-            from .engines import get_scientific_visualization_engine
+            from src.maestro.engines import get_scientific_visualization_engine
             
             ScientificVisualizationEngine = get_scientific_visualization_engine()
             if ScientificVisualizationEngine:
                 logger.info("🔄 Instantiating Scientific Visualization engine...")
-                viz_engine = ScientificVisualizationEngine()
-                self.engines['scientific_visualization'] = viz_engine
+                scivis_engine = ScientificVisualizationEngine()
+                self.engines['scientific_visualization'] = scivis_engine
                 logger.info("✅ Scientific Visualization Engine loaded successfully")
             else:
                 logger.warning("Failed to load Scientific Visualization Engine: Class not available")
@@ -294,13 +295,13 @@ class ComputationalTools:
         # Add Veterinary Nutrition RAG engine
         try:
             logger.info("🔄 Loading Veterinary Nutrition RAG Engine...")
-            from .engines import get_vet_nutrition_rag_engine
+            from src.maestro.engines import get_vet_nutrition_rag_engine
             
-            VeterinaryNutritionRAGEngine = get_vet_nutrition_rag_engine()
-            if VeterinaryNutritionRAGEngine:
+            VetNutritionRAG = get_vet_nutrition_rag_engine()
+            if VetNutritionRAG:
                 logger.info("🔄 Instantiating Veterinary Nutrition RAG engine...")
-                vet_rag_engine = VeterinaryNutritionRAGEngine()
-                self.engines['vet_nutrition_rag'] = vet_rag_engine
+                vet_nut_engine = VetNutritionRAG()
+                self.engines['vet_nutrition_rag'] = vet_nut_engine
                 logger.info("✅ Veterinary Nutrition RAG Engine loaded successfully")
             else:
                 logger.warning("Failed to load Veterinary Nutrition RAG Engine: Class not available")
@@ -314,13 +315,13 @@ class ComputationalTools:
         # Add Veterinary Radiation Oncology engine
         try:
             logger.info("🔄 Loading Veterinary Radiation Oncology Engine...")
-            from .engines import get_vet_rad_onc_engine
+            from src.maestro.engines import get_vet_rad_onc_engine
             
-            VeterinaryRadiationOncologyEngine = get_vet_rad_onc_engine()
-            if VeterinaryRadiationOncologyEngine:
+            VetRadOncEngine = get_vet_rad_onc_engine()
+            if VetRadOncEngine:
                 logger.info("🔄 Instantiating Veterinary Radiation Oncology engine...")
-                vet_rad_onc_engine = VeterinaryRadiationOncologyEngine()
-                self.engines['vet_rad_onc'] = vet_rad_onc_engine
+                vet_rad_engine = VetRadOncEngine()
+                self.engines['vet_rad_onc'] = vet_rad_engine
                 logger.info("✅ Veterinary Radiation Oncology Engine loaded successfully")
             else:
                 logger.warning("Failed to load Veterinary Radiation Oncology Engine: Class not available")
@@ -330,6 +331,20 @@ class ComputationalTools:
             logger.warning(f"Failed to initialize Veterinary Radiation Oncology Engine: {e}")
             import traceback
             logger.warning(f"Full traceback: {traceback.format_exc()}")
+        
+        # Add Basic Arithmetic engine
+        try:
+            logger.info("🔄 Loading Basic Arithmetic Engine...")
+            from src.maestro.engines import get_basic_arithmetic_engine
+            
+            BasicArithmeticEngine = get_basic_arithmetic_engine()
+            if BasicArithmeticEngine:
+                self.engines['basic_arithmetic'] = BasicArithmeticEngine()
+                logger.info("✅ Basic Arithmetic Engine loaded successfully")
+            else:
+                logger.warning("Failed to load Basic Arithmetic Engine: Class not available")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Basic Arithmetic Engine: {e}")
         
         logger.info(f"🔧 Computational engines initialized ({len(self.engines)} active)")
     
@@ -1089,83 +1104,82 @@ class ComputationalTools:
 
     async def intelligence_amplification_engine(self, ctx, analysis_request: str, engine_type: str = "auto", data: Any = None, parameters: Dict[str, Any] = None) -> str:
         """
-        Intelligence Amplification Engine - Gateway to computational intelligence methods.
+        Single gateway to all computational engines.
         
-        Args:
-            ctx: MCP context (unused, but required for signature compatibility)
-            analysis_request: Description of the analysis to perform
-            engine_type: Type of engine to use ("auto", "knowledge_network", "cognitive_load", "concept_clustering")
-            data: Optional input data for the engine
-            parameters: Optional engine-specific parameters dictionary that may include:
-                - complexity_level: Complexity level ("simple", "moderate", "complex")
-                - output_format: Output format ("detailed", "concise")
-        Returns:
-            Formatted analysis result string
+        Dynamically routes requests to the most appropriate engine.
         """
-        parameters = parameters or {}
-        # Extract complexity_level and output_format from parameters if provided
-        complexity_level = parameters.get("complexity_level", "moderate")
-        output_format = parameters.get("output_format", "detailed")
+        # Ensure engines are loaded before processing
+        self._initialize_engines()
         
-        try:
-            logger.info(f"🧠 Intelligence Amplification Engine called: {engine_type}")
-            
-            # Ensure engines are initialized
-            self._initialize_engines()
-            
-            # Check if intelligence amplification engine is available
-            if 'intelligence_amplification' not in self.engines:
-                return f"❌ **Intelligence Amplification Engine Unavailable**\n\nThe intelligence amplification engine is not available. This may be due to missing dependencies (NumPy, NetworkX, scikit-learn).\n\nPlease install required dependencies:\n```bash\npip install numpy networkx scikit-learn scipy\n```"
-            
-            engine = self.engines['intelligence_amplification']
-            
-            # Map engine_type to specific methods and parse analysis_request
-            if engine_type == "knowledge_network" or "knowledge" in analysis_request.lower() or "network" in analysis_request.lower():
-                # Parse concepts and relationships from analysis_request
-                concepts, relationships = self._parse_knowledge_network_request(analysis_request)
-                result = engine.analyze_knowledge_network(concepts, relationships)
-                title = "Knowledge Network Analysis"
-                
-            elif engine_type == "cognitive_load" or "cognitive" in analysis_request.lower() or "load" in analysis_request.lower() or "optimization" in analysis_request.lower():
-                # Parse tasks and constraints from analysis_request
-                tasks, constraints = self._parse_cognitive_load_request(analysis_request, complexity_level)
-                result = engine.optimize_cognitive_load(tasks, constraints)
-                title = "Cognitive Load Optimization"
-                
-            elif engine_type == "concept_clustering" or "clustering" in analysis_request.lower() or "concepts" in analysis_request.lower():
-                # Parse concept features from analysis_request
-                concept_features, concept_names, n_clusters = self._parse_concept_clustering_request(analysis_request, complexity_level)
-                result = engine.analyze_concept_clustering(concept_features, concept_names, n_clusters)
-                title = "Concept Clustering Analysis"
-                
-            else:  # engine_type == "auto" or fallback
-                # For general analysis, try to determine the best method based on content
-                if any(keyword in analysis_request.lower() for keyword in ["network", "relationship", "connection", "graph"]):
-                    concepts, relationships = self._parse_knowledge_network_request(analysis_request)
-                    result = engine.analyze_knowledge_network(concepts, relationships)
-                    title = "General Knowledge Network Analysis"
-                elif any(keyword in analysis_request.lower() for keyword in ["task", "load", "optimization", "allocation"]):
-                    tasks, constraints = self._parse_cognitive_load_request(analysis_request, complexity_level)
-                    result = engine.optimize_cognitive_load(tasks, constraints)
-                    title = "General Cognitive Load Analysis"
-                else:
-                    # Default to concept clustering for general analysis
-                    concept_features, concept_names, n_clusters = self._parse_concept_clustering_request(analysis_request, complexity_level)
-                    result = engine.analyze_concept_clustering(concept_features, concept_names, n_clusters)
-                    title = "General Concept Analysis"
-            
-            # Format output according to output_format parameter
-            if output_format == "concise":
-                return self._format_iae_result_concise(title, result)
-            else:  # detailed
-                return self._format_iae_result(title, result)
-                
-        except Exception as e:
-            logger.error(f"❌ Intelligence amplification engine failed: {str(e)}")
-            return f"❌ **Intelligence Amplification Engine Error**\n\nFailed to perform analysis: {str(e)}\n\nPlease check your analysis_request format and ensure all required dependencies are installed."
+        # 1. Direct routing for simple, pattern-based queries (e.g., basic math)
+        is_simple_math = re.search(r'^\s*[\d\.\s]+[+\-*/][\d\.\s]+$', analysis_request.strip())
+        if is_simple_math and 'basic_arithmetic' in self.engines:
+            logger.info(f"🔢 Routing to Basic Arithmetic Engine: '{analysis_request}'")
+            result = self.engines['basic_arithmetic'].execute(analysis_request)
+            if result.get("status") == "success":
+                return self._format_iae_result_concise("Arithmetic Calculation", result)
+            else:
+                # Fall through to more complex engines if simple one fails
+                logger.warning(f"Basic arithmetic failed, falling back to other engines. Error: {result.get('error')}")
 
+        # 2. LLM-based engine selection for complex queries
+        if engine_type == "auto":
+            # Use LLM to determine best engine for the task
+            engine_id = await self._select_engine_with_llm(ctx, analysis_request)
+            logger.info(f"🧠 LLM selected engine: {engine_id} for request: '{analysis_request}'")
+        else:
+            engine_id = engine_type
+        
+        # 3. Execute request with the selected engine
+        if engine_id and engine_id in self.engines:
+            engine = self.engines[engine_id]
+            logger.info(f"🚀 Executing with {engine_id}: '{analysis_request}'")
+            
+            try:
+                # Pass all relevant parameters to the engine's execute method
+                engine_params = {
+                    "analysis_request": analysis_request,
+                    "data": data,
+                    "parameters": parameters or {}
+                }
+                result = engine.execute(**engine_params)
+                return self._format_iae_result(f"Result from {engine.name}", result)
+            except Exception as e:
+                logger.error(f"Error executing engine {engine_id}: {str(e)}")
+                return self._format_iae_result(f"Error in {engine_id}", {"status": "error", "error": str(e)})
+        else:
+            # Fallback if no suitable engine is found
+            logger.warning(f"No suitable engine found for '{analysis_request}'")
+            return self._format_iae_result("Engine Not Found", {
+                "status": "error",
+                "error": f"No engine capable of handling the request was found. Searched for type: {engine_type}"
+            })
+
+    async def _select_engine_with_llm(self, ctx, analysis_request: str) -> str:
+        """Use LLM to select the best engine for a given analysis request."""
+        engine_descriptions = "\n".join(
+            f"- {eid}: {self._get_engine_description(eid)}" for eid in self.engines
+        )
+
+        prompt = f"""
+        Given the user's analysis request, select the most appropriate computational engine from the list below.
+        Respond with only the engine's ID (e.g., 'quantum_physics').
+
+        Available Engines:
+        {engine_descriptions}
+
+        User Request: "{analysis_request}"
+
+        Selected Engine ID:
+        """
+        
+        response = await ctx.sample(prompt)
+        selected_engine = response.text.strip()
+        
+        return selected_engine if selected_engine in self.engines else "intelligence_amplification"
+        
     def _parse_knowledge_network_request(self, analysis_request: str) -> tuple:
-        """Parse knowledge network analysis request to extract concepts and relationships."""
+        """Parse request for knowledge network analysis."""
         try:
             # Try to extract structured data from the request
             import re

@@ -46,7 +46,7 @@ async def health_check(request):
         "service": "maestro-mcp-server",
         "version": "1.0",
         "tools_count": len(maestro_tools),
-        "protocol": "mcp-2024-11-5",
+        "protocol": "mcp-2024-11-05",
         "timestamp": datetime.datetime.utcnow().isoformat()
     })
 
@@ -86,6 +86,10 @@ def create_app():
         instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification.",
         on_duplicate_tools="warn",
         mask_error_details=not is_dev_mode,
+        # Configure timeouts for Smithery compatibility
+        timeout=30,  # Reduced timeout for tool scanning
+        json_response=True,  # Enable JSON responses for Smithery
+        stateless_http=True,  # Enable stateless mode for faster scanning
         # Remove dependencies to prevent configuration loading during tool scanning
         # dependencies={'config': get_config}
     )

@@ -155,7 +155,7 @@ TOOL_CATEGORIES = {
 
 # Version and metadata
 MAESTRO_VERSION = "1.0"
-PROTOCOL_VERSION = "mcp-2024-11-5"
+PROTOCOL_VERSION = "mcp-2024-11-05"
 DISCOVERY_TIME_MS = 50  # Target discovery time in milliseconds
 
 def get_tools_dict():

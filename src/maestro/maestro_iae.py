@@ -122,7 +122,6 @@ class IAEIntegrationManager:
                                 type="text",
                                 text=f"# ❌ Task Timeout\n\nTask {task_name} timed out after {config.retry_attempts} attempts"
                             )
-                            
                     except Exception as e:
                         if attempt < config.retry_attempts - 1:
                             logger.warning(
@@ -134,7 +133,7 @@ class IAEIntegrationManager:
                                 type="text",
                                 text=f"# ❌ Task Error\n\nTask {task_name} failed: {str(e)}"
                             )
-            
+                            
         except Exception as e:
             logger.error(f"Task execution failed: {e}")
             return TextContent(
@@ -149,8 +148,8 @@ class IAEIntegrationManager:
             engines_dir = Path(__file__).parent.parent / 'engines'
             
             if not engines_dir.exists():
-                logger.warning(f"Engines directory not found: {engines_dir}")
-                return
+                logger.warning(f"Creating engines directory: {engines_dir}")
+                engines_dir.mkdir(parents=True, exist_ok=True)
             
             # Load each engine's configuration
             for file in engines_dir.glob('*.py'):
@@ -158,6 +157,12 @@ class IAEIntegrationManager:
                     continue
                     
                 try:
+                    # Check for null bytes in file
+                    content = file.read_bytes()
+                    if b'\x00' in content:
+                        logger.warning(f"Skipping {file.stem} due to null bytes in file")
+                        continue
+                        
                     # Create default configuration
                     engine_id = f"iae_{file.stem.lower()}"
                     config = IAEIntegrationConfig(engine_id=engine_id)
@@ -185,8 +190,15 @@ class IAEIntegrationManager:
         try:
             # Import engine module
             module_name = engine_id.replace('iae_', '')
-            module = importlib.import_module(f"engines.{module_name}")
             
+            try:
+                module = importlib.import_module(f"engines.{module_name}")
+            except ValueError as e:
+                if "null bytes" in str(e):
+                    logger.error(f"Engine file {module_name} contains null bytes, skipping")
+                    return
+                raise
+                
             # Find engine class
             engine_classes = [
                 obj for name, obj in inspect.getmembers(module)
@@ -201,6 +213,13 @@ class IAEIntegrationManager:
             # Instantiate engine
             engine_class = engine_classes[0]
             engine = engine_class()
+            
+            # Initialize the engine if it has an initialize method
+            if hasattr(engine, 'initialize'):
+                if asyncio.iscoroutinefunction(engine.initialize):
+                    await engine.initialize()
+                else:
+                    engine.initialize()
             
             # Store engine instance
             self._engine_instances[engine_id] = engine
@@ -230,10 +249,12 @@ class IAEIntegrationManager:
             if not method:
                 raise ValueError(f"Task {task_name} not found in engine")
             
-            # Execute task
-            if context:
+            # Check if method accepts context parameter
+            sig = inspect.signature(method)
+            if 'context' in sig.parameters and context:
                 parameters['context'] = context
             
+            # Execute task
             if asyncio.iscoroutinefunction(method):
                 result = await method(**parameters)
             else:

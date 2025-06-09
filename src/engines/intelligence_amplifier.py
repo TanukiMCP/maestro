@@ -73,6 +73,11 @@ class IntelligenceAmplificationEngine:
                 "Intelligence Amplification Engine requires: networkx, scipy, scikit-learn"
             )
     
+    async def test_connection(self) -> dict:
+        """A simple method to test if the engine is reachable."""
+        logger.info("IAE connection test successful.")
+        return {"status": "success", "message": f"{self.name} v{self.version} is connected."}
+    
     async def analyze_knowledge_network(
         self, 
         concepts: List[str],

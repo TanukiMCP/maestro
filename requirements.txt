@@ -1,89 +1,16 @@
-# MCP Framework - Official Python SDK (NOT FastMCP)
-mcp>=1.9.2
+# Core MCP Server
+fastapi
+uvicorn[standard]
+starlette
+pydantic
+fastmcp
+websockets
 
-# HTTP transport
-fastapi>=0.104.0
-starlette>=0.27.0
-uvicorn>=0.22.0
-
-# Core dependencies
-numpy>=1.24.0
-sympy>=1.12.0
-langchain>=0.1.0
-langchain-core>=0.1.0
-pandas>=2.0.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-
-# Web utilities
-aiohttp>=3.9.0
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-
-# Natural language processing
-nltk>=3.8.1
-spacy>=3.7.0
-
-# Data processing
-pyarrow>=14.0.0
-polars>=0.20.0
-
-# Date and time handling
-pendulum>=2.1.2
-python-dateutil>=2.8.2
-
-# Visualization
-matplotlib>=3.7.0
-seaborn>=0.13.0
-
-# Development tools
-pytest>=7.4.0
-black>=23.10.0
-mypy>=1.5.0
-isort>=5.12.0
-
-# LangChain Orchestration  
-langchain-community
-langchain-experimental
-langchain-openai
-
-# Intelligence Amplification Libraries
-scipy
-scikit-learn
-
-# Language Enhancement
-textstat
-pyspellchecker
-language-tool-python
-
-# Code Quality & Testing
-pylint
-flake8
-coverage
-
-# Web & Visual Verification
+# Web Tools
 playwright
-selenium
-pyppeteer
-pillow
-opencv-python
+duckduckgo-search
+beautifulsoup4
 
-# Infrastructure
-redis
-streamlit
-ollama
-
-# Additional utilities
-asyncio-mqtt
-
-# Utilities
-typing-extensions
-httpx
-psutil
-
-# For asyncio and async support
-asyncio
-
-# For optional database connections
-sqlalchemy
-aiomysql 
+# Configuration & Logging
+python-dotenv
+loguru

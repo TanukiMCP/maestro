@@ -536,72 +536,101 @@ class SuccessCriteriaEngine:
 
 class EnhancedOrchestrationEngine:
     """
-    Enhanced orchestration engine with comprehensive intelligence amplification.
-    
-    Provides context intelligence, tool discovery, IAE integration, and validation.
+    General-purpose, domain-agnostic orchestration engine for LLM-driven workflows.
+    Provides context intelligence, tool/IAE discovery, and validation for any task.
     """
-    
     def __init__(self):
         self.context_engine = ContextIntelligenceEngine()
         self.success_engine = SuccessCriteriaEngine()
         self.iae_registry = self._load_iae_registry()
         self.tool_mappings = {}
         self.workflow_templates = self._load_workflow_templates()
-    
+
+    async def _discover_available_tools(self) -> Dict[str, Any]:
+        """
+        Discover available tools from the provided context.
+        This is a backend-only method that relies on tools being provided by the external caller.
+        """
+        # Get tools from context if available
+        context_tools = getattr(self, '_context_tools', {})
+        if context_tools:
+            return context_tools
+
+        # Default to built-in MAESTRO tools as fallback
+        default_tools = {
+            "maestro_search": {
+                "name": "MAESTRO Search",
+                "description": "LLM-driven web search capability",
+                "server": "maestro",
+                "tool_type": "search",
+                "usage_context": "Information gathering and research"
+            },
+            "maestro_execute": {
+                "name": "MAESTRO Execute",
+                "description": "Code and command execution capability",
+                "server": "maestro",
+                "tool_type": "execution",
+                "usage_context": "Code execution and validation"
+            },
+            "maestro_scrape": {
+                "name": "MAESTRO Scrape",
+                "description": "Web content extraction capability",
+                "server": "maestro",
+                "tool_type": "scraping",
+                "usage_context": "Data extraction and processing"
+            }
+        }
+        
+        return default_tools
+
     async def orchestrate_complete_workflow(
-        self, 
-        task_description: str, 
+        self,
+        task_description: str,
         provided_context: Optional[Dict[str, Any]] = None
     ) -> Union[OrchestrationResult, ContextSurvey]:
-        """
-        Complete workflow orchestration with context intelligence.
-        
-        Returns either:
-        - ContextSurvey if additional context is needed
-        - OrchestrationResult if ready to proceed
-        """
-        logger.info(f"🎭 Starting complete workflow orchestration for: {task_description[:100]}...")
-        
+        logger.info(f"🎭 Starting general-purpose workflow orchestration for: {task_description[:100]}...")
         if provided_context is None:
             provided_context = {}
-        
+            
+        # Store available tools in context for discovery
+        if "available_tools" in provided_context:
+            self._context_tools = {
+                tool["name"]: {
+                    "name": tool["name"],
+                    "description": tool.get("description", "No description available"),
+                    "server": tool.get("server", "unknown"),
+                    "tool_type": tool.get("tool_type", "unknown"),
+                    "usage_context": tool.get("usage_context", "General purpose")
+                }
+                for tool in provided_context["available_tools"]
+            }
+            
         # Step 1: Analyze context gaps
         context_gaps = self.context_engine.analyze_context_gaps(task_description, provided_context)
-        
-        # Step 2: If critical gaps exist, generate survey
         critical_gaps = [gap for gap in context_gaps if gap.importance == "critical"]
         if critical_gaps:
             logger.info(f"⚠️ Found {len(critical_gaps)} critical context gaps - generating survey")
             survey = self.context_engine.generate_context_survey(context_gaps, task_description)
             return survey
-        
-        # Step 3: Proceed with orchestration
+        # Step 2: Proceed with orchestration
         return await self._perform_full_orchestration(task_description, provided_context, context_gaps)
-    
+
     async def _perform_full_orchestration(
-        self, 
-        task_description: str, 
-        context: Dict[str, Any], 
+        self,
+        task_description: str,
+        context: Dict[str, Any],
         context_gaps: List[ContextGap]
     ) -> OrchestrationResult:
-        """Perform complete orchestration with all enhancements."""
-        
-        # Determine task complexity and type
-        task_type = self.context_engine._identify_task_type(task_description)
+        # Dynamically assess complexity (can be improved to use LLM or heuristics)
         complexity = self._assess_task_complexity(task_description, context)
-        
-        logger.info(f"📊 Task analysis: type={task_type}, complexity={complexity.value}")
-        
-        # Define success criteria
-        success_criteria = self.success_engine.define_success_criteria(task_description, task_type, context)
-        
-        # Create workflow phases
-        workflow_phases = await self._create_workflow_phases(task_description, task_type, complexity, context)
-        
+        logger.info(f"📊 Task analysis: complexity={complexity.value}")
+        # Define generic success criteria
+        success_criteria = self.success_engine.define_success_criteria(task_description, "generic", context)
+        # Create generic workflow phases
+        workflow_phases = await self._create_generic_workflow_phases(task_description, complexity, context)
         # Map tools and IAEs to phases
-        tool_mappings = await self._map_tools_to_phases(workflow_phases, task_type)
-        iae_mappings = await self._map_iaes_to_phases(workflow_phases, task_type, success_criteria)
-        
+        tool_mappings = await self._map_tools_to_phases(workflow_phases)
+        iae_mappings = await self._map_iaes_to_phases(workflow_phases, success_criteria)
         # Create complete workflow
         workflow = OrchestrationWorkflow(
             workflow_id=f"workflow_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -615,26 +644,109 @@ class EnhancedOrchestrationEngine:
             estimated_total_time=self._estimate_total_time(workflow_phases),
             created_timestamp=datetime.datetime.now().isoformat()
         )
-        
-        # Generate execution guidance
         execution_guidance = self._generate_execution_guidance(workflow)
-        
-        # Create result
         result = OrchestrationResult(
             workflow=workflow,
             execution_guidance=execution_guidance,
-            validation_results=[],  # Will be populated during validation
+            validation_results=[],
             overall_success=True,
             completion_percentage=0.0,
             recommendations=self._generate_recommendations(workflow),
             next_steps=self._generate_next_steps(workflow)
         )
-        
-        logger.info(f"✅ Orchestration complete: {len(workflow_phases)} phases, "
-                   f"{len(tool_mappings)} tools, {len(iae_mappings)} IAEs")
-        
+        logger.info(f"✅ Orchestration complete: {len(workflow_phases)} phases, {len(tool_mappings)} tools, {len(iae_mappings)} IAEs")
         return result
-    
+
+    async def _create_generic_workflow_phases(self, task_description: str, complexity: TaskComplexity, context: Dict[str, Any]) -> List[WorkflowPhase]:
+        """
+        Dynamically generate workflow phases for any task using available tools/IAEs and context.
+        This method is domain-agnostic and extensible.
+        """
+        # Discover available tools and IAEs
+        available_tools = await self._discover_available_tools()
+        iae_registry = self.iae_registry
+        # Use LLM or heuristics to break down the task into phases/steps
+        # For now, use a simple generic breakdown (can be replaced with LLM-driven planning)
+        phases = []
+        # Phase 1: Planning/Analysis
+        phases.append(WorkflowPhase(
+            phase_id="planning",
+            phase_name="Planning & Analysis",
+            description="Analyze the task, requirements, and context. Plan the workflow.",
+            inputs=["task_description", "context"],
+            outputs=["plan", "requirements"],
+            tool_mappings=[],
+            iae_mappings=[],
+            success_criteria=["requirements_defined"],
+            estimated_duration="30 minutes"
+        ))
+        # Phase 2: Execution/Implementation
+        phases.append(WorkflowPhase(
+            phase_id="execution",
+            phase_name="Execution",
+            description="Execute the planned steps using available tools and IAEs.",
+            inputs=["plan", "requirements"],
+            outputs=["results", "artifacts"],
+            tool_mappings=[],
+            iae_mappings=[],
+            success_criteria=["execution_successful"],
+            dependencies=["planning"],
+            estimated_duration="1-2 hours"
+        ))
+        # Phase 3: Validation/Review
+        phases.append(WorkflowPhase(
+            phase_id="validation",
+            phase_name="Validation & Review",
+            description="Validate results, review outcomes, and ensure success criteria are met.",
+            inputs=["results", "artifacts"],
+            outputs=["validation_report", "final_output"],
+            tool_mappings=[],
+            iae_mappings=[],
+            success_criteria=["validation_passed"],
+            dependencies=["execution"],
+            estimated_duration="30 minutes"
+        ))
+        return phases
+
+    async def _map_tools_to_phases(self, phases: List[WorkflowPhase]) -> Dict[str, ToolMapping]:
+        """
+        Map available tools to workflow phases in a domain-agnostic way.
+        """
+        tool_mappings = {}
+        available_tools = await self._discover_available_tools()
+        for phase in phases:
+            for tool_name, tool_info in available_tools.items():
+                mapping_id = f"{phase.phase_id}_{tool_name}"
+                tool_mappings[mapping_id] = ToolMapping(
+                    tool_id=mapping_id,
+                    tool_name=tool_name,
+                    server_name=tool_info.get("server", "maestro"),
+                    workflow_phase=phase.phase_id,
+                    usage_context=tool_info.get("usage_context", f"Tool for {phase.phase_name}"),
+                    command_template=tool_info.get("command_template"),
+                    fallback_tools=tool_info.get("fallback_tools", [])
+                )
+        return tool_mappings
+
+    async def _map_iaes_to_phases(self, phases: List[WorkflowPhase], success_criteria: SuccessCriteria) -> Dict[str, IAEMapping]:
+        """
+        Map IAEs to workflow phases in a domain-agnostic way.
+        """
+        iae_mappings = {}
+        for phase in phases:
+            for iae_id, iae_info in self.iae_registry.items():
+                mapping_id = f"{phase.phase_id}_{iae_id}"
+                iae_mappings[mapping_id] = IAEMapping(
+                    iae_id=mapping_id,
+                    iae_name=iae_info["name"],
+                    workflow_phase=phase.phase_id,
+                    enhancement_type=iae_info["enhancement_types"][0] if iae_info["enhancement_types"] else "analysis",
+                    application_context=iae_info["cognitive_focus"],
+                    libraries_required=iae_info.get("libraries", []),
+                    cognitive_enhancement=iae_info["cognitive_focus"]
+                )
+        return iae_mappings
+
     def _assess_task_complexity(self, task_description: str, context: Dict[str, Any]) -> TaskComplexity:
         """Assess task complexity based on description and context."""
         complexity_indicators = 0
@@ -660,301 +772,7 @@ class EnhancedOrchestrationEngine:
             return TaskComplexity.MODERATE
         else:
             return TaskComplexity.SIMPLE
-    
-    async def _create_workflow_phases(
-        self, 
-        task_description: str, 
-        task_type: str, 
-        complexity: TaskComplexity, 
-        context: Dict[str, Any]
-    ) -> List[WorkflowPhase]:
-        """Create workflow phases based on task analysis."""
-        
-        if task_type == "web_development":
-            return self._create_web_development_phases(task_description, complexity, context)
-        elif task_type == "backend_development":
-            return self._create_backend_development_phases(task_description, complexity, context)
-        else:
-            return self._create_general_development_phases(task_description, complexity, context)
-    
-    def _create_web_development_phases(self, task_description: str, complexity: TaskComplexity, context: Dict[str, Any]) -> List[WorkflowPhase]:
-        """Create phases for web development projects."""
-        phases = [
-            WorkflowPhase(
-                phase_id="planning",
-                phase_name="Project Planning & Architecture",
-                description="Define project structure, architecture, and technical requirements",
-                inputs=["task_description", "context"],
-                outputs=["project_structure", "technical_architecture", "component_design"],
-                tool_mappings=[],
-                iae_mappings=[],
-                success_criteria=["functional_requirements"],
-                estimated_duration="30 minutes"
-            ),
-            WorkflowPhase(
-                phase_id="design",
-                phase_name="UI/UX Design & Wireframing",
-                description="Create visual design, wireframes, and user experience flow",
-                inputs=["project_structure", "target_audience", "design_preferences"],
-                outputs=["wireframes", "design_system", "component_specifications"],
-                tool_mappings=[],
-                iae_mappings=[],
-                success_criteria=["responsive_design"],
-                dependencies=["planning"],
-                estimated_duration="45 minutes"
-            ),
-            WorkflowPhase(
-                phase_id="implementation",
-                phase_name="Development & Implementation",
-                description="Build the website according to specifications",
-                inputs=["technical_architecture", "design_system", "component_specifications"],
-                outputs=["website_code", "assets", "configuration_files"],
-                tool_mappings=[],
-                iae_mappings=[],
-                success_criteria=["functional_requirements", "code_quality"],
-                dependencies=["design"],
-                estimated_duration="2-4 hours"
-            ),
-            WorkflowPhase(
-                phase_id="testing",
-                phase_name="Testing & Quality Assurance",
-                description="Comprehensive testing including functionality, performance, and accessibility",
-                inputs=["website_code", "test_specifications"],
-                outputs=["test_results", "performance_metrics", "accessibility_report"],
-                tool_mappings=[],
-                iae_mappings=[],
-                success_criteria=["performance_standards", "accessibility_standards", "security_standards"],
-                dependencies=["implementation"],
-                estimated_duration="30-60 minutes"
-            ),
-            WorkflowPhase(
-                phase_id="validation",
-                phase_name="Final Validation & Deployment Preparation",
-                description="Final validation against all success criteria and deployment preparation",
-                inputs=["test_results", "website_code", "success_criteria"],
-                outputs=["validation_report", "deployment_package", "documentation"],
-                tool_mappings=[],
-                iae_mappings=[],
-                success_criteria=["functional_requirements", "responsive_design", "performance_standards", "accessibility_standards"],
-                dependencies=["testing"],
-                estimated_duration="20 minutes"
-            )
-        ]
-        
-        return phases
-    
-    def _create_backend_development_phases(self, task_description: str, complexity: TaskComplexity, context: Dict[str, Any]) -> List[WorkflowPhase]:
-        """Create phases for backend development projects."""
-        return []  # Implementation would be similar to web development
-    
-    def _create_general_development_phases(self, task_description: str, complexity: TaskComplexity, context: Dict[str, Any]) -> List[WorkflowPhase]:
-        """Create phases for general development projects."""
-        return []  # Implementation would be similar to web development
-    
-    async def _map_tools_to_phases(self, phases: List[WorkflowPhase], task_type: str) -> Dict[str, ToolMapping]:
-        """Map available tools to workflow phases."""
-        tool_mappings = {}
-        
-        # Discover available tools dynamically
-        available_tools = await self._discover_available_tools()
-        
-        # Map tools to phases based on task type and phase requirements
-        for phase in phases:
-            phase_tools = self._get_phase_appropriate_tools(phase, available_tools, task_type)
-            
-            for tool_name, tool_info in phase_tools.items():
-                mapping_id = f"{phase.phase_id}_{tool_name}"
-                tool_mappings[mapping_id] = ToolMapping(
-                    tool_id=mapping_id,
-                    tool_name=tool_name,
-                    server_name=tool_info.get("server", "maestro"),
-                    workflow_phase=phase.phase_id,
-                    usage_context=tool_info.get("usage_context", f"Tool for {phase.phase_name}"),
-                    command_template=tool_info.get("command_template"),
-                    fallback_tools=tool_info.get("fallback_tools", [])
-                )
-        
-        return tool_mappings
-    
-    async def _discover_available_tools(self) -> Dict[str, Dict[str, Any]]:
-        """Discover available tools from various sources."""
-        tools = {}
-        
-        # MAESTRO built-in tools
-        maestro_tools = {
-            "maestro_search": {
-                "server": "maestro",
-                "usage_context": "Search the web for information",
-                "command_template": "maestro_search(query='{query}')",
-                "fallback_tools": ["manual_search"]
-            },
 
-            "maestro_iae": {
-                "server": "maestro",
-                "usage_context": "Intelligence amplification analysis",
-                "command_template": "maestro_iae(task='{task}', method='{method}')",
-                "fallback_tools": ["manual_analysis"]
-            },
-            "maestro_execute": {
-                "server": "maestro",
-                "usage_context": "Execute workflows and code",
-                "command_template": "maestro_execute(plan='{plan}')",
-                "fallback_tools": ["manual_execution"]
-            },
-            "maestro_error_handler": {
-                "server": "maestro",
-                "usage_context": "Handle and recover from errors",
-                "command_template": "maestro_error_handler(error='{error}')",
-                "fallback_tools": ["manual_debugging"]
-            },
-            "maestro_temporal_context": {
-                "server": "maestro",
-                "usage_context": "Manage temporal context and time-sensitive operations",
-                "command_template": "maestro_temporal_context(query='{query}')",
-                "fallback_tools": ["manual_timing"]
-            }
-        }
-        
-        tools.update(maestro_tools)
-        
-        # Integrate with MCP tool discovery
-        try:
-            mcp_tools = await self._discover_mcp_tools()
-            tools.update(mcp_tools)
-        except Exception as e:
-            # Fallback if MCP discovery fails
-            pass
-        
-        return tools
-    
-    async def _discover_mcp_tools(self) -> Dict[str, Dict[str, Any]]:
-        """Discover tools from MCP servers."""
-        mcp_tools = {}
-        
-        # Common MCP tool patterns based on typical server implementations
-        common_mcp_tools = {
-            "filesystem": {
-                "create_file": {
-                    "server": "filesystem",
-                    "usage_context": "Create files and directories",
-                    "command_template": "create_file(path='{path}', content='{content}')",
-                    "fallback_tools": ["manual_file_creation"]
-                },
-                "read_file": {
-                    "server": "filesystem", 
-                    "usage_context": "Read file contents",
-                    "command_template": "read_file(path='{path}')",
-                    "fallback_tools": ["manual_file_reading"]
-                }
-            },
-            "git": {
-                "git_init": {
-                    "server": "git",
-                    "usage_context": "Initialize git repository",
-                    "command_template": "git_init(path='{path}')",
-                    "fallback_tools": ["manual_git_setup"]
-                },
-                "git_commit": {
-                    "server": "git",
-                    "usage_context": "Commit changes",
-                    "command_template": "git_commit(message='{message}')",
-                    "fallback_tools": ["manual_git_commit"]
-                }
-            },
-            "web": {
-                "fetch_url": {
-                    "server": "web",
-                    "usage_context": "Fetch web content",
-                    "command_template": "fetch_url(url='{url}')",
-                    "fallback_tools": ["maestro_scrape"]
-                }
-            }
-        }
-        
-        # Flatten the structure
-        for server_name, server_tools in common_mcp_tools.items():
-            for tool_name, tool_info in server_tools.items():
-                mcp_tools[tool_name] = tool_info
-        
-        return mcp_tools
-    
-    def _get_phase_appropriate_tools(self, phase: WorkflowPhase, available_tools: Dict[str, Dict[str, Any]], task_type: str) -> Dict[str, Dict[str, Any]]:
-        """Get tools appropriate for a specific phase."""
-        phase_tools = {}
-        
-        # Map phase types to appropriate tools
-        phase_tool_mapping = {
-            "analysis": ["maestro_search", "maestro_iae", "maestro_temporal_context"],
-            "planning": ["maestro_iae", "maestro_temporal_context"],
-            "implementation": ["maestro_execute", "maestro_scrape"],
-            "testing": ["maestro_execute", "maestro_error_handler"],
-            "validation": ["maestro_iae", "maestro_error_handler"],
-            "documentation": ["maestro_iae"],
-            "deployment": ["maestro_execute", "maestro_error_handler"]
-        }
-        
-        # Get tools for this phase type
-        phase_type = phase.phase_id.split("_")[-1] if "_" in phase.phase_id else phase.phase_id
-        recommended_tools = phase_tool_mapping.get(phase_type, ["maestro_iae"])
-        
-        # Add available tools that match this phase
-        for tool_name in recommended_tools:
-            if tool_name in available_tools:
-                phase_tools[tool_name] = available_tools[tool_name]
-        
-        # Always include error handler as fallback
-        if "maestro_error_handler" in available_tools and "maestro_error_handler" not in phase_tools:
-            phase_tools["maestro_error_handler"] = available_tools["maestro_error_handler"]
-        
-        return phase_tools
-    
-    async def _map_iaes_to_phases(self, phases: List[WorkflowPhase], task_type: str, success_criteria: SuccessCriteria) -> Dict[str, IAEMapping]:
-        """Map Intelligence Amplification Engines to workflow phases."""
-        iae_mappings = {}
-        
-        # Map IAEs based on task type and success criteria
-        if task_type == "web_development":
-            iae_mappings.update({
-                "design_thinking": IAEMapping(
-                    iae_id="iae_design_thinking",
-                    iae_name="Design Thinking Engine",
-                    workflow_phase="design",
-                    enhancement_type="analysis",
-                    application_context="Enhance UX/UI design decisions and user-centered thinking",
-                    libraries_required=["NetworkX", "NumPy", "pandas"],
-                    cognitive_enhancement="Provides design constraint analysis and solution space mapping"
-                ),
-                "visual_art": IAEMapping(
-                    iae_id="iae_visual_art",
-                    iae_name="Visual Art Engine",
-                    workflow_phase="design",
-                    enhancement_type="reasoning",
-                    application_context="Enhance visual design reasoning and aesthetic analysis",
-                    libraries_required=["NumPy", "SciPy", "PIL", "colorsys"],
-                    cognitive_enhancement="Amplifies visual design reasoning through color theory and composition analysis"
-                ),
-                "accessibility": IAEMapping(
-                    iae_id="iae_accessibility",
-                    iae_name="Accessibility Engine",
-                    workflow_phase="testing",
-                    enhancement_type="validation",
-                    application_context="Enhance accessibility reasoning and inclusive design thinking",
-                    libraries_required=["NLTK", "pandas", "BeautifulSoup"],
-                    cognitive_enhancement="Provides accessibility frameworks through barrier identification and mitigation analysis"
-                ),
-                "systems_engineering": IAEMapping(
-                    iae_id="iae_systems",
-                    iae_name="Systems Engineering Engine",
-                    workflow_phase="planning",
-                    enhancement_type="optimization",
-                    application_context="Enhance complex system reasoning and optimization thinking",
-                    libraries_required=["NetworkX", "NumPy", "SciPy"],
-                    cognitive_enhancement="Enhances system architecture analysis and dependency reasoning"
-                )
-            })
-        
-        return iae_mappings
-    
     def _generate_execution_guidance(self, workflow: OrchestrationWorkflow) -> str:
         """Generate comprehensive execution guidance for the LLM."""
         
@@ -1058,7 +876,7 @@ This orchestration enhances your capabilities through structured reasoning frame
 """
         
         return guidance
-    
+
     def _generate_recommendations(self, workflow: OrchestrationWorkflow) -> List[str]:
         """Generate recommendations for optimal execution."""
         recommendations = [
@@ -1073,7 +891,7 @@ This orchestration enhances your capabilities through structured reasoning frame
             recommendations.append("Pay special attention to the validation phase for complex requirements")
         
         return recommendations
-    
+
     def _generate_next_steps(self, workflow: OrchestrationWorkflow) -> List[str]:
         """Generate immediate next steps."""
         first_phase = workflow.phases[0] if workflow.phases else None
@@ -1087,7 +905,7 @@ This orchestration enhances your capabilities through structured reasoning frame
             ]
         else:
             return ["Review the workflow structure and begin execution"]
-    
+
     def _estimate_total_time(self, phases: List[WorkflowPhase]) -> str:
         """Estimate total time for all phases."""
         # Simple estimation - in practice would be more sophisticated
@@ -1117,7 +935,7 @@ This orchestration enhances your capabilities through structured reasoning frame
             return f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
         else:
             return f"{total_minutes}m"
-    
+
     def _load_iae_registry(self) -> Dict[str, Any]:
         """Load the registry of available Intelligence Amplification Engines."""
         # Registry of available IAEs with their capabilities
@@ -1173,7 +991,7 @@ This orchestration enhances your capabilities through structured reasoning frame
         }
         
         return iae_registry
-    
+
     def _load_workflow_templates(self) -> Dict[str, Any]:
         """Load workflow templates for different task types."""
         return {}

@@ -23,6 +23,7 @@ import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from dataclasses import dataclass
+from .number_formatter import clean_output
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +300,9 @@ class MAESTROPuppeteerTools:
         """
         logger.info(f"⚡ Executing MAESTRO code: {language} ({len(code)} chars)")
 
+        # Import the number formatter
+        from .number_formatter import clean_output
+
         # Set a default, safe working directory if none is provided.
         # This resolves the issue of cwd being None and provides a secure default.
         if working_directory and os.path.isdir(working_directory):
@@ -336,8 +340,11 @@ class MAESTROPuppeteerTools:
                     encoding='utf-8',  # Explicitly set encoding to prevent 'charmap' errors
                     errors='replace'   # Handle any potential decoding errors gracefully
                 )
-                stdout = result.stdout
-                stderr = result.stderr
+                
+                # Clean up numeric output for better readability
+                stdout_cleaned = clean_output(result.stdout) if result.stdout else ""
+                stderr_cleaned = clean_output(result.stderr) if result.stderr else ""
+                
                 return_code = result.returncode
                 
                 end_time = datetime.now()
@@ -345,7 +352,7 @@ class MAESTROPuppeteerTools:
                 
                 # Analyze execution results
                 success = return_code == 0
-                validation_results = self._analyze_execution_results(stdout, stderr, return_code)
+                validation_results = self._analyze_execution_results(stdout_cleaned, stderr_cleaned, return_code)
                 
                 response = {
                     "success": success,
@@ -353,8 +360,8 @@ class MAESTROPuppeteerTools:
                     "execution_time": execution_time,
                     "timestamp": start_time.isoformat(),
                     "output": {
-                        "stdout": stdout,
-                        "stderr": stderr
+                        "stdout": stdout_cleaned,
+                        "stderr": stderr_cleaned
                     },
                     "validation": validation_results,
                     "metadata": {

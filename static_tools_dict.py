@@ -10,22 +10,27 @@ instant tool listing without full initialization.
 MAESTRO_TOOLS_DICT = {
     "maestro_orchestrate": {
         "name": "maestro_orchestrate",
-        "description": "Orchestrates a complex task by generating and executing a dynamic workflow using a suite of available tools.",
+        "description": "Orchestrates a complex task using progressive step-by-step execution. For new orchestration: provide task_description and available_tools to create workflow and execute step 1. For continuation: provide workflow_session_id to execute the next step in existing workflow. Returns step execution results with progress tracking and session management.",
         "category": "orchestration",
         "parameters": {
             "task_description": {
                 "type": "string",
-                "description": "The task to orchestrate",
-                "required": True
+                "description": "The task to orchestrate (required for new orchestration)",
+                "required": False
             },
             "available_tools": {
                 "type": "array",
-                "description": "List of available tools for the workflow",
-                "required": True
+                "description": "List of available tools for the workflow (required for new orchestration)",
+                "required": False
             },
             "context_info": {
                 "type": "object",
                 "description": "Additional context information",
+                "required": False
+            },
+            "workflow_session_id": {
+                "type": "string", 
+                "description": "Session ID to continue existing workflow (for step continuation)",
                 "required": False
             }
         }

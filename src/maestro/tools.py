@@ -28,13 +28,24 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 async def maestro_orchestrate(
-    task_description: str,
-    available_tools: List[Dict[str, Any]],
+    task_description: str = None,
+    available_tools: List[Dict[str, Any]] = None,
     context_info: Optional[Dict[str, Any]] = None,
+    workflow_session_id: Optional[str] = None,
     ctx: Context = None,
 ) -> Dict[str, Any]:
     """
-    Orchestrates a complex task by generating and executing a dynamic workflow using a suite of available tools.
+    Orchestrates a complex task using progressive step-by-step execution.
+    
+    For new orchestration: Provide task_description and available_tools to create workflow and execute step 1.
+    For continuation: Provide workflow_session_id to execute the next step in existing workflow.
+    
+    Returns step execution results following sequentialthinking pattern with:
+    - Step progress (current_step/total_steps)
+    - Step results and validation
+    - Next step guidance
+    - Session management for state continuity
+    
     This implementation is fully MCP-native, context-aware, and stateful, with no placeholders or mock logic.
     """
     # Get config lazily only when actually needed
@@ -42,47 +53,98 @@ async def maestro_orchestrate(
     config = get_config() if ctx else None
     
     if ctx:
-        ctx.info(f"[Maestro] Orchestration requested: {task_description}")
+        if workflow_session_id:
+            ctx.info(f"[Maestro] Continuing workflow session: {workflow_session_id}")
+        else:
+            ctx.info(f"[Maestro] Starting new progressive orchestration: {task_description}")
         if config:
             ctx.info(f"[Maestro] Operating in {config.engine.mode.value} mode.")
+    
     try:
         # Lazy import to prevent delays during tool scanning
-        from .orchestration_framework import EnhancedOrchestrationEngine, OrchestrationResult, ContextSurvey
+        from .orchestration_framework import EnhancedOrchestrationEngine, StepExecutionResult, ContextSurvey
         engine = EnhancedOrchestrationEngine()
-        # Merge available_tools into context_info for tool mapping
-        orchestration_context = context_info.copy() if context_info else {}
-        orchestration_context["available_tools"] = available_tools
-        # Run the full orchestration
-        orchestration_result = await engine.orchestrate_complete_workflow(
-            task_description=task_description,
-            provided_context=orchestration_context
-        )
-        # If a ContextSurvey is returned, return it directly (context gaps must be filled)
+        
+        # Handle progressive workflow execution
+        if workflow_session_id:
+            # Continue existing workflow
+            if ctx:
+                ctx.info(f"[Maestro] Executing next step in session {workflow_session_id}")
+            
+            orchestration_result = await engine.execute_workflow_step(workflow_session_id)
+            
+        else:
+            # Start new progressive workflow
+            if not task_description or not available_tools:
+                raise ValueError("task_description and available_tools are required for new workflow orchestration")
+            
+            # Merge available_tools into context_info for tool mapping
+            orchestration_context = context_info.copy() if context_info else {}
+            orchestration_context["available_tools"] = available_tools
+            
+            if ctx:
+                ctx.info(f"[Maestro] Creating new progressive workflow with {len(available_tools)} available tools")
+            
+            # Run progressive orchestration (creates workflow and executes step 1)
+            orchestration_result = await engine.orchestrate_progressive_workflow(
+                task_description=task_description,
+                provided_context=orchestration_context
+            )
+        
+        # Handle different result types
         if isinstance(orchestration_result, ContextSurvey):
             if ctx:
                 ctx.warning("[Maestro] Context gaps detected, returning survey for user input.")
             return {"status": "context_required", "survey": orchestration_result}
-        # If OrchestrationResult, return all workflow details
-        elif isinstance(orchestration_result, OrchestrationResult):
+        
+        elif isinstance(orchestration_result, StepExecutionResult):
             if ctx:
-                ctx.info("[Maestro] Orchestration completed successfully.")
-            return {
-                "status": "orchestrated",
-                "workflow": orchestration_result.workflow,
-                "execution_guidance": orchestration_result.execution_guidance,
-                "validation_results": orchestration_result.validation_results,
-                "overall_success": orchestration_result.overall_success,
-                "completion_percentage": orchestration_result.completion_percentage,
-                "recommendations": orchestration_result.recommendations,
-                "next_steps": orchestration_result.next_steps
+                step_status = orchestration_result.status
+                current_step = orchestration_result.current_step
+                total_steps = orchestration_result.total_steps
+                ctx.info(f"[Maestro] Step execution result: {step_status} (step {current_step}/{total_steps})")
+            
+            # Convert StepExecutionResult to dict format for MCP response
+            result_dict = {
+                "status": orchestration_result.status,
+                "workflow_session_id": orchestration_result.workflow_session_id,
+                "current_step": orchestration_result.current_step,
+                "total_steps": orchestration_result.total_steps,
+                "step_description": orchestration_result.step_description,
+                "step_results": orchestration_result.step_results,
+                "next_step_needed": orchestration_result.next_step_needed,
+                "next_step_guidance": orchestration_result.next_step_guidance,
+                "overall_progress": orchestration_result.overall_progress
             }
+            
+            # Include optional fields if present
+            if orchestration_result.workflow is not None:
+                result_dict["workflow"] = {
+                    "workflow_id": orchestration_result.workflow.workflow_id,
+                    "task_description": orchestration_result.workflow.task_description,
+                    "complexity": orchestration_result.workflow.complexity.value,
+                    "estimated_total_time": orchestration_result.workflow.estimated_total_time,
+                    "phase_count": len(orchestration_result.workflow.phases),
+                    "tool_mappings_count": len(orchestration_result.workflow.tool_mappings),
+                    "iae_mappings_count": len(orchestration_result.workflow.iae_mappings)
+                }
+            
+            if orchestration_result.execution_summary is not None:
+                result_dict["execution_summary"] = orchestration_result.execution_summary
+            
+            if orchestration_result.error_details is not None:
+                result_dict["error_details"] = orchestration_result.error_details
+            
+            return result_dict
+        
         else:
             if ctx:
                 ctx.error(f"[Maestro] Unexpected orchestration result type: {type(orchestration_result)}")
             raise RuntimeError("Unexpected orchestration result type.")
+    
     except Exception as e:
         if ctx:
-            ctx.error(f"[Maestro] Orchestration failed: {e}")
+            ctx.error(f"[Maestro] Progressive orchestration failed: {e}")
         raise
 
 async def maestro_search(

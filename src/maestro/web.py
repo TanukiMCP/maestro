@@ -8,8 +8,6 @@ It uses playwright for robust browser automation and duckduckgo_search for searc
 
 import logging
 from typing import List, Dict
-from playwright.async_api import async_playwright, Browser as PlaywrightBrowser, Page
-from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +15,7 @@ class Browser:
     """
     An asynchronous wrapper around Playwright for web browsing and scraping.
     """
-    def __init__(self, browser: PlaywrightBrowser = None):
+    def __init__(self, browser=None):
         self._playwright = None
         self._browser = browser
         self._ext_browser = browser is not None
@@ -25,8 +23,8 @@ class Browser:
     async def __aenter__(self):
         if self._ext_browser:
             return self
-        
         logger.info("Launching new browser instance...")
+        from playwright.async_api import async_playwright
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.launch()
         return self
@@ -34,7 +32,6 @@ class Browser:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._ext_browser:
             return
-            
         logger.info("Closing browser instance...")
         await self._browser.close()
         await self._playwright.stop()
@@ -87,6 +84,7 @@ class SearchEngine:
             'href' is the link and 'body' is the snippet.
         """
         logger.info(f"Searching for '{query}' with {self.engine}...")
+        from duckduckgo_search import DDGS
         with DDGS() as ddgs:
             results = [r for r in ddgs.text(query, max_results=num_results)]
         

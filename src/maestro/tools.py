@@ -19,9 +19,6 @@ import os
 # The Context object is part of the server's context submodule.
 from fastmcp.server.context import Context
 
-from .orchestration_framework import EnhancedOrchestrationEngine, OrchestrationResult, ContextSurvey
-from .web import SearchEngine
-
 logger = logging.getLogger(__name__)
 
 async def maestro_orchestrate(
@@ -37,6 +34,7 @@ async def maestro_orchestrate(
     if ctx:
         ctx.info(f"[Maestro] Orchestration requested: {task_description}")
     try:
+        from .orchestration_framework import EnhancedOrchestrationEngine, OrchestrationResult, ContextSurvey
         engine = EnhancedOrchestrationEngine()
         # Merge available_tools into context_info for tool mapping
         orchestration_context = context_info.copy() if context_info else {}
@@ -94,8 +92,8 @@ async def maestro_search(
     """
     if ctx:
         ctx.info(f"Performing search for '{query}' using {search_engine}")
-    
     try:
+        from .web import SearchEngine
         engine = SearchEngine(engine=search_engine)
         results = await engine.search(query, num_results=num_results)
         if ctx:
@@ -122,8 +120,8 @@ async def maestro_scrape(
     """
     if ctx:
         ctx.info(f"Scraping URL: {url}")
-
     try:
+        from .web import Browser
         async with Browser() as browser:
             content = await browser.scrape(url)
             if ctx:
@@ -159,6 +157,7 @@ async def maestro_web(
     if ctx:
         ctx.info(f"[MaestroWeb] Performing web search for '{query_or_url}' using {search_engine}")
     try:
+        from .web import SearchEngine
         engine = SearchEngine(engine=search_engine)
         results = await engine.search(query_or_url, num_results=num_results)
         if ctx:
@@ -194,10 +193,7 @@ async def maestro_execute(
     """
     if ctx:
         await ctx.info(f"Executing {language} code...")
-
-    # Import the number formatter
     from .number_formatter import clean_output
-
     cmd = []
     if language == 'python':
         cmd = [sys.executable, '-c', code]
@@ -207,7 +203,6 @@ async def maestro_execute(
         cmd = ['bash', '-c', code]
     else:
         raise ValueError(f"Unsupported language: {language}")
-
     def run_sync_subprocess(cmd_list: list, timeout_sec: int) -> dict:
         try:
             process_result = subprocess.run(
@@ -218,11 +213,8 @@ async def maestro_execute(
                 check=False,
                 stdin=subprocess.DEVNULL,
             )
-            
-            # Clean up numeric output for better readability
             stdout_cleaned = clean_output(process_result.stdout.strip()) if process_result.stdout else ""
             stderr_cleaned = clean_output(process_result.stderr.strip()) if process_result.stderr else ""
-            
             return {
                 "exit_code": process_result.returncode,
                 "stdout": stdout_cleaned,
@@ -233,21 +225,16 @@ async def maestro_execute(
             return {"status": "error", "error": f"Interpreter for '{language}' not found."}
         except subprocess.TimeoutExpired:
             return {"status": "error", "error": "Execution timed out"}
-
     if ctx:
         await ctx.info(f"Running command in thread: {' '.join(cmd)}")
-
     try:
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None, functools.partial(run_sync_subprocess, cmd_list=cmd, timeout_sec=timeout)
         )
-        
         if ctx:
             await ctx.info(f"Execution finished with status: {result.get('status')}")
-
         return result
-
     except Exception as e:
         if ctx:
             await ctx.error(f"Execution failed in executor: {e}")
@@ -271,16 +258,12 @@ async def maestro_error_handler(
     """
     if ctx:
         ctx.warning(f"Analyzing error: {error_message}")
-
-    # A real implementation could use an LLM to analyze the error and suggest
-    # more intelligent recovery steps. For now, we'll do some basic analysis.
     analysis = {
         "error_type": "GenericError",
         "severity": "High",
         "possible_root_cause": "An unknown error occurred.",
         "recovery_suggestion": "Review the error message and context, and try an alternative approach."
     }
-
     if "timeout" in error_message.lower():
         analysis["error_type"] = "TimeoutError"
         analysis["possible_root_cause"] = "The operation took too long to complete."
@@ -289,7 +272,6 @@ async def maestro_error_handler(
         analysis["error_type"] = "NotFoundError"
         analysis["possible_root_cause"] = "A required resource or file was not found."
         analysis["recovery_suggestion"] = "Verify that all paths are correct and required resources exist."
-
     return {
         "original_error": error_message,
         "original_context": context,
@@ -314,10 +296,6 @@ async def maestro_collaboration_response(
     """
     if ctx:
         ctx.info(f"Received user collaboration response: {user_response}")
-
-    # This tool's purpose is to formally receive the user's input and pass it
-    # back to the orchestrator. The orchestrator would then use this response
-    # to inform the next steps in the workflow.
     return {
         "status": "processed",
         "user_response": user_response,
@@ -336,35 +314,25 @@ async def maestro_iae(
     if ctx:
         await ctx.info(f"[MaestroIAE] Invoking {method_name} on {engine_name} IAE...")
     try:
-        # Add engines directory to Python path
         import sys
         from pathlib import Path
         engines_dir = Path(__file__).parent.parent
         if str(engines_dir) not in sys.path:
             sys.path.insert(0, str(engines_dir))
-
-        # Initialize IAE registry and integration manager
         from .iae_discovery import IAERegistry
         from .maestro_iae import IAEIntegrationManager
-        
         registry = IAERegistry()
         manager = IAEIntegrationManager(registry)
-        
-        # Initialize engines
         await manager.initialize_engines()
-        
-        # Execute the task
         result = await manager.execute_task(
             engine_id=f"iae_{engine_name.lower()}",
             task_name=method_name,
             parameters=parameters,
             context=ctx
         )
-        
         if ctx:
             await ctx.info(f"[MaestroIAE] IAE method {method_name} executed successfully.")
         return result
-        
     except Exception as e:
         if ctx:
             await ctx.error(f"[MaestroIAE] IAE operation failed: {e}")

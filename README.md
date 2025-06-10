@@ -16,9 +16,82 @@ Maestro is an **MCP server** that supercharges any LLM with powerful capabilitie
 
 **Perfect for:** Research, data analysis, coding assistance, content creation, and complex problem-solving.
 
-## ⚡ Quick Start
+## 📋 Easy Setup for Cursor Users (Dad-Friendly!)
 
-### Option 1: Use with Claude Desktop (Recommended)
+### Step 1: Install Python (One-Time Setup)
+
+1. **Download Python**: Go to [python.org](https://python.org) and download Python 3.8 or newer
+2. **Install Python**: 
+   - ⚠️ **IMPORTANT**: During installation, check the box that says **"Add Python to PATH"**
+   - This is crucial for the batch files to work!
+3. **Verify Installation**: Open Command Prompt and type `python --version`
+
+### Step 2: Get the Code
+
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/yourusername/tanukimcp-maestro.git
+   cd tanukimcp-maestro
+   ```
+   
+   *Don't have git? Download the ZIP file from GitHub and extract it.*
+
+### Step 3: Super Easy Installation
+
+1. **Double-click `install.bat`** - This installs all dependencies automatically!
+   - The batch file will check if Python is installed
+   - It will install all required packages
+   - It takes a few minutes the first time
+
+### Step 4: Run the Server
+
+**Option A: Double-Click Method (Easiest)**
+- Double-click `start-server.bat`
+- The server will start and show you the URL (usually http://localhost:8000)
+
+**Option B: Command Line Method**
+```bash
+python run.py
+```
+
+### Step 5: Use with Cursor
+
+1. **Configure Cursor**: Add this to your Cursor settings:
+   ```json
+   {
+     "mcpServers": {
+       "maestro": {
+         "command": "python",
+         "args": ["C:/path/to/tanukimcp-maestro/run.py", "--stdio"]
+       }
+     }
+   }
+   ```
+   
+   *Replace `C:/path/to/tanukimcp-maestro/` with the actual path where you downloaded this project*
+
+2. **Restart Cursor** and start using Maestro tools!
+
+### 🆘 Troubleshooting
+
+**"Python is not recognized"**
+- You forgot to check "Add Python to PATH" during installation
+- Reinstall Python and make sure to check that box
+
+**"pip is not available"**
+- Usually fixed by reinstalling Python with pip included
+
+**Dependencies fail to install**
+- Check your internet connection
+- Try running `install.bat` as Administrator
+
+**Can't find the project folder**
+- Right-click in the folder where you extracted/cloned the project
+- Choose "Copy as path" and use that in your Cursor config
+
+## ⚡ Quick Start (For Developers)
+
+### Option 1: Use with Claude Desktop
 
 1. **Clone and install:**
    ```bash
@@ -46,7 +119,7 @@ Maestro is an **MCP server** that supercharges any LLM with powerful capabilitie
 ```bash
 # Install and run
 pip install -r requirements.txt
-uvicorn src.main:app --host 0.0.0.0 --port 8000
+python run.py
 
 # Test it works
 curl http://localhost:8000/health

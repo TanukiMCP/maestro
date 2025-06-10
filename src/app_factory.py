@@ -20,8 +20,7 @@ from maestro.tools import (
     maestro_iae,
     maestro_web,
     maestro_execute,
-    maestro_error_handler,
-    maestro_collaboration_response
+    maestro_error_handler
 )
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,7 @@ maestro_tools = [
     maestro_iae,
     maestro_web,
     maestro_execute,
-    maestro_error_handler,
-    maestro_collaboration_response
+    maestro_error_handler
 ]
 
 async def health_check(request):

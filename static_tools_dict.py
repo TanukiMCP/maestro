@@ -10,28 +10,39 @@ instant tool listing without full initialization.
 MAESTRO_TOOLS_DICT = {
     "maestro_orchestrate": {
         "name": "maestro_orchestrate",
-        "description": "Orchestrates a complex task using progressive step-by-step execution. For new orchestration: provide task_description and available_tools to create workflow and execute step 1. For continuation: provide workflow_session_id to execute the next step in existing workflow. Returns step execution results with progress tracking and session management.",
-        "category": "orchestration",
+        "description": "Unified workflow orchestration and collaboration handler for the MAESTRO Protocol. Handles both task orchestration and user collaboration in a single robust tool with operation_mode parameter.",
+        "category": "orchestration", 
         "parameters": {
             "task_description": {
                 "type": "string",
-                "description": "The task to orchestrate (required for new orchestration)",
+                "description": "Description of the task to orchestrate (required for new workflows)",
                 "required": False
             },
             "available_tools": {
                 "type": "array",
-                "description": "List of available tools for the workflow (required for new orchestration)",
+                "description": "List of available tools for workflow execution",
                 "required": False
             },
             "context_info": {
                 "type": "object",
-                "description": "Additional context information",
+                "description": "Additional context and configuration for workflow execution",
                 "required": False
             },
             "workflow_session_id": {
-                "type": "string", 
-                "description": "Session ID to continue existing workflow (for step continuation)",
+                "type": "string",
+                "description": "Existing workflow session ID to continue or None for new workflow",
                 "required": False
+            },
+            "user_response": {
+                "type": "any",
+                "description": "User response data for collaboration (when operation_mode is 'collaborate')",
+                "required": False
+            },
+            "operation_mode": {
+                "type": "string",
+                "description": "Either 'orchestrate' (default) or 'collaborate'",
+                "required": False,
+                "default": "orchestrate"
             }
         }
     },
@@ -126,23 +137,7 @@ MAESTRO_TOOLS_DICT = {
             }
         }
     },
-    "maestro_collaboration_response": {
-        "name": "maestro_collaboration_response",
-        "description": "Handles a response from a user during a collaborative workflow step.",
-        "category": "collaboration",
-        "parameters": {
-            "user_response": {
-                "type": "any",
-                "description": "The data received from the user",
-                "required": True
-            },
-            "original_request": {
-                "type": "object",
-                "description": "The original request that prompted the collaboration",
-                "required": True
-            }
-        }
-    }
+
 }
 
 # Tool count for quick reference
@@ -155,7 +150,7 @@ TOOL_CATEGORIES = {
     "research": ["maestro_web"],
     "execution": ["maestro_execute"],
     "error_handling": ["maestro_error_handler"],
-    "collaboration": ["maestro_collaboration_response"]
+    "collaboration": ["maestro_orchestrate"]
 }
 
 # Version and metadata

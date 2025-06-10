@@ -1,6 +1,12 @@
 import uvicorn
 import logging
 import os
+import sys
+from pathlib import Path
+
+# Add src directory to Python path
+src_path = Path(__file__).parent / "src"
+sys.path.insert(0, str(src_path))
 
 # It's good practice to have a single, clear entrypoint.
 # This script is now simplified to focus on one thing: running the server.

@@ -2,12 +2,19 @@
 
 ## Built-in Tools
 
-### 1. `maestro_orchestrate`
-- **Description**: Orchestrates a complex task by generating and executing a dynamic workflow using a suite of available tools.
+### 1. `maestro_orchestrate` (Primary Tool)
+- **Description**: Unified workflow orchestration and collaboration handler for the MAESTRO Protocol. Consolidates task orchestration and user collaboration into a single robust tool with comprehensive session management.
 - **Parameters**:
-  - `task_description` (string, required): The task to orchestrate
-  - `available_tools` (array, required): List of available tools for the workflow
-  - `context_info` (object, optional): Additional context information
+  - `task_description` (string, optional): Description of the task to orchestrate (required for new workflows)
+  - `available_tools` (array, optional): List of available tools for workflow execution
+  - `context_info` (object, optional): Additional context and configuration for workflow execution
+  - `workflow_session_id` (string, optional): Existing workflow session ID to continue or None for new workflow
+  - `user_response` (any, optional): User response data for collaboration (when operation_mode is "collaborate")
+  - `operation_mode` (string, optional): Either "orchestrate" (default) or "collaborate"
+- **Usage Examples**:
+  - New workflow: `{"task_description": "Create a web app", "available_tools": [...], "operation_mode": "orchestrate"}`
+  - Continue workflow: `{"workflow_session_id": "session_123", "operation_mode": "orchestrate"}`
+  - Handle collaboration: `{"user_response": {...}, "workflow_session_id": "session_123", "operation_mode": "collaborate"}`
 
 ### 2. `maestro_iae`
 - **Description**: Invokes a specific capability from an Intelligence Amplification Engine (IAE) using the MCP-native registry and meta-reasoning logic.
@@ -37,11 +44,29 @@
   - `error_message` (string, required): The error message that occurred
   - `context` (object, required): Context in which the error occurred
 
-### 6. `maestro_collaboration_response`
-- **Description**: Handles a response from a user during a collaborative workflow step.
-- **Parameters**:
-  - `user_response` (any, required): The data received from the user
-  - `original_request` (object, required): The original request that prompted the collaboration
+---
+
+---
+
+## Migration Guide
+
+### Collaboration workflows:
+```javascript
+// Use maestro_orchestrate with collaboration mode
+{"user_response": {...}, "workflow_session_id": "session_id", "operation_mode": "collaborate"}
+```
+
+### Enhanced orchestration (new functionality):
+```javascript
+// Standard orchestration (default)
+{"task_description": "Create app", "available_tools": [...]}
+
+// Explicit orchestration mode
+{"task_description": "Create app", "available_tools": [...], "operation_mode": "orchestrate"}
+
+// Collaboration mode  
+{"user_response": {...}, "workflow_session_id": "session_123", "operation_mode": "collaborate"}
+```
 
 ---
 

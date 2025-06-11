@@ -61,9 +61,9 @@ install.bat
 ```
 
 **Mac/Linux Users:**
-```bash
-pip install -r requirements.txt
-```
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ### Step 3: Start the Server
 
@@ -74,9 +74,9 @@ python run.py
 ```
 
 **Mac/Linux:**
-```bash
-python run.py
-```
+    ```bash
+    python run.py
+    ```
 
 You should see:
 ```
@@ -89,9 +89,9 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 #### For Cursor IDE:
 1. Open Cursor → Settings → Extensions → Generic Copilot
 2. Add MCP server configuration:
-```json
+    ```json
 {
-  "maestro": {
+    "maestro": {
     "command": "python",
     "args": ["path/to/tanukimcp-maestro/run.py"],
     "env": {
@@ -309,7 +309,7 @@ python -m pytest tests/test_orchestrator.py
 
 # Run with coverage
 python -m pytest --cov=src tests/
-```
+  ```
 
 ---
 

@@ -1876,29 +1876,32 @@ This orchestration enhances your capabilities through structured reasoning frame
             # Update session
             session.step_results[session.current_step] = step_result
             session.completed_steps.append(session.current_step)
+            
+            # Determine if more steps needed BEFORE incrementing current_step
+            is_final_step = session.current_step >= session.total_steps
+            next_step_needed = not is_final_step
+            
+            # Now increment current_step for next execution
             session.current_step += 1
             self.session_manager.update_session(session)
-            
-            # Determine if more steps needed
-            is_final_step = session.current_step > session.total_steps
-            next_step_needed = not is_final_step
             
             # Generate next step guidance
             next_step_guidance = ""
             if next_step_needed and session.current_step <= len(session.workflow_steps):
-                next_step = session.workflow_steps[session.current_step - 1]  # 0-based index
+                next_step = session.workflow_steps[session.current_step - 1]  # 0-based index, current_step is now incremented
                 next_step_guidance = f"Next: {next_step.step_name} - {next_step.description}"
             elif is_final_step:
                 next_step_guidance = "All workflow steps completed successfully"
             
-            # Calculate progress
-            progress = (session.current_step - 1) / session.total_steps
+            # Calculate progress - use the step just completed
+            completed_step_number = session.current_step - 1  # Since we incremented current_step
+            progress = completed_step_number / session.total_steps
             
             # Prepare result
             result = StepExecutionResult(
                 status="step_completed" if not is_final_step else "workflow_complete",
                 workflow_session_id=workflow_session_id,
-                current_step=session.current_step - 1,  # Return the step just completed
+                current_step=completed_step_number,  # Return the step just completed
                 total_steps=session.total_steps,
                 step_description=current_step.step_name,
                 step_results={
@@ -1912,7 +1915,7 @@ This orchestration enhances your capabilities through structured reasoning frame
                 next_step_needed=next_step_needed,
                 next_step_guidance=next_step_guidance,
                 overall_progress=progress,
-                workflow=session.workflow if session.current_step == 2 else None,  # Include workflow on step 1 completion
+                workflow=session.workflow if completed_step_number == 1 else None,  # Include workflow on step 1 completion
                 execution_summary=self._generate_execution_summary(session) if is_final_step else None
             )
             

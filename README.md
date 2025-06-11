@@ -1,195 +1,381 @@
-# 🎭 Maestro MCP Server
+# 🎭 TanukiMCP Maestro: Intelligent AI Workflow Automation
 
-> **Turn any LLM into a superintelligent AI assistant with advanced reasoning, web search, code execution, and multi-step workflows**
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: Non-Commercial](https://img.shields.io/badge/License-Non--Commercial-red.svg)](LICENSE)
+[![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--5-orange)](https://modelcontextprotocol.io)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-green)](Dockerfile)
 
-[![Docker Ready](https://img.shields.io/badge/Docker-Ready-green)](Dockerfile) [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--5-orange)](https://modelcontextprotocol.io)
-
-## 🚀 What is Maestro?
-
-Maestro is an **MCP server** that supercharges any LLM with powerful capabilities:
-
-- 🔍 **Smart Web Search** - Research any topic with intelligent search
-- 💻 **Code Execution** - Run Python, JavaScript, and other code safely  
-- 🧠 **Advanced Reasoning** - Break down complex problems step-by-step
-- 🔄 **Multi-Step Workflows** - Chain together multiple tasks automatically
-- 🤝 **Human Collaboration** - Ask for help when needed
-
-**Perfect for:** Research, data analysis, coding assistance, content creation, and complex problem-solving.
-
-## 📋 Easy Setup for Cursor Users (Dad-Friendly!)
-
-### Step 1: Install Python (One-Time Setup)
-
-1. **Download Python**: Go to [python.org](https://python.org) and download Python 3.8 or newer
-2. **Install Python**: 
-   - ⚠️ **IMPORTANT**: During installation, check the box that says **"Add Python to PATH"**
-   - This is crucial for the batch files to work!
-3. **Verify Installation**: Open Command Prompt and type `python --version`
-
-### Step 2: Get the Code
-
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/yourusername/tanukimcp-maestro.git
-   cd tanukimcp-maestro
-   ```
-   
-   *Don't have git? Download the ZIP file from GitHub and extract it.*
-
-### Step 3: Super Easy Installation
-
-1. **Double-click `install.bat`** - This installs all dependencies automatically!
-   - The batch file will check if Python is installed
-   - It will install all required packages
-   - It takes a few minutes the first time
-
-### Step 4: Run the Server
-
-**Option A: Double-Click Method (Easiest)**
-- Double-click `start-server.bat`
-- The server will start and show you the URL (usually http://localhost:8000)
-
-**Option B: Command Line Method**
-```bash
-python run.py
-```
-
-### Step 5: Use with Cursor
-
-1. **Configure Cursor**: Add this to your Cursor settings:
-   ```json
-   {
-     "mcpServers": {
-       "maestro": {
-         "command": "python",
-         "args": ["C:/path/to/tanukimcp-maestro/run.py", "--stdio"]
-       }
-     }
-   }
-   ```
-   
-   *Replace `C:/path/to/tanukimcp-maestro/` with the actual path where you downloaded this project*
-
-2. **Restart Cursor** and start using Maestro tools!
-
-### 🆘 Troubleshooting
-
-**"Python is not recognized"**
-- You forgot to check "Add Python to PATH" during installation
-- Reinstall Python and make sure to check that box
-
-**"pip is not available"**
-- Usually fixed by reinstalling Python with pip included
-
-**Dependencies fail to install**
-- Check your internet connection
-- Try running `install.bat` as Administrator
-
-**Can't find the project folder**
-- Right-click in the folder where you extracted/cloned the project
-- Choose "Copy as path" and use that in your Cursor config
-
-## ⚡ Quick Start (For Developers)
-
-### Option 1: Use with Claude Desktop
-
-1. **Clone and install:**
-   ```bash
-   git clone <this-repo-url>
-   cd maestro-mcp
-   pip install -r requirements.txt
-   ```
-
-2. **Add to Claude Desktop config:**
-   ```json
-   {
-     "mcpServers": {
-       "maestro": {
-         "command": "python",
-         "args": ["path/to/maestro-mcp/src/main.py", "--stdio"]
-       }
-     }
-   }
-   ```
-
-3. **Restart Claude Desktop** and start using Maestro tools!
-
-### Option 2: Run as HTTP Server
-
-```bash
-# Install and run
-pip install -r requirements.txt
-python run.py
-
-# Test it works
-curl http://localhost:8000/health
-```
-
-### Option 3: Docker
-
-```bash
-# Build and run with Docker
-docker build -t maestro .
-docker run -p 8000:8000 maestro
-```
-
-## 🛠️ What Can You Do?
-
-### 🔍 Research & Analysis
-Ask Claude: *"Research the latest developments in quantum computing and summarize the key breakthroughs"*
-
-### 💻 Code & Execute
-Ask Claude: *"Write a Python script to analyze this CSV data and create visualizations"*
-
-### 🧠 Complex Problem Solving  
-Ask Claude: *"Help me plan a marketing strategy for my startup, including market research and budget analysis"*
-
-### 📊 Data Processing
-Ask Claude: *"Download this dataset, clean it, and provide insights with charts"*
-
-## 🎯 Available Tools
-
-| Tool | What it does | Example Use |
-|------|-------------|-------------|
-| 🎭 **Orchestrate** | Plans and executes complex multi-step tasks | "Create a business plan with market research" |
-| 🔍 **Web Search** | Intelligent web search with summarization | "What are the latest AI developments?" |
-| 💻 **Code Execute** | Runs code safely in multiple languages | "Analyze this data with Python" |
-| 🧠 **Intelligence Engine** | Advanced reasoning and analysis | "Solve this complex math problem" |
-| ⚠️ **Error Handler** | Fixes problems and suggests solutions | Automatically handles errors |
-| 🤝 **Collaboration** | Asks for human input when needed | "I need clarification on requirements" |
-
-## 🔧 Configuration
-
-Most users won't need to change anything, but you can customize:
-
-- **Port**: Set `MAESTRO_PORT=8000`
-- **Debug Mode**: Set `MAESTRO_MODE=development`  
-- **Log Level**: Set `MAESTRO_LOG_LEVEL=INFO`
-
-## 📦 Advanced Configuration
-
-Environment variables you can set:
-- `MAESTRO_PORT=8000` - Change the port
-- `MAESTRO_MODE=development` - Enable debug mode  
-- `MAESTRO_LOG_LEVEL=INFO` - Set logging level
-
-## 🤝 Contributing
-
-Want to add new capabilities? Check out:
-- `src/maestro/tools.py` - Add new tools
-- `src/engines/` - Add reasoning engines
-- `docs/` - Documentation
-
-## 📝 License
-
-Non-commercial use is free. For commercial use, contact: tanukimcp@gmail.com
-
-## 🆘 Support
-
-- 🐛 **Issues**: [Open a GitHub issue](../../issues)
-- 💬 **Questions**: [Start a discussion](../../discussions)  
-- 📧 **Commercial**: tanukimcp@gmail.com
+**Transform any Large Language Model into a superintelligent autonomous agent capable of complex reasoning, web research, and code execution.**
 
 ---
 
-**Made with ❤️ for the AI community** 
+## 🌟 What is TanukiMCP Maestro?
+
+TanukiMCP Maestro is a powerful [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that serves as an **intelligent execution layer** for Large Language Models. It bridges the gap between conversational AI and real-world action by providing:
+
+### ⚡ Core Capabilities
+
+- **🧠 Advanced Orchestration**: Break down complex tasks into manageable steps with intelligent workflow planning
+- **🔍 Web Intelligence**: Perform real-time web searches and gather up-to-date information 
+- **💻 Secure Code Execution**: Run Python, JavaScript, and shell scripts in sandboxed environments
+- **🎯 Meta-Reasoning**: Apply advanced thinking frameworks for complex problem-solving
+- **🔄 Error Recovery**: Intelligent error handling and automatic task recovery
+- **🤝 Human Collaboration**: Smart interaction patterns that know when to ask for help
+
+### 🎯 Perfect For
+
+- **Developers**: Automated coding, debugging, and documentation generation
+- **Researchers**: Data analysis, literature reviews, and report generation  
+- **Analysts**: Market research, competitive intelligence, and trend analysis
+- **Content Creators**: Research-driven content creation and fact-checking
+- **Students**: Learning assistance with explanations and examples
+
+---
+
+## 🚀 Quick Start (5 Minutes)
+
+### Prerequisites
+
+- **Python 3.9+** ([Download here](https://python.org/downloads/))
+- **Git** (optional, for cloning)
+
+### Step 1: Get the Code
+
+**Option A: Clone with Git (Recommended)**
+```bash
+git clone https://github.com/your-username/tanukimcp-maestro.git
+cd tanukimcp-maestro
+```
+
+**Option B: Download ZIP**
+1. Click the green "Code" button → "Download ZIP"
+2. Extract to your desired location
+3. Open terminal/command prompt in the extracted folder
+
+### Step 2: Install Dependencies
+
+**Windows Users:**
+```cmd
+# Double-click install.bat OR run:
+install.bat
+```
+
+**Mac/Linux Users:**
+```bash
+pip install -r requirements.txt
+```
+
+### Step 3: Start the Server
+
+**Windows:**
+```cmd
+# Double-click start-server.bat OR run:
+python run.py
+```
+
+**Mac/Linux:**
+```bash
+python run.py
+```
+
+You should see:
+```
+🎭 Starting MAESTRO MCP server on 0.0.0.0:8000
+INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+### Step 4: Connect to Your AI Assistant
+
+#### For Cursor IDE:
+1. Open Cursor → Settings → Extensions → Generic Copilot
+2. Add MCP server configuration:
+```json
+{
+  "maestro": {
+    "command": "python",
+    "args": ["path/to/tanukimcp-maestro/run.py"],
+    "env": {
+      "PORT": "8000"
+    }
+  }
+}
+```
+3. Restart Cursor
+4. Use `@maestro` in chat to access tools
+
+#### For Other MCP Clients:
+- **HTTP/SSE Transport**: `http://localhost:8000/mcp`
+- **Stdio Transport**: `python run.py` (for direct MCP protocol)
+
+---
+
+## 🛠️ Available Tools
+
+### 1. 🎼 Workflow Orchestrator (`maestro_orchestrate`)
+The central intelligence that breaks down complex tasks into manageable steps.
+
+**Example Use Cases:**
+- "Research competitor analysis and create a presentation"
+- "Analyze this CSV data and generate insights with visualizations"
+- "Build a simple web scraper for product prices"
+
+### 2. 🌐 Web Intelligence (`maestro_web`)
+Real-time web search and information gathering.
+
+**Features:**
+- DuckDuckGo search integration
+- Content extraction and summarization
+- Up-to-date information retrieval
+
+### 3. 💻 Code Executor (`maestro_execute`)
+Secure, sandboxed code execution in multiple languages.
+
+**Supported Languages:**
+- Python (data analysis, automation)
+- JavaScript (web interactions)  
+- Bash/Shell (system operations)
+
+### 4. 🧠 Intelligence Amplification Engine (`maestro_iae`)
+Advanced reasoning frameworks for complex problem-solving.
+
+**Available Engines:**
+- First Principles Thinking
+- Systems Analysis
+- Design Thinking
+- Mathematical Reasoning
+
+### 5. 🔧 Error Handler (`maestro_error_handler`)
+Intelligent error analysis and recovery suggestions.
+
+---
+
+## 💡 Example Use Cases
+
+### 📊 Data Analysis Workflow
+```
+You: "@maestro Analyze the sales data in data.csv and create a report with trends and recommendations"
+
+Maestro will:
+1. Load and explore the CSV data
+2. Perform statistical analysis
+3. Generate visualizations
+4. Create insights and recommendations
+5. Format everything into a professional report
+```
+
+### 🔍 Research & Writing
+```
+You: "@maestro Research the latest developments in quantum computing and write a 1000-word article"
+
+Maestro will:
+1. Search for recent quantum computing news
+2. Gather information from multiple sources
+3. Analyze and synthesize findings
+4. Write a comprehensive article with citations
+```
+
+### 🐛 Code Debugging
+```
+You: "@maestro This Python function has a bug, can you fix it and add tests?"
+
+Maestro will:
+1. Analyze the code to identify issues
+2. Fix the bugs with explanations
+3. Add comprehensive test cases
+4. Suggest improvements
+```
+
+---
+
+## 🔧 Developer Guide
+
+### Project Structure
+```
+tanukimcp-maestro/
+├── src/                     # Main source code
+│   ├── maestro/            # Core Maestro logic
+│   ├── engines/            # Intelligence Amplification Engines
+│   ├── app_factory.py      # FastAPI application factory
+│   └── main.py             # Application entry point
+├── scripts/                # Utility scripts
+├── docs/                   # Documentation
+├── tests/                  # Test suite
+├── requirements.txt        # Python dependencies
+├── run.py                  # Server entry point
+├── Dockerfile             # Container configuration
+└── pyproject.toml         # Package configuration
+```
+
+### Development Setup
+
+1. **Clone and Setup Environment:**
+```bash
+git clone https://github.com/your-username/tanukimcp-maestro.git
+cd tanukimcp-maestro
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2. **Development Mode:**
+```bash
+# Hot reload for development
+uvicorn src.app_factory:create_app --reload --factory
+
+# Run tests
+python -m pytest tests/
+
+# Format code
+black src/ tests/
+```
+
+3. **Environment Variables:**
+```bash
+# .env file
+PORT=8000                    # Server port
+MAESTRO_HOST=0.0.0.0        # Server host
+LOG_LEVEL=INFO              # Logging level
+PYTHONPATH=src              # Python path
+```
+
+### Architecture Overview
+
+```mermaid
+graph TB
+    Client[MCP Client] --> Server[Maestro MCP Server]
+    Server --> Orchestrator[Workflow Orchestrator]
+    Orchestrator --> Web[Web Tools]
+    Orchestrator --> Execute[Code Executor]
+    Orchestrator --> IAE[Intelligence Engines]
+    Orchestrator --> Error[Error Handler]
+    Web --> Search[DuckDuckGo Search]
+    Execute --> Sandbox[Secure Sandbox]
+    IAE --> Reasoning[Reasoning Frameworks]
+```
+
+### Adding New Tools
+
+1. **Create Tool Module:**
+```python
+# src/maestro/tools/my_tool.py
+from mcp.server.models import Tool
+
+async def my_tool_handler(arguments: dict) -> dict:
+    """Your tool implementation"""
+    return {"result": "success"}
+
+# Tool definition
+MY_TOOL = Tool(
+    name="my_tool",
+    description="Description of what your tool does",
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "param": {"type": "string", "description": "Parameter description"}
+        }
+    }
+)
+```
+
+2. **Register Tool:**
+```python
+# src/maestro/server.py
+from .tools.my_tool import MY_TOOL, my_tool_handler
+
+# Add to tools list and handlers
+```
+
+### Docker Deployment
+
+```bash
+# Build image
+docker build -t tanukimcp-maestro .
+
+# Run container
+docker run -d -p 8000:8000 tanukimcp-maestro
+
+# With environment variables
+docker run -d -p 8000:8000 -e PORT=8000 tanukimcp-maestro
+```
+
+### Testing
+
+```bash
+# Run all tests
+python -m pytest
+
+# Run specific test
+python -m pytest tests/test_orchestrator.py
+
+# Run with coverage
+python -m pytest --cov=src tests/
+```
+
+---
+
+## 📦 Dependencies
+
+### Core Requirements
+- `fastapi` - Web framework
+- `uvicorn` - ASGI server
+- `pydantic` - Data validation
+- `websockets` - WebSocket support
+
+### Intelligence Features
+- `duckduckgo-search` - Web search
+- `playwright` - Browser automation
+- `beautifulsoup4` - HTML parsing
+
+### Optional Extensions
+- `numpy` - Numerical computing
+- `pandas` - Data analysis
+- `matplotlib` - Visualization
+- `spacy` - NLP processing
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the Repository**
+2. **Create Feature Branch:** `git checkout -b feature/amazing-feature`
+3. **Commit Changes:** `git commit -m 'Add amazing feature'`
+4. **Push to Branch:** `git push origin feature/amazing-feature`
+5. **Open Pull Request**
+
+### Development Guidelines
+- Follow PEP 8 style guidelines
+- Add tests for new features
+- Update documentation
+- Use meaningful commit messages
+
+---
+
+## 📄 License
+
+This project is licensed under a **Non-Commercial License**. 
+
+- ✅ **Free for personal use, research, and education**
+- ❌ **Commercial use requires permission**
+- 📧 **Contact:** tanukimcp@gmail.com for commercial licensing
+
+---
+
+## 🆘 Support & Community
+
+- **Issues:** [GitHub Issues](https://github.com/your-username/tanukimcp-maestro/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/your-username/tanukimcp-maestro/discussions)
+- **Email:** tanukimcp@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+- [Model Context Protocol](https://modelcontextprotocol.io) team
+- [Anthropic](https://anthropic.com) for Claude and MCP development
+- The open-source AI community
+
+---
+
+*Made with ❤️ by the TanukiMCP team* 

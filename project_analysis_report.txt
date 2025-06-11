@@ -1,0 +1,23 @@
+==================================================
+Project Analysis Report
+Generated on: 2025-06-10 21:44:25
+Directory: C:\Users\ididi\tanukimcp-maestro
+==================================================
+
+--- Overview ---
+Total Items: 29
+Directories: 14
+Files: 15
+
+--- File Types ---
+- .py: 4
+- No Extension: 3
+- .bat: 2
+- .in: 1
+- .json: 1
+- .toml: 1
+- .md: 1
+- .txt: 1
+- .yaml: 1
+
+==================================================

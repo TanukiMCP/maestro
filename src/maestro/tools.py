@@ -31,6 +31,42 @@ logger = logging.getLogger(__name__)
 # Add after imports
 _orchestration_engine = None
 
+def _create_temporal_awareness_context() -> Dict[str, Any]:
+    """Create temporal awareness context with current date/time and research suggestions."""
+    current_time = datetime.datetime.now()
+    current_utc = datetime.datetime.utcnow()
+    
+    # Estimate when information might be outdated (basic heuristic)
+    # For tech/current events: 1-3 months old suggests web research
+    # For general knowledge: 6+ months suggests verification
+    knowledge_cutoff_estimate = datetime.datetime(2024, 4, 1)  # Rough estimate for most LLMs
+    months_since_cutoff = (current_time.year - knowledge_cutoff_estimate.year) * 12 + \
+                         (current_time.month - knowledge_cutoff_estimate.month)
+    
+    suggests_web_research = months_since_cutoff > 3  # Suggest research if >3 months old
+    
+    return {
+        "temporal_awareness": {
+            "current_date": current_time.strftime("%Y-%m-%d"),
+            "current_time": current_time.strftime("%H:%M:%S"),
+            "current_datetime_iso": current_time.isoformat(),
+            "current_utc_datetime_iso": current_utc.isoformat(),
+            "current_timezone": str(current_time.astimezone().tzinfo),
+            "current_day_of_week": current_time.strftime("%A"),
+            "current_month": current_time.strftime("%B"),
+            "current_year": current_time.year,
+            "knowledge_cutoff_estimate": knowledge_cutoff_estimate.isoformat(),
+            "months_since_knowledge_cutoff": months_since_cutoff,
+            "suggests_web_research_for_current_info": suggests_web_research,
+            "temporal_context_reasoning": (
+                "Always consider whether information might be outdated. "
+                f"Current date is {current_time.strftime('%Y-%m-%d')}. "
+                f"If the task involves current events, recent developments, or time-sensitive information, "
+                f"consider using web search tools to get up-to-date information."
+            )
+        }
+    }
+
 async def maestro_orchestrate(
     task_description: str = None,
     available_tools: List[Dict[str, Any]] = None,
@@ -58,6 +94,26 @@ async def maestro_orchestrate(
     """
     global _orchestration_engine
     
+    # Defensive coding to handle malformed available_tools from clients
+    if available_tools and isinstance(available_tools[0], str):
+        logger.warning("Received available_tools as a list of strings. Attempting to convert to list of tool dictionaries.")
+        try:
+            all_tools_dict = ctx.fastmcp._tool_manager.get_tools()
+            
+            new_available_tools = []
+            for tool_name in available_tools:
+                if tool_name in all_tools_dict:
+                    tool_obj = all_tools_dict[tool_name]
+                    # Convert Tool object to dictionary representation
+                    mcp_tool = tool_obj.to_mcp_tool()
+                    new_available_tools.append(mcp_tool.model_dump(exclude_none=True))
+            
+            available_tools = new_available_tools
+        except Exception as e:
+            logger.error(f"Failed to convert available_tools from strings to dicts: {e}")
+            # Decide how to proceed: maybe return an error or continue with empty tools
+            available_tools = []
+
     try:
         # Lazy import to prevent delays during tool scanning
         from .orchestration_framework import EnhancedOrchestrationEngine, StepExecutionResult, ContextSurvey
@@ -412,43 +468,45 @@ def _prepare_context_response(user_response: Any, context_info: Optional[Dict[st
         context_response['user_context'] = user_response
     
     # Merge additional context if provided
-        if context_info:
+    if context_info:
         context_response.update(context_info)
     
     return context_response
 
 
 def _map_context_info(context_info: Dict[str, Any]) -> Dict[str, Any]:
-    """Map provided context to expected keys for backward compatibility."""
-            mapped_context = {
-                "target_audience": context_info.get("target_audience"),
-                "design_preferences": {
-                    "color_scheme": context_info.get("color_scheme"),
-                    "design_style": context_info.get("design_style"),
-                    "inspiration_sites": context_info.get("inspiration_sites")
-                },
-                "functionality_requirements": {
-                    "key_features": context_info.get("key_features"),
-                    "need_forms": context_info.get("need_forms"),
-                    "need_galleries": context_info.get("need_galleries"),
-                    "need_ecommerce": context_info.get("need_ecommerce"),
-                    "external_integrations": context_info.get("external_integrations")
-                },
-                "content_assets": {
-                    "existing_content": context_info.get("existing_content"),
-                    "need_content_creation": context_info.get("need_content_creation"),
-                    "has_brand_guidelines": context_info.get("has_brand_guidelines")
-                },
-                "technical_constraints": {
-                    "hosting": context_info.get("hosting"),
-                    "technical_constraints": context_info.get("technical_constraints"),
-                    "cms_needed": context_info.get("cms_needed")
-                }
-            }
-            # Merge original context with mapped context
-    return {**context_info, **mapped_context}
-
-
+    """Map provided context to expected keys and inject temporal awareness."""
+    mapped_context = {
+        "target_audience": context_info.get("target_audience"),
+        "design_preferences": {
+            "color_scheme": context_info.get("color_scheme"),
+            "design_style": context_info.get("design_style"),
+            "inspiration_sites": context_info.get("inspiration_sites")
+        },
+        "functionality_requirements": {
+            "key_features": context_info.get("key_features"),
+            "need_forms": context_info.get("need_forms"),
+            "need_galleries": context_info.get("need_galleries"),
+            "need_ecommerce": context_info.get("need_ecommerce"),
+            "external_integrations": context_info.get("external_integrations")
+        },
+        "content_assets": {
+            "existing_content": context_info.get("existing_content"),
+            "need_content_creation": context_info.get("need_content_creation"),
+            "has_brand_guidelines": context_info.get("has_brand_guidelines")
+        },
+        "technical_constraints": {
+            "hosting": context_info.get("hosting"),
+            "technical_constraints": context_info.get("technical_constraints"),
+            "cms_needed": context_info.get("cms_needed")
+        }
+    }
+    
+    # ALWAYS inject temporal awareness context for date/time awareness
+    temporal_context = _create_temporal_awareness_context()
+    
+    # Merge original context with mapped context and temporal awareness
+    return {**context_info, **mapped_context, **temporal_context}
 
 
 async def maestro_search(

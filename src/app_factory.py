@@ -12,6 +12,7 @@ import logging
 from fastmcp.server import FastMCP
 from starlette.responses import JSONResponse
 from starlette.routing import Route
+from starlette.middleware.cors import CORSMiddleware
 import os
 import sys
 import time
@@ -136,11 +137,11 @@ def create_app():
     is_scanning = TOOL_SCANNING_MODE
     
     if is_scanning:
-        logger.info("🔍 Smithery tool scanning mode detected")
+        logger.info("🔍 Smithery tool scanning mode detected, using lightweight tool definitions.")
         
         # Use extremely fast options for tool scanning
         mcp = FastMCP(
-            # Use tools with very minimal metadata
+            # Use lazy-loaded tools with pre-defined metadata for fast scanning
             tools=lazy_tools,
             name="Maestro",
             instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification. Provides session management for complex multi-step tasks.",
@@ -148,12 +149,11 @@ def create_app():
             mask_error_details=not is_dev_mode,
             # Fast scanning configuration for Smithery
             timeout=10,  # Reduced timeout for tool scanning
-            json_response=True,  # Enable JSON responses for Smithery
-            stateless_http=True,  # Enable stateless mode for faster scanning
-            # Skip dependencies completely during scanning
+            # Skip dependencies completely during scanning to ensure rapid startup
             dependencies={}
         )
     else:
+        logger.info("🚀 Normal operation mode detected, using full tool implementations.")
         # Normal operation mode with full features
         mcp = FastMCP(
             tools=lazy_tools,
@@ -162,14 +162,22 @@ def create_app():
             on_duplicate_tools="warn",
             mask_error_details=not is_dev_mode,
             # Configure timeouts for Smithery compatibility
-            timeout=30,  # Reduced timeout for tool scanning
-            json_response=True,  # Enable JSON responses for Smithery
-            stateless_http=True,  # Enable stateless mode for faster scanning
-            # Add dependencies for full operation
+            timeout=30,
+            # Add dependencies for full operation, which are loaded lazily on request
             dependencies={'config': get_config}
         )
 
     app = mcp.streamable_http_app()
+    
+    # Add CORS middleware to allow cross-origin requests from Smithery
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins for simplicity, can be restricted
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
     end_time = time.time()
     initialization_time = (end_time - start_time) * 1000  # Convert to ms
     logger.info(f"✅ Maestro MCP Server created with {len(lazy_tools)} tools in {initialization_time:.2f}ms.")

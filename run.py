@@ -42,7 +42,9 @@ def main():
         host=host,
         port=port,
         factory=True, # Treat the import string as a factory function to call
-        log_level="info"
+        log_level="info",
+        proxy_headers=True, # Correctly handle headers from Smithery's proxy
+        forwarded_allow_ips='*' # Trust all forwarding IPs
     )
 
 if __name__ == "__main__":

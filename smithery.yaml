@@ -1,4 +1,8 @@
 runtime: "container"
+env:
+  # Signal to the application that Smithery is scanning tools
+  # This enables fast scanning mode with minimal dependencies
+  SMITHERY_SCANNING: "1"
 build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."

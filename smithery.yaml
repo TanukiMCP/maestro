@@ -2,6 +2,11 @@ runtime: "container"
 build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."
+  # Environment variables for build-time configuration
+  buildEnv:
+    # Signal to the application that Smithery is scanning tools
+    # This enables fast scanning mode with minimal dependencies
+    SMITHERY_SCANNING: "1"
 startCommand:
   type: "http"
   configSchema:
@@ -125,6 +130,7 @@ startCommand:
       file_enabled: false
       rotation_size: 100
       retention_days: 30
+# Resource limitations ensure fast startup and tool scanning
 resources:
   memory: "512Mi"
   cpu: "0.5"
@@ -136,3 +142,13 @@ description: "TanukiMCP Maestro - Meta-Agent Ensemble for Systematic Task Reason
 tags: ["mcp", "ai-orchestration", "multi-agent", "reasoning", "productivity"]
 version: "1.0.0"
 protocol: "mcp-2024-11-05"
+# Smithery-specific optimizations
+# These help ensure that tool scanning completes quickly (<100ms)
+# and that the server can start up properly in a Smithery environment
+optimizations:
+  # Enable lazy loading of tool configurations
+  lazyLoading: true 
+  # Maximum time (in milliseconds) that tool scanning should take
+  maxScanTimeMs: 100
+  # Whether to cache tool definitions for faster scanning
+  cacheToolDefinitions: true

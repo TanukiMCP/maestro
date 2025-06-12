@@ -22,6 +22,24 @@ from app_factory import create_app, maestro_tools
 
 logger = logging.getLogger(__name__)
 
+# Check if we're in tool scanning mode (for Smithery deployment)
+# This is set when Smithery is scanning for available tools
+SMITHERY_SCANNING = os.environ.get("SMITHERY_SCANNING", "0") == "1" or "--scan-tools" in sys.argv
+
+# Set up logging appropriately for the execution mode
+if SMITHERY_SCANNING:
+    # Minimal logging during scanning to speed up the process
+    logging.basicConfig(level=logging.ERROR)
+    logger.info("🔍 Starting in Smithery tool scanning mode")
+else:
+    # Normal logging for regular operation
+    logging_level = os.getenv("MAESTRO_LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=logging_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger.info("🚀 Starting Maestro MCP Server in normal mode")
+
 # --- Application Instance ---
 # When imported by an ASGI server like Uvicorn, the `app` object is created here.
 # The factory ensures that configuration is loaded and the app is initialized

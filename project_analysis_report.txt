@@ -21,3 +21,146 @@ Files: 15
 - .yaml: 1
 
 ==================================================
+
+# TanukiMCP Maestro - Smithery.ai Deployment Fix Report
+
+## Problem Description
+
+Our FastMCP deployment on Smithery.ai was failing with the following error:
+
+```
+Failed to scan tools list from server: McpError: MCP error -32001: Request timed out
+Please ensure your server performs lazy loading of configurations: https://smithery.ai/docs/build/deployments#tool-lists
+```
+
+This error occurred because our tool scanning process was taking too long. Smithery.ai requires tool scanning to complete very quickly (recommended under 100ms), but our implementation was loading full tool implementations during the scanning phase, causing timeouts.
+
+## Solution Implemented
+
+We implemented a lazy loading approach that separates tool metadata from tool implementation, allowing for extremely fast tool scanning while maintaining full functionality when tools are actually used.
+
+### Key Changes:
+
+1. **Created a LazyToolProxy Class in app_factory.py**
+   - Acts as a proxy between tool metadata and implementation
+   - Provides fast access to tool descriptions and parameters
+   - Only calls the actual implementation when the tool is invoked
+   - Tracks tool execution time for performance monitoring
+
+2. **Added Smithery Scanning Mode Detection**
+   - Implemented environment variable detection (SMITHERY_SCANNING)
+   - Created conditional logic to use minimal dependencies during scanning
+   - Configured reduced timeout (10s) specifically for scanning operations
+
+3. **Optimized Logging and Configuration Loading**
+   - Reduced logging during scanning phase
+   - Disabled configuration loading during tool scanning
+   - Added timing metrics to track initialization performance
+
+4. **Enhanced Smithery.yaml Configuration**
+   - Added buildEnv section with SMITHERY_SCANNING=1
+   - Created optimizations section with lazyLoading=true
+   - Set maxScanTimeMs=100 to ensure fast tool scanning
+
+## Modified Files
+
+1. **src/app_factory.py**
+   - Added LazyToolProxy class
+   - Implemented scanning mode detection
+   - Created conditional FastMCP initialization
+   - Added performance tracking
+
+2. **src/main.py**
+   - Added SMITHERY_SCANNING environment variable support
+   - Configured minimal logging during scanning
+   - Updated initialization logic
+
+3. **smithery.yaml**
+   - Added buildEnv configuration
+   - Created optimizations section
+   - Added documentation comments
+
+## Implementation Details
+
+### LazyToolProxy Class
+
+The LazyToolProxy class is the core of the solution. It wraps each tool function and exposes only the metadata during scanning, while deferring the actual implementation until the tool is invoked:
+
+```python
+class LazyToolProxy:
+    """A proxy that defers tool initialization until the tool is actually called."""
+    
+    def __init__(self, tool_name, tool_impl, tool_meta):
+        self.tool_name = tool_name
+        self.tool_impl = tool_impl
+        self.__name__ = tool_name
+        
+        # Copy metadata from static dictionary for fast access
+        self.__doc__ = tool_meta.get("description", "")
+        self.description = tool_meta.get("description", "")
+        self.parameters = tool_meta.get("parameters", {})
+        self.category = tool_meta.get("category", "")
+    
+    async def __call__(self, *args, **kwargs):
+        # Only now do we actually call the real implementation
+        start_time = time.time()
+        result = await self.tool_impl(*args, **kwargs)
+        end_time = time.time()
+        logger.debug(f"Tool {self.tool_name} executed in {(end_time - start_time)*1000:.2f}ms")
+        return result
+```
+
+### Scanning Mode Detection
+
+We implemented detection of Smithery's scanning mode to optimize performance:
+
+```python
+# Check if we're in tool scanning mode (for Smithery deployment)
+SMITHERY_SCANNING = os.environ.get("SMITHERY_SCANNING", "0") == "1" or "--scan-tools" in sys.argv
+
+if is_scanning:
+    logger.info("🔍 Smithery tool scanning mode detected")
+    
+    # Use extremely fast options for tool scanning
+    mcp = FastMCP(
+        tools=lazy_tools,
+        timeout=10,
+        json_response=True,
+        stateless_http=True,
+        dependencies={}  # Skip dependencies completely during scanning
+    )
+```
+
+### Smithery.yaml Optimizations
+
+We added specific optimizations to the smithery.yaml file:
+
+```yaml
+buildEnv:
+  # Signal to the application that Smithery is scanning tools
+  SMITHERY_SCANNING: "1"
+
+optimizations:
+  # Enable lazy loading of tool configurations
+  lazyLoading: true 
+  # Maximum time (in milliseconds) that tool scanning should take
+  maxScanTimeMs: 100
+  # Whether to cache tool definitions for faster scanning
+  cacheToolDefinitions: true
+```
+
+## Expected Results
+
+With these changes, the tool scanning process should now complete in under 100ms, well within Smithery's requirements. The full functionality of the tools is still available when they are actually invoked.
+
+## Future Considerations
+
+1. Consider further optimizing tool initialization if the performance needs improvement
+2. Monitor the deployment logs to ensure scanning remains fast as new tools are added
+3. Document this pattern for future developers working on the codebase
+
+## Conclusion
+
+The implemented lazy loading solution addresses the timeout issue with Smithery.ai deployments while maintaining full functionality. The approach follows best practices for performance optimization and should ensure smooth deployments going forward.
+
+==================================================

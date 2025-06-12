@@ -124,6 +124,8 @@ logs/
 .maestro_cache/
 temp_files/
 test_outputs/
+maestro/state/
+taskmaster/state/
 
 # IDE
 .vscode/

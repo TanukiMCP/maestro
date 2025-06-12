@@ -10,39 +10,124 @@ instant tool listing without full initialization.
 MAESTRO_TOOLS_DICT = {
     "maestro_orchestrate": {
         "name": "maestro_orchestrate",
-        "description": "Unified workflow orchestration and collaboration handler for the MAESTRO Protocol. Handles both task orchestration and user collaboration in a single robust tool with operation_mode parameter.",
-        "category": "orchestration", 
+        "description": "Intelligent session management for complex multi-step tasks following MCP principles. Enables LLMs to self-direct orchestration through conceptual frameworks and knowledge management.",
+        "category": "session_management", 
         "parameters": {
+            "action": {
+                "type": "string",
+                "description": "The action to take. Original: 'create_session', 'declare_capabilities', 'add_task', 'execute_next', 'validate_task', 'mark_complete', 'get_status'. Self-directed: 'create_framework', 'update_workflow_state', 'add_knowledge', 'decompose_task', 'get_relevant_knowledge', 'get_task_hierarchy'. Capability Management: 'validate_capabilities', 'suggest_capabilities'",
+                "required": True
+            },
             "task_description": {
                 "type": "string",
-                "description": "Description of the task to orchestrate (required for new workflows)",
+                "description": "Description of task to add (for 'add_task')",
                 "required": False
             },
-            "available_tools": {
+            "session_name": {
+                "type": "string",
+                "description": "Name for new session (for 'create_session')",
+                "required": False
+            },
+            "validation_criteria": {
                 "type": "array",
-                "description": "List of available tools for workflow execution",
+                "description": "List of criteria for task validation (for 'add_task')",
                 "required": False
             },
-            "context_info": {
-                "type": "object",
-                "description": "Additional context and configuration for workflow execution",
-                "required": False
-            },
-            "workflow_session_id": {
+            "evidence": {
                 "type": "string",
-                "description": "Existing workflow session ID to continue or None for new workflow",
+                "description": "Evidence of task completion (for 'validate_task')",
                 "required": False
             },
-            "user_response": {
-                "type": "any",
-                "description": "User response data for collaboration (when operation_mode is 'collaborate')",
-                "required": False
-            },
-            "operation_mode": {
+            "execution_evidence": {
                 "type": "string",
-                "description": "Either 'orchestrate' (default) or 'collaborate'",
+                "description": "Evidence that execution was performed (for tracking completion)",
+                "required": False
+            },
+            "builtin_tools": {
+                "type": "array",
+                "description": "List of built-in tools available (for 'declare_capabilities')",
+                "required": False
+            },
+            "mcp_tools": {
+                "type": "array",
+                "description": "List of MCP server tools available (for 'declare_capabilities')",
+                "required": False
+            },
+            "user_resources": {
+                "type": "array",
+                "description": "List of user-added resources available (for 'declare_capabilities')",
+                "required": False
+            },
+            "next_action_needed": {
+                "type": "boolean",
+                "description": "Whether more actions are needed",
                 "required": False,
-                "default": "orchestrate"
+                "default": True
+            },
+            "framework_type": {
+                "type": "string",
+                "description": "Type of conceptual framework: 'task_decomposition', 'dependency_graph', 'workflow_optimization', 'knowledge_synthesis', 'multi_agent_coordination', 'iterative_refinement', 'custom' (for 'create_framework')",
+                "required": False
+            },
+            "framework_name": {
+                "type": "string",
+                "description": "Name for the conceptual framework (for 'create_framework')",
+                "required": False
+            },
+            "framework_structure": {
+                "type": "object",
+                "description": "Dictionary defining the framework structure (for 'create_framework')",
+                "required": False
+            },
+            "task_nodes": {
+                "type": "array",
+                "description": "List of task nodes for decomposition frameworks (for 'create_framework')",
+                "required": False
+            },
+            "workflow_phase": {
+                "type": "string",
+                "description": "Current workflow phase: 'planning', 'decomposition', 'execution', 'validation', 'synthesis', 'reflection' (for 'update_workflow_state')",
+                "required": False
+            },
+            "workflow_state_update": {
+                "type": "object",
+                "description": "Dictionary with workflow state updates (for 'update_workflow_state' and context)",
+                "required": False
+            },
+            "knowledge_type": {
+                "type": "string",
+                "description": "Type of knowledge: 'tool_effectiveness', 'approach_outcome', 'error_pattern', 'optimization_insight', 'domain_specific', 'workflow_pattern' (for 'add_knowledge')",
+                "required": False
+            },
+            "knowledge_subject": {
+                "type": "string",
+                "description": "What the knowledge is about (for 'add_knowledge' and 'get_relevant_knowledge')",
+                "required": False
+            },
+            "knowledge_insights": {
+                "type": "array",
+                "description": "List of insights learned (for 'add_knowledge')",
+                "required": False
+            },
+            "knowledge_confidence": {
+                "type": "number",
+                "description": "Confidence level 0.0-1.0 (for 'add_knowledge')",
+                "required": False
+            },
+            "parent_task_id": {
+                "type": "string",
+                "description": "ID of parent task for decomposition (for 'decompose_task' and 'get_task_hierarchy')",
+                "required": False
+            },
+            "subtasks": {
+                "type": "array",
+                "description": "List of subtask definitions (for 'decompose_task')",
+                "required": False
+            },
+            "decomposition_strategy": {
+                "type": "string",
+                "description": "Strategy used for task decomposition (for 'decompose_task')",
+                "required": False
             }
         }
     },

@@ -81,7 +81,7 @@ def create_app():
     mcp = FastMCP(
         tools=maestro_tools,
         name="Maestro",
-        instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification.",
+        instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification. Provides session management for complex multi-step tasks.",
         on_duplicate_tools="warn",
         mask_error_details=not is_dev_mode,
         # Configure timeouts for Smithery compatibility

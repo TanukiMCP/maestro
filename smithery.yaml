@@ -13,6 +13,10 @@ build:
     SMITHERY_SCANNING: "1"
 startCommand:
   type: "http"
+  # This command will be executed to start the server
+  # It correctly uses uvicorn for a production environment
+  # and binds to the PORT provided by Smithery.
+  command: ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "${PORT}"]
   configSchema:
     type: "object"
     properties:
@@ -146,13 +150,3 @@ description: "TanukiMCP Maestro - Meta-Agent Ensemble for Systematic Task Reason
 tags: ["mcp", "ai-orchestration", "multi-agent", "reasoning", "productivity"]
 version: "1.0.0"
 protocol: "mcp-2024-11-05"
-# Smithery-specific optimizations
-# These help ensure that tool scanning completes quickly (<100ms)
-# and that the server can start up properly in a Smithery environment
-optimizations:
-  # Enable lazy loading of tool configurations
-  lazyLoading: true 
-  # Maximum time (in milliseconds) that tool scanning should take
-  maxScanTimeMs: 100
-  # Whether to cache tool definitions for faster scanning
-  cacheToolDefinitions: true

@@ -16,7 +16,7 @@ startCommand:
   # This command will be executed to start the server
   # It correctly uses uvicorn for a production environment
   # and binds to the PORT provided by Smithery.
-  command: ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+  command: ["uvicorn", "src.app_factory:create_app", "--factory", "--host", "0.0.0.0", "--port", "${PORT}"]
   configSchema:
     type: "object"
     properties:

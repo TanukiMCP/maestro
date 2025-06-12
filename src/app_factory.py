@@ -16,10 +16,23 @@ from starlette.middleware.cors import CORSMiddleware
 import os
 import sys
 import time
+import inspect
+from functools import wraps
 
 # Import the static tool dictionary for fast tool scanning
 # This is critical for Smithery deployments which have strict timeouts
-from static_tools_dict import MAESTRO_TOOLS_DICT, get_tool_names
+try:
+    # Try importing from the src directory first (when run as a module)
+    from src.static_tools_dict import MAESTRO_TOOLS_DICT, get_tool_names
+except ImportError:
+    try:
+        # Then try importing from the root directory (when run directly)
+        from static_tools_dict import MAESTRO_TOOLS_DICT, get_tool_names
+    except ImportError:
+        # Fallback to empty dictionary if not found
+        print("WARNING: static_tools_dict.py not found, using empty dictionary")
+        MAESTRO_TOOLS_DICT = {}
+        def get_tool_names(): return []
 
 # Import real tool implementations (lazy-loaded only when needed)
 from maestro.dependencies import get_config
@@ -48,44 +61,40 @@ maestro_tools = [
     maestro_error_handler
 ]
 
-# Create a lightweight proxy for each tool that defers initialization
-# This approach ensures that the tool scanning process is extremely fast
-class LazyToolProxy:
-    """A proxy that defers tool initialization until the tool is actually called."""
+def create_proxy_function(original_func, tool_meta):
+    """Dynamically creates a proxy function with the same signature as the original."""
     
-    def __init__(self, tool_name, tool_impl, tool_meta):
-        self.tool_name = tool_name
-        self.tool_impl = tool_impl
-        self.__name__ = tool_name
-        
-        # Copy metadata from static dictionary for fast access
-        self.__doc__ = tool_meta.get("description", "")
-        self.description = tool_meta.get("description", "")
-        self.parameters = tool_meta.get("parameters", {})
-        self.category = tool_meta.get("category", "")
-    
-    async def __call__(self, *args, **kwargs):
-        # Only now do we actually call the real implementation
+    @wraps(original_func)
+    async def proxy(**kwargs):
+        # Call the original function with all provided kwargs
+        # The validation that this will work is done by fastmcp already
         start_time = time.time()
-        result = await self.tool_impl(*args, **kwargs)
+        result = await original_func(**kwargs)
         end_time = time.time()
-        logger.debug(f"Tool {self.tool_name} executed in {(end_time - start_time)*1000:.2f}ms")
+        logger.debug(f"Tool {original_func.__name__} executed in {(end_time - start_time)*1000:.2f}ms")
         return result
+    
+    # Add the metadata for fastmcp to find
+    proxy.__doc__ = tool_meta.get("description", "")
+    proxy.description = tool_meta.get("description", "")
+    proxy.parameters = tool_meta.get("parameters", {})
+    proxy.category = tool_meta.get("category", "")
+    
+    return proxy
 
 # Create lazy-loading proxies for each tool
 lazy_tools = []
-for i, tool in enumerate(maestro_tools):
+for tool in maestro_tools:
     tool_name = tool.__name__
-    if tool_name in MAESTRO_TOOLS_DICT:
-        lazy_tools.append(LazyToolProxy(
-            tool_name=tool_name,
-            tool_impl=tool,
-            tool_meta=MAESTRO_TOOLS_DICT[tool_name]
+    if TOOL_SCANNING_MODE and tool_name in MAESTRO_TOOLS_DICT:
+        # During scanning, create a proxy with the correct signature and metadata
+        lazy_tools.append(create_proxy_function(
+            tool,
+            MAESTRO_TOOLS_DICT[tool_name]
         ))
     else:
-        # Fallback if tool not in static dictionary
+        # In normal mode, just use the tool directly
         lazy_tools.append(tool)
-        logger.warning(f"Tool {tool_name} not found in static dictionary")
 
 async def health_check(request):
     """Health check endpoint for container orchestration and monitoring."""
@@ -156,7 +165,8 @@ def create_app():
         logger.info("🚀 Normal operation mode detected, using full tool implementations.")
         # Normal operation mode with full features
         mcp = FastMCP(
-            tools=lazy_tools,
+            # Use the original tools here, not the proxies
+            tools=maestro_tools,
             name="Maestro",
             instructions="An MCP server for advanced, backend-only orchestration and intelligence amplification. Provides session management for complex multi-step tasks.",
             on_duplicate_tools="warn",
